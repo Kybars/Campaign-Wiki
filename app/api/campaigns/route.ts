@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { areCampaignUploadsAllowed } from "@/lib/campaign-upload-access";
 import { createAdminClient } from "@/lib/db/client";
 import { extractPdfPages, PdfExtractionError } from "@/lib/pdf/extract-text";
 
@@ -13,6 +14,10 @@ function redirectWithError(request: Request, message: string) {
 }
 
 export async function POST(request: Request) {
+  if (!areCampaignUploadsAllowed()) {
+    return redirectWithError(request, "Campaign uploads are disabled on this deployment.");
+  }
+
   let campaignId: string | undefined;
   let storagePath: string | undefined;
   try {

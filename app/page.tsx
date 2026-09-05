@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { areCampaignUploadsAllowed } from "@/lib/campaign-upload-access";
 import type { CampaignStatus } from "@/lib/db/types";
 import { getCampaigns } from "@/lib/db/queries";
 
@@ -16,6 +17,7 @@ const STATUS_LABELS: Record<CampaignStatus, string> = {
 
 export default async function UploadPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
+  const uploadsAllowed = areCampaignUploadsAllowed();
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = [];
   let campaignLoadFailed = false;
 
@@ -34,18 +36,24 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
         <p className="mt-4 max-w-xl text-lg leading-8 text-[var(--muted)]">
           Upload one text-based campaign PDF and turn it into a source-backed, interconnected wiki.
         </p>
-        <form className="mt-10 space-y-6" action="/api/campaigns" method="post" encType="multipart/form-data">
-          {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p> : null}
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold">Campaign name</span>
-            <input className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-3 outline-none focus:border-[var(--accent)]" name="name" required maxLength={200} />
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold">Campaign PDF</span>
-            <input className="w-full rounded-lg border border-dashed border-[var(--line)] bg-white px-4 py-5" name="pdf" type="file" accept="application/pdf,.pdf" required />
-          </label>
-          <button className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-white hover:brightness-110" type="submit">Generate Wiki</button>
-        </form>
+        {uploadsAllowed ? (
+          <form className="mt-10 space-y-6" action="/api/campaigns" method="post" encType="multipart/form-data">
+            {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p> : null}
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold">Campaign name</span>
+              <input className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-3 outline-none focus:border-[var(--accent)]" name="name" required maxLength={200} />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold">Campaign PDF</span>
+              <input className="w-full rounded-lg border border-dashed border-[var(--line)] bg-white px-4 py-5" name="pdf" type="file" accept="application/pdf,.pdf" required />
+            </label>
+            <button className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-white hover:brightness-110" type="submit">Generate Wiki</button>
+          </form>
+        ) : (
+          <p className="mt-8 max-w-xl rounded-lg border border-[var(--line)] bg-white/50 px-4 py-3 text-sm text-[var(--muted)]">
+            This deployment is currently read-only. Campaign imports are performed locally.
+          </p>
+        )}
       </section>
 
       <section className="mt-12" aria-labelledby="existing-campaigns-heading">

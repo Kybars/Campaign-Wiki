@@ -69,11 +69,30 @@ NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 
+# Campaign imports
+ALLOW_CAMPAIGN_UPLOADS=true
+
 AI_EXTRACTION_CONCURRENCY=3
 PDF_CHUNK_TARGET_CHARACTERS=45000
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only secrets. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or expose them in browser code. The anon key is included for conventional Supabase project configuration, although v0 database access is server-only.
+
+### Campaign upload access
+
+For local development, enable campaign imports in `.env.local`:
+
+```dotenv
+ALLOW_CAMPAIGN_UPLOADS=true
+```
+
+For Vercel, explicitly configure the deployment as read-only:
+
+```dotenv
+ALLOW_CAMPAIGN_UPLOADS=false
+```
+
+Existing Supabase-backed campaigns and wiki pages remain readable when imports are disabled, but the upload form is hidden and the upload API rejects direct requests before parsing a PDF or performing Supabase/OpenAI work. If the variable is omitted, uploads default to disabled when `VERCEL=1` and enabled otherwise. Explicit values must be `true` or `false` (case-insensitive).
 
 ## Supabase setup
 
