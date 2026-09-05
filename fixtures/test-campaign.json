@@ -1,0 +1,31 @@
+{
+  "title": "Ashes of Greymoor",
+  "pages": [
+    "The heroes returned to Greymoor and met Hanna Stone, proprietor of the Silver Stag Inn. Old friends call Hanna ‘H. Stone’. Hanna owns the inn and fears for her brother, Edric Stone.",
+    "Edric Stone vanished while investigating the abandoned Old Mine. He learned that the Cult of Ash operates beneath the mine. Edric carried the Lantern Key, an important brass key that opens the mine's sealed lower door.",
+    "King Robert commands the King's Guard from Greymoor. His nephew Prince Robert serves in the King's Guard, but Prince Robert openly disputes the king's plan. King Robert and Prince Robert are distinct people.",
+    "At Tomar's Crossing, the undead scientist Ralekai researches a cure for the Demonplague. Ralekai needs an empty Soul Stone to complete the cure. The Soul Stone is hidden in the Old Mine.",
+    "H. Stone asked the heroes to Find Edric, an explicit quest to locate her missing brother in the Old Mine. The Cult of Ash formed after the Fall of Blackstone, a disaster that destroyed its former sanctuary.",
+    "Hanna Stone still owns the Silver Stag Inn. Witnesses again place the Cult of Ash beneath the Old Mine. Ralekai repeated that the Soul Stone is necessary for his Demonplague cure."
+  ],
+  "expectedEntities": [
+    "Greymoor", "Hanna Stone", "Silver Stag Inn", "Edric Stone", "Old Mine", "Cult of Ash",
+    "Lantern Key", "King Robert", "King's Guard", "Prince Robert", "Ralekai", "Demonplague",
+    "Soul Stone", "Tomar's Crossing", "Find Edric", "Fall of Blackstone"
+  ],
+  "expectedRelationships": [
+    ["Hanna Stone", "owns", "Silver Stag Inn"],
+    ["Hanna Stone", "sibling of", "Edric Stone"],
+    ["Edric Stone", "investigating", "Old Mine"],
+    ["Cult of Ash", "operates beneath", "Old Mine"],
+    ["Edric Stone", "carried", "Lantern Key"],
+    ["Lantern Key", "opens", "Old Mine"],
+    ["King Robert", "commands", "King's Guard"],
+    ["Prince Robert", "serves in", "King's Guard"],
+    ["Ralekai", "researching cure for", "Demonplague"],
+    ["Ralekai", "needs", "Soul Stone"],
+    ["Soul Stone", "hidden in", "Old Mine"],
+    ["Find Edric", "concerns", "Edric Stone"],
+    ["Cult of Ash", "formed after", "Fall of Blackstone"]
+  ]
+}
