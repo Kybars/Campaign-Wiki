@@ -99,6 +99,7 @@ The migrations create:
 - `processing_runs`
 - the private `campaign-pdfs` Storage bucket
 - `replace_campaign_graph(...)` for transactional/idempotent graph persistence
+- explicit `service_role` table grants (newer Supabase projects may not create these default grants)
 
 RLS is enabled with no public policies. The server-side service role performs all v0 access. Do not add a browser-facing service-role client.
 
