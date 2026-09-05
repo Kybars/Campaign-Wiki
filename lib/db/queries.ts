@@ -10,6 +10,29 @@ export async function getCampaign(campaignId: string) {
   return requireData(result.data, result.error, "Load campaign");
 }
 
+export async function getCampaigns() {
+  const client = createAdminClient();
+  const [campaignResult, entityResult] = await Promise.all([
+    client
+      .from("campaigns")
+      .select("id,name,status,error_message,processing_stage,created_at")
+      .order("created_at", { ascending: false }),
+    client.from("entities").select("campaign_id"),
+  ]);
+  const campaigns = requireData(campaignResult.data, campaignResult.error, "Load campaigns");
+  const entities = requireData(entityResult.data, entityResult.error, "Count campaign entities");
+  const entityCounts = new Map<string, number>();
+
+  for (const entity of entities) {
+    entityCounts.set(entity.campaign_id, (entityCounts.get(entity.campaign_id) ?? 0) + 1);
+  }
+
+  return campaigns.map((campaign) => ({
+    ...campaign,
+    entityCount: entityCounts.get(campaign.id) ?? 0,
+  }));
+}
+
 export async function getCampaignEntities(campaignId: string, type?: EntityType) {
   const client = createAdminClient();
   let query = client.from("entities").select("id,name,type,aliases,summary").eq("campaign_id", campaignId);
