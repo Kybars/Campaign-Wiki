@@ -204,6 +204,14 @@ The refresh form requires `OPENAI_API_KEY`; the default replay only requires Sup
 
 Campaigns imported before the Milestone 0 cache migration have page text and a canonical graph, but not the raw candidate payloads needed for this replay. In particular, the existing `Test 2` baseline cannot be fully replayed without another extraction and must not be regenerated merely to create a cache.
 
+Run the cheapest end-to-end Milestone 0 smoke test against the configured Supabase project with:
+
+```bash
+npm run smoke:replay
+```
+
+This test makes no OpenAI request and reads no PDF. It creates a uniquely named temporary campaign with deterministic page and candidate data, persists raw and validated extraction cache rows, replays the cached graph, verifies entities, relationships, sources, diagnostics, and zero model calls, then deletes the temporary campaign and all cascading rows. It never touches an existing campaign or Storage object.
+
 ## Processing and debugging
 
 `processCampaign(campaignId)` owns the orchestration. Chunk extraction is limited to `AI_EXTRACTION_CONCURRENCY` concurrent calls. Any chunk/model/persistence failure marks the campaign failed; failed chunks are never silently skipped. Retrying replaces the prior graph instead of appending duplicates.

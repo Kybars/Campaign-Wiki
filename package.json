@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,8 @@
     "test:watch": "vitest --configLoader runner",
     "evaluate": "tsx scripts/evaluate-extraction.ts",
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
-    "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts"
+    "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",
+    "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts"
   },
   "dependencies": {
     "@next/env": "^16.3.4",
@@ -22,6 +23,7 @@
     "pdfjs-dist": "^6.3.289",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "server-only": "^0.0.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
