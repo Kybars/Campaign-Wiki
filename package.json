@@ -11,9 +11,11 @@
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest --configLoader runner",
     "evaluate": "tsx scripts/evaluate-extraction.ts",
-    "fixture:pdf": "tsx scripts/create-fixture-pdf.ts"
+    "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
+    "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts"
   },
   "dependencies": {
+    "@next/env": "^16.3.4",
     "@supabase/supabase-js": "^2.57.4",
     "next": "^16.3.4",
     "openai": "^7.10.0",

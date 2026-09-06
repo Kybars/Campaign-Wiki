@@ -51,6 +51,18 @@ export interface Database {
         { id: string; campaign_id: string; stage: string; status: string; input_metadata: Json; output_metadata: Json; error_message: string | null; created_at: string },
         { id?: string; campaign_id: string; stage: string; status: string; input_metadata?: Json; output_metadata?: Json; error_message?: string | null }
       >;
+      extraction_cache_runs: Table<
+        { id: string; campaign_id: string; document_id: string; status: string; extraction_model: string; cache_schema_version: number; chunking_metadata: Json; error_message: string | null; created_at: string; completed_at: string | null },
+        { id?: string; campaign_id: string; document_id: string; status: string; extraction_model: string; cache_schema_version?: number; chunking_metadata?: Json; error_message?: string | null; completed_at?: string | null }
+      >;
+      extraction_cache_chunks: Table<
+        { id: string; cache_run_id: string; chunk_id: string; chunk_index: number; page_numbers: number[]; raw_output: Json; validated_output: Json; validation_diagnostics: Json; model: string; response_id: string | null; input_tokens: number | null; cached_input_tokens: number | null; cache_write_tokens: number | null; output_tokens: number | null; total_tokens: number | null; estimated_cost_usd: number | null; created_at: string },
+        { id?: string; cache_run_id: string; chunk_id: string; chunk_index: number; page_numbers: number[]; raw_output: Json; validated_output: Json; validation_diagnostics?: Json; model: string; response_id?: string | null; input_tokens?: number | null; cached_input_tokens?: number | null; cache_write_tokens?: number | null; output_tokens?: number | null; total_tokens?: number | null; estimated_cost_usd?: number | null }
+      >;
+      reconciliation_cache_results: Table<
+        { id: string; cache_run_id: string; decision: Json; model: string | null; response_id: string | null; input_tokens: number | null; cached_input_tokens: number | null; cache_write_tokens: number | null; output_tokens: number | null; total_tokens: number | null; estimated_cost_usd: number | null; created_at: string },
+        { id?: string; cache_run_id: string; decision?: Json; model?: string | null; response_id?: string | null; input_tokens?: number | null; cached_input_tokens?: number | null; cache_write_tokens?: number | null; output_tokens?: number | null; total_tokens?: number | null; estimated_cost_usd?: number | null }
+      >;
     };
     Views: Record<string, never>;
     Functions: {

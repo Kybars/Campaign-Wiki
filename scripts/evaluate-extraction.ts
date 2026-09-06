@@ -30,8 +30,8 @@ async function main() {
   const extracted = await extractChunksLimited(chunks, 2);
   const aggregate = aggregateCandidates(extracted.map((result) => ({ chunkId: result.chunkId, ...result.extraction })));
   const groups = buildDeterministicGroups(aggregate);
-  const decision = await reconcileGroupsWithAI(groups);
-  const graph = buildCanonicalGraph(aggregate, decision);
+  const reconciliation = await reconcileGroupsWithAI(groups);
+  const graph = buildCanonicalGraph(aggregate, reconciliation.decision);
 
   const actualEntities = new Set(graph.entities.map((entity) => normalizeName(entity.name)));
   const missedEntities = fixture.expectedEntities.filter((name) => !actualEntities.has(normalizeName(name)));

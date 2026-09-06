@@ -3,11 +3,16 @@ import { getOpenAIClient } from "@/lib/ai/client";
 import { RECONCILIATION_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { reconciliationDecisionSchema, type ReconciliationDecision } from "@/lib/ai/schemas";
 import { getOpenAIEnv } from "@/lib/env";
+import { modelCallUsage, type ModelCallUsage } from "@/lib/ai/usage";
 import type { DeterministicGroup } from "@/lib/graph/types";
 
-export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promise<ReconciliationDecision | undefined> {
-  if (groups.length === 0) return undefined;
-  if (groups.length === 1) return undefined;
+export interface ReconciliationResult {
+  decision: ReconciliationDecision | undefined;
+  usage: ModelCallUsage | undefined;
+}
+
+export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promise<ReconciliationResult> {
+  if (groups.length <= 1) return { decision: undefined, usage: undefined };
 
   const payload = groups.map((group) => ({
     group_id: group.id,
@@ -20,7 +25,7 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promi
     })),
   }));
   const response = await getOpenAIClient().responses.parse({
-    model: getOpenAIEnv().OPENAI_MODEL,
+    model: getOpenAIEnv().OPENAI_RECONCILIATION_MODEL,
     input: [
       { role: "system", content: RECONCILIATION_SYSTEM_PROMPT },
       { role: "user", content: `Reconcile every candidate group in this JSON data:\n${JSON.stringify(payload)}` },
@@ -28,5 +33,8 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promi
     text: { format: zodTextFormat(reconciliationDecisionSchema, "campaign_entity_reconciliation") },
   });
   if (!response.output_parsed) throw new Error("Model returned no parsed reconciliation result");
-  return response.output_parsed;
+  return {
+    decision: response.output_parsed,
+    usage: modelCallUsage(response.model, response.id, response.usage),
+  };
 }

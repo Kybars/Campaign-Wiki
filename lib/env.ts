@@ -1,10 +1,20 @@
 import { z } from "zod";
 
+export function resolveOpenAIModels<T extends { OPENAI_MODEL: string; OPENAI_EXTRACTION_MODEL?: string; OPENAI_RECONCILIATION_MODEL?: string }>(env: T) {
+  return {
+    ...env,
+    OPENAI_EXTRACTION_MODEL: env.OPENAI_EXTRACTION_MODEL ?? env.OPENAI_MODEL,
+    OPENAI_RECONCILIATION_MODEL: env.OPENAI_RECONCILIATION_MODEL ?? env.OPENAI_MODEL,
+  };
+}
+
 const openAIEnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1).default("gpt-5.6-terra"),
+  OPENAI_EXTRACTION_MODEL: z.string().min(1).optional(),
+  OPENAI_RECONCILIATION_MODEL: z.string().min(1).optional(),
   AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(3),
-});
+}).transform(resolveOpenAIModels);
 
 const supabaseEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),

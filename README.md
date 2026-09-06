@@ -14,6 +14,7 @@ browser upload
   -> Supabase Storage + document_pages
   -> complete-page chunks with one-page overlap
   -> OpenAI Responses API structured extraction (Zod)
+  -> persisted raw + validated per-chunk extraction cache
   -> programmatic page/quote/endpoint validation
   -> deterministic normalized-name and explicit-alias grouping
   -> conservative AI global reconciliation
@@ -33,8 +34,9 @@ Important design properties:
 - One directional relationship row is stored and rendered from both endpoints.
 - Graph replacement is one PostgreSQL function call, so a partial canonical graph is not exposed.
 - `processing_runs` and reconciliation metadata preserve candidate IDs, merge reasons, counts, and discarded-item diagnostics.
+- Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
 
-The OpenAI integration follows the official [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) (`responses.parse` plus `zodTextFormat`). The default `gpt-5.6-terra` model supports both the Responses API and structured outputs; change `OPENAI_MODEL` if your project uses another compatible model. See the official [model page](https://developers.openai.com/api/docs/models/gpt-5.6-terra).
+The OpenAI integration follows the official [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) (`responses.parse` plus `zodTextFormat`). The default `gpt-5.6-terra` model supports both the Responses API and structured outputs. `OPENAI_EXTRACTION_MODEL` and `OPENAI_RECONCILIATION_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. See the official [model page](https://developers.openai.com/api/docs/models/gpt-5.6-terra).
 
 ## Key directories
 
@@ -64,6 +66,8 @@ Copy `.env.example` to `.env.local` and fill in:
 ```dotenv
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5.6-terra
+OPENAI_EXTRACTION_MODEL=gpt-5.6-terra
+OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
 
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -116,6 +120,8 @@ The migrations create:
 - `relationships`
 - `relationship_sources`
 - `processing_runs`
+- `extraction_cache_runs` and `extraction_cache_chunks`
+- `reconciliation_cache_results`
 - the private `campaign-pdfs` Storage bucket
 - `replace_campaign_graph(...)` for transactional/idempotent graph persistence
 - explicit `service_role` table grants (newer Supabase projects may not create these default grants)
@@ -180,6 +186,24 @@ The harness extracts the fixture PDF page by page, deliberately creates overlapp
 
 The fixture includes a recurring NPC, an explicit alias, two similarly named distinct NPCs, multiple locations and factions, important items, an event, a quest, explicit relationships, and repeated relationships across overlapping chunks. Evaluation is diagnostic rather than a strict probabilistic test.
 
+## Replaying a cached import
+
+After applying the Milestone 0 migration, every new successful import persists its candidate extraction before reconciliation and graph persistence. Rebuild a campaign's canonical graph from its latest complete cache with no OpenAI calls:
+
+```bash
+npm run replay -- CAMPAIGN_UUID
+```
+
+This reuses both the validated candidates and latest cached reconciliation decision. To deliberately rerun only reconciliation while still avoiding all chunk extraction calls:
+
+```bash
+npm run replay -- CAMPAIGN_UUID --refresh-reconciliation
+```
+
+The refresh form requires `OPENAI_API_KEY`; the default replay only requires Supabase configuration. Graph replacement remains transactional. Validation or model failures before replacement leave the previously persisted graph and campaign status intact.
+
+Campaigns imported before the Milestone 0 cache migration have page text and a canonical graph, but not the raw candidate payloads needed for this replay. In particular, the existing `Test 2` baseline cannot be fully replayed without another extraction and must not be regenerated merely to create a cache.
+
 ## Processing and debugging
 
 `processCampaign(campaignId)` owns the orchestration. Chunk extraction is limited to `AI_EXTRACTION_CONCURRENCY` concurrent calls. Any chunk/model/persistence failure marks the campaign failed; failed chunks are never silently skipped. Retrying replaces the prior graph instead of appending duplicates.
@@ -188,11 +212,15 @@ For debugging, inspect:
 
 - `campaigns.processing_stage`, `error_message`, and `processing_diagnostics`
 - `processing_runs` for stage counts and failures
+- `extraction_cache_chunks` for raw/validated candidates, validation diagnostics, model, response ID, and per-call token/cost data
+- `reconciliation_cache_results` for cached decisions and reconciliation call usage
 - `entities.reconciliation_metadata` for originating candidate IDs and merge reason
 - `relationships.resolution_metadata` for candidate relationship IDs
 - `document_pages`, entity sources, and relationship sources for page-level evidence
 
 The application intentionally avoids logging API keys, service-role keys, or full campaign documents.
+
+Model diagnostics record the stage, actual response model, API call count, input tokens, cached input tokens, cache-write tokens, output tokens, total tokens, and estimated standard-tier USD cost. Cost estimates use a small explicit table of official rates for known models; an unknown configured model records full token usage with a `null` estimate rather than guessing. Actual billing can vary by service tier and pricing changes.
 
 ## Known limitations
 
