@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAdminClient, requireData } from "@/lib/db/client";
-import type { EntityType } from "@/lib/db/types";
+import type { EntityRole, EntityType } from "@/lib/db/types";
 import { relationshipsForEntity } from "@/lib/relationships/view";
 
 export async function getCampaign(campaignId: string) {
@@ -33,10 +33,11 @@ export async function getCampaigns() {
   }));
 }
 
-export async function getCampaignEntities(campaignId: string, type?: EntityType) {
+export async function getCampaignEntities(campaignId: string, type?: EntityType, role?: EntityRole) {
   const client = createAdminClient();
-  let query = client.from("entities").select("id,name,type,aliases,summary").eq("campaign_id", campaignId);
+  let query = client.from("entities").select("id,name,type,roles,aliases,summary").eq("campaign_id", campaignId);
   if (type) query = query.eq("type", type);
+  if (role) query = query.contains("roles", [role]);
   const result = await query.order("name");
   return requireData(result.data, result.error, "Load campaign entities");
 }

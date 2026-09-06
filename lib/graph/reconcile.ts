@@ -82,11 +82,18 @@ function canonicalFromGroups(
     (alias) => alias && normalizeName(alias) !== canonicalNormalized,
   ))];
   const longestSummary = [...candidates].sort((a, b) => b.summary.length - a.summary.length)[0]?.summary ?? "";
+  const roles = [...new Set(candidates.flatMap((candidate) => candidate.roles))];
+  const roleSources = Object.fromEntries(roles.map((role) => [
+    role,
+    uniqueSources(candidates.filter((candidate) => candidate.roles.includes(role)).flatMap((candidate) => candidate.sources)),
+  ]));
   return {
     key,
     name,
     normalizedName: canonicalNormalized,
     type: groups[0].type,
+    roles,
+    roleSources,
     aliases,
     summary: override?.summary ?? longestSummary,
     sources: uniqueSources(candidates.flatMap((candidate) => candidate.sources)),

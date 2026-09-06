@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
 import { getCampaign, getEntityDetail } from "@/lib/db/queries";
-import { ENTITY_TYPE_LABELS } from "@/lib/entities";
+import { ENTITY_TYPE_SINGULAR_LABELS, hasEntityRole } from "@/lib/entities";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,10 @@ export default async function EntityPage({ params }: { params: Promise<{ campaig
       <WikiHeader campaignId={campaignId} campaignName={campaign.name} />
       <main className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
         <Link className="text-sm text-[var(--accent)]" href={`/campaigns/${campaignId}`}>← Campaign home</Link>
-        <p className="mt-8 text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">{ENTITY_TYPE_LABELS[entity.type].replace(/s$/, "")}</p>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">{ENTITY_TYPE_SINGULAR_LABELS[entity.type]}</p>
+          {hasEntityRole(entity, "enemy") ? <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-red-800">Enemy</span> : null}
+        </div>
         <h1 className="mt-2 font-serif text-5xl font-semibold tracking-tight">{entity.name}</h1>
         {entity.aliases.length ? <p className="mt-3 text-sm text-[var(--muted)]">Also known as {entity.aliases.join(", ")}</p> : null}
         <p className="mt-8 text-lg leading-8">{entity.summary}</p>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
 import { getCampaign, getCampaignEntities } from "@/lib/db/queries";
-import { ENTITY_TYPES, ENTITY_TYPE_LABELS } from "@/lib/entities";
+import { ENTITY_TYPES, ENTITY_TYPE_LABELS, hasEntityRole } from "@/lib/entities";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
   if (campaign.status !== "complete") redirect(`/campaigns/${campaignId}/processing`);
   const entities = await getCampaignEntities(campaignId);
   const grouped = Object.fromEntries(ENTITY_TYPES.map((type) => [type, entities.filter((entity) => entity.type === type)]));
+  const enemies = entities.filter((entity) => hasEntityRole(entity, "enemy"));
 
   return (
     <>
@@ -30,13 +31,17 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
           </div>
         </form>
 
-        <section className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7" aria-label="Entity counts">
+        <section className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-9" aria-label="Entity counts">
           {ENTITY_TYPES.map((type) => (
             <Link key={type} href={`/campaigns/${campaignId}/categories/${type}`} className="rounded-xl border border-[var(--line)] bg-white/60 p-4 hover:border-[var(--accent)]">
               <span className="block text-2xl font-bold">{grouped[type].length}</span>
               <span className="text-sm text-[var(--muted)]">{ENTITY_TYPE_LABELS[type]}</span>
             </Link>
           ))}
+          <Link href={`/campaigns/${campaignId}/categories/enemies`} className="rounded-xl border border-[var(--line)] bg-white/60 p-4 hover:border-[var(--accent)]">
+            <span className="block text-2xl font-bold">{enemies.length}</span>
+            <span className="text-sm text-[var(--muted)]">Enemies</span>
+          </Link>
         </section>
 
         <div className="mt-14 grid gap-12 md:grid-cols-2">
@@ -48,7 +53,10 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
               </div>
               <ul className="space-y-2">
                 {grouped[type].map((entity) => (
-                  <li key={entity.id}><Link className="hover:text-[var(--accent)] hover:underline" href={`/campaigns/${campaignId}/entities/${entity.id}`}>{entity.name}</Link></li>
+                  <li key={entity.id} className="flex flex-wrap items-center gap-2">
+                    <Link className="hover:text-[var(--accent)] hover:underline" href={`/campaigns/${campaignId}/entities/${entity.id}`}>{entity.name}</Link>
+                    {hasEntityRole(entity, "enemy") ? <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Enemy</span> : null}
+                  </li>
                 ))}
               </ul>
             </section>

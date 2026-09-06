@@ -27,7 +27,9 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
   const { campaign, document } = await loadCampaignAndDocument(campaignId);
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
-  if (cache.run.cache_schema_version !== 1) throw new Error(`Unsupported extraction cache schema version ${cache.run.cache_schema_version}`);
+  if (![1, 2].includes(cache.run.cache_schema_version)) {
+    throw new Error(`Unsupported extraction cache schema version ${cache.run.cache_schema_version}`);
+  }
 
   await recordProcessingRun(campaignId, "replay", "started", {
     input: { cacheRunId: cache.run.id, refreshReconciliation: options.refreshReconciliation === true },

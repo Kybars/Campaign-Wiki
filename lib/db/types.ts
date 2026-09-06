@@ -7,7 +7,8 @@ export type CampaignStatus =
   | "persisting"
   | "complete"
   | "failed";
-export type EntityType = "npc" | "location" | "faction" | "item" | "event" | "quest" | "other";
+export type EntityType = "npc" | "deity" | "location" | "faction" | "item" | "event" | "quest" | "other";
+export type EntityRole = "enemy";
 
 type Table<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -32,8 +33,8 @@ export interface Database {
         { id?: string; document_id: string; page_number: number; text: string }
       >;
       entities: Table<
-        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; aliases: string[]; summary: string; reconciliation_metadata: Json; created_at: string; updated_at: string },
-        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; aliases?: string[]; summary?: string; reconciliation_metadata?: Json }
+        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles: EntityRole[]; aliases: string[]; summary: string; reconciliation_metadata: Json; created_at: string; updated_at: string },
+        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles?: EntityRole[]; aliases?: string[]; summary?: string; reconciliation_metadata?: Json }
       >;
       entity_sources: Table<
         { id: string; entity_id: string; document_id: string; page_number: number; supporting_text: string; created_at: string },

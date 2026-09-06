@@ -19,6 +19,7 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promi
     type: group.type,
     references: group.candidates.map((candidate) => ({
       name: candidate.name,
+      roles: candidate.roles,
       aliases: candidate.aliases,
       summary: candidate.summary,
       evidence: candidate.sources.slice(0, 3),

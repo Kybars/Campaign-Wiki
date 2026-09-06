@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
 import { getCampaign, searchCampaignEntities } from "@/lib/db/queries";
-import { ENTITY_TYPE_LABELS } from "@/lib/entities";
+import { ENTITY_TYPE_SINGULAR_LABELS, hasEntityRole } from "@/lib/entities";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,8 @@ export default async function SearchPage({ params, searchParams }: {
           {results.map((entity) => (
             <li key={entity.id} className="py-4">
               <Link className="font-semibold hover:text-[var(--accent)]" href={`/campaigns/${campaignId}/entities/${entity.id}`}>{entity.name}</Link>
-              <span className="ml-2 text-sm text-[var(--muted)]">{ENTITY_TYPE_LABELS[entity.type].replace(/s$/, "")}</span>
+              <span className="ml-2 text-sm text-[var(--muted)]">{ENTITY_TYPE_SINGULAR_LABELS[entity.type]}</span>
+              {hasEntityRole(entity, "enemy") ? <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Enemy</span> : null}
               {entity.aliases.length ? <p className="mt-1 text-sm text-[var(--muted)]">Also known as {entity.aliases.join(", ")}</p> : null}
             </li>
           ))}

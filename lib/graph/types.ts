@@ -1,5 +1,5 @@
 import type { CandidateEntity, CandidateRelationship, SourceEvidence } from "@/lib/ai/schemas";
-import type { EntityType } from "@/lib/db/types";
+import type { EntityRole, EntityType } from "@/lib/db/types";
 
 export interface ChunkCandidateResult {
   chunkId: string;
@@ -36,6 +36,8 @@ export interface CanonicalEntity {
   name: string;
   normalizedName: string;
   type: EntityType;
+  roles: EntityRole[];
+  roleSources: Partial<Record<EntityRole, SourceEvidence[]>>;
   aliases: string[];
   summary: string;
   sources: SourceEvidence[];

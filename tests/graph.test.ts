@@ -3,9 +3,15 @@ import type { CandidateAggregate, GlobalCandidateEntity, GlobalCandidateRelation
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 
-function entity(id: string, name: string, type: GlobalCandidateEntity["type"] = "npc", aliases: string[] = []): GlobalCandidateEntity {
+function entity(
+  id: string,
+  name: string,
+  type: GlobalCandidateEntity["type"] = "npc",
+  aliases: string[] = [],
+  roles: GlobalCandidateEntity["roles"] = [],
+): GlobalCandidateEntity {
   const [chunkId, temporaryId] = id.split(":");
-  return { id, chunkId, temporaryId, name, type, aliases, summary: `${name} summary`, sources: [{ page_number: 1, supporting_text: `${name} appears in the campaign.` }] };
+  return { id, chunkId, temporaryId, name, type, roles, aliases, summary: `${name} summary`, sources: [{ page_number: 1, supporting_text: `${name} appears in the campaign.` }] };
 }
 
 function relationship(id: string, chunkId: string, sourceCandidateId: string, targetCandidateId: string, relationshipType = "owns"): GlobalCandidateRelationship {
@@ -50,8 +56,8 @@ describe("canonical graph", () => {
     const soulGroup = groups.find((group) => group.type === "item")!;
     const graph = buildCanonicalGraph(aggregate, {
       canonical_entities: [
-        { canonical_id: "c1", name: "Ralekai", group_ids: ralekaiGroups.map((group) => group.id), aliases: ["Ralekai the Scientist"], summary: "An undead scientist." },
-        { canonical_id: "c2", name: "Soul Stone", group_ids: [soulGroup.id], aliases: [], summary: "An important stone." },
+        { canonical_id: "c1", name: "Ralekai", group_ids: ralekaiGroups.map((group) => group.id), roles: [], aliases: ["Ralekai the Scientist"], summary: "An undead scientist." },
+        { canonical_id: "c2", name: "Soul Stone", group_ids: [soulGroup.id], roles: [], aliases: [], summary: "An important stone." },
       ],
     });
     expect(graph.entities).toHaveLength(2);

@@ -52,6 +52,7 @@ describe("Milestone 0 replay cache", () => {
       relationships: [{ source_temporary_id: "e1", target_temporary_id: "e2", relationship_type: "owns", description: "Hanna Stone owns the Silver Stag Inn.", confidence: 0.9, sources: [{ page_number: 1, supporting_text: "Hanna Stone owns the Silver Stag Inn." }] }],
     } }]);
     expect(aggregate.entities.map((entity) => entity.id)).toEqual(["chunk-1:e1", "chunk-1:e2"]);
+    expect(aggregate.entities.every((entity) => entity.roles.length === 0)).toBe(true);
     expect(aggregate.relationships[0]).toMatchObject({ sourceCandidateId: "chunk-1:e1", targetCandidateId: "chunk-1:e2" });
   });
 
