@@ -31,6 +31,11 @@ export interface DeterministicGroup {
   candidates: GlobalCandidateEntity[];
 }
 
+export interface CrossTypeReconciliationCandidate {
+  normalizedIdentity: string;
+  groupIds: string[];
+}
+
 export interface CanonicalEntity {
   key: string;
   name: string;
@@ -42,6 +47,7 @@ export interface CanonicalEntity {
   summary: string;
   sources: SourceEvidence[];
   candidateIds: string[];
+  reconciliationEvidence: SourceEvidence[];
   mergeReason: "deterministic" | "ai";
 }
 

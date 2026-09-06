@@ -37,9 +37,11 @@ export const reconciliationDecisionSchema = z.object({
       canonical_id: z.string().min(1),
       name: z.string().min(1).max(200),
       group_ids: z.array(z.string().min(1)).min(1),
+      type: entityTypeSchema,
       roles: z.array(entityRoleSchema).max(10),
       aliases: z.array(z.string().min(1).max(200)),
       summary: z.string().min(1).max(1200),
+      identity_evidence: z.array(sourceEvidenceSchema).max(20),
     }),
   ),
 });

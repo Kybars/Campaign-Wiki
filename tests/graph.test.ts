@@ -56,8 +56,8 @@ describe("canonical graph", () => {
     const soulGroup = groups.find((group) => group.type === "item")!;
     const graph = buildCanonicalGraph(aggregate, {
       canonical_entities: [
-        { canonical_id: "c1", name: "Ralekai", group_ids: ralekaiGroups.map((group) => group.id), roles: [], aliases: ["Ralekai the Scientist"], summary: "An undead scientist." },
-        { canonical_id: "c2", name: "Soul Stone", group_ids: [soulGroup.id], roles: [], aliases: [], summary: "An important stone." },
+        { canonical_id: "c1", name: "Ralekai", group_ids: ralekaiGroups.map((group) => group.id), type: "npc", roles: [], aliases: ["Ralekai the Scientist"], summary: "An undead scientist.", identity_evidence: [{ page_number: 1, supporting_text: "Ralekai appears in the campaign." }] },
+        { canonical_id: "c2", name: "Soul Stone", group_ids: [soulGroup.id], type: "item", roles: [], aliases: [], summary: "An important stone.", identity_evidence: [] },
       ],
     });
     expect(graph.entities).toHaveLength(2);

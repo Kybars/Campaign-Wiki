@@ -27,7 +27,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
   const { campaign, document } = await loadCampaignAndDocument(campaignId);
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
-  if (![1, 2].includes(cache.run.cache_schema_version)) {
+  if (![1, 2, 3].includes(cache.run.cache_schema_version)) {
     throw new Error(`Unsupported extraction cache schema version ${cache.run.cache_schema_version}`);
   }
 
@@ -52,7 +52,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       if (!cache.reconciliation && groups.length > 1) {
         throw new Error("Extraction candidates are cached, but no reconciliation decision is cached. Re-run with --refresh-reconciliation to make only that model call.");
       }
-      decision = cache.reconciliation ? parseCachedReconciliation(cache.reconciliation.decision) : undefined;
+      decision = cache.reconciliation ? parseCachedReconciliation(cache.reconciliation.decision, groups) : undefined;
     }
 
     const graph = buildCanonicalGraph(aggregate, decision);

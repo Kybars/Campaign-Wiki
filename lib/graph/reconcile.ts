@@ -3,6 +3,7 @@ import { normalizeName } from "@/lib/graph/normalize";
 import type {
   CandidateAggregate,
   CanonicalEntity,
+  CrossTypeReconciliationCandidate,
   DeterministicGroup,
   GlobalCandidateEntity,
 } from "@/lib/graph/types";
@@ -55,6 +56,24 @@ export function buildDeterministicGroups(aggregate: CandidateAggregate): Determi
   }));
 }
 
+export function buildCrossTypeReconciliationCandidates(
+  groups: DeterministicGroup[],
+): CrossTypeReconciliationCandidate[] {
+  const groupsByIdentity = new Map<string, DeterministicGroup[]>();
+  for (const group of groups) {
+    const identities = new Set(group.candidates.flatMap((candidate) => [...identityNames(candidate)]));
+    for (const identity of identities) {
+      groupsByIdentity.set(identity, [...(groupsByIdentity.get(identity) ?? []), group]);
+    }
+  }
+
+  return [...groupsByIdentity.entries()].flatMap(([normalizedIdentity, matchingGroups]) => {
+    const groupIds = [...new Set(matchingGroups.map((group) => group.id))];
+    const types = new Set(matchingGroups.map((group) => group.type));
+    return groupIds.length > 1 && types.size > 1 ? [{ normalizedIdentity, groupIds }] : [];
+  });
+}
+
 function uniqueSources(sources: SourceEvidence[]): SourceEvidence[] {
   const seen = new Set<string>();
   return sources.filter((source) => {
@@ -68,7 +87,7 @@ function uniqueSources(sources: SourceEvidence[]): SourceEvidence[] {
 function canonicalFromGroups(
   groups: DeterministicGroup[],
   key: string,
-  override?: { name: string; aliases: string[]; summary: string },
+  override?: { name: string; type: CanonicalEntity["type"]; aliases: string[]; summary: string; identityEvidence: SourceEvidence[] },
   mergeReason: "deterministic" | "ai" = "deterministic",
 ): CanonicalEntity {
   const candidates = groups.flatMap((group) => group.candidates);
@@ -82,6 +101,11 @@ function canonicalFromGroups(
     (alias) => alias && normalizeName(alias) !== canonicalNormalized,
   ))];
   const longestSummary = [...candidates].sort((a, b) => b.summary.length - a.summary.length)[0]?.summary ?? "";
+  const sources = uniqueSources(candidates.flatMap((candidate) => candidate.sources));
+  const supportedSourceKeys = new Set(sources.map((source) => `${source.page_number}:${source.supporting_text.trim()}`));
+  const reconciliationEvidence = uniqueSources((override?.identityEvidence ?? []).filter(
+    (source) => supportedSourceKeys.has(`${source.page_number}:${source.supporting_text.trim()}`),
+  ));
   const roles = [...new Set(candidates.flatMap((candidate) => candidate.roles))];
   const roleSources = Object.fromEntries(roles.map((role) => [
     role,
@@ -91,15 +115,38 @@ function canonicalFromGroups(
     key,
     name,
     normalizedName: canonicalNormalized,
-    type: groups[0].type,
+    type: override?.type ?? groups[0].type,
     roles,
     roleSources,
     aliases,
     summary: override?.summary ?? longestSummary,
-    sources: uniqueSources(candidates.flatMap((candidate) => candidate.sources)),
+    sources,
     candidateIds: candidates.map((candidate) => candidate.id),
+    reconciliationEvidence,
     mergeReason,
   };
+}
+
+function groupsShareIdentity(left: DeterministicGroup, right: DeterministicGroup): boolean {
+  const leftIdentities = new Set(left.candidates.flatMap((candidate) => [...identityNames(candidate)]));
+  return right.candidates.some((candidate) => [...identityNames(candidate)].some((identity) => leftIdentities.has(identity)));
+}
+
+function hasIdentitySignalConnectivity(groups: DeterministicGroup[]): boolean {
+  if (groups.length <= 1) return true;
+  const visited = new Set([groups[0].id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const group of groups) {
+      if (visited.has(group.id)) continue;
+      if (groups.some((candidate) => visited.has(candidate.id) && groupsShareIdentity(candidate, group))) {
+        visited.add(group.id);
+        changed = true;
+      }
+    }
+  }
+  return visited.size === groups.length;
 }
 
 export interface ReconciledEntities {
@@ -119,17 +166,34 @@ export function applyReconciliation(
   for (const proposed of decision?.canonical_entities ?? []) {
     const proposalGroups = proposed.group_ids.map((id) => groupsById.get(id)).filter((group): group is DeterministicGroup => Boolean(group));
     if (proposalGroups.length !== proposed.group_ids.length || proposalGroups.some((group) => claimed.has(group.id))) continue;
-    if (new Set(proposalGroups.map((group) => group.type)).size !== 1) continue;
+    if (new Set(proposed.group_ids).size !== proposed.group_ids.length) continue;
+    const hasIdentitySignal = hasIdentitySignalConnectivity(proposalGroups);
+    const isCrossType = new Set(proposalGroups.map((group) => group.type)).size > 1;
+    if (isCrossType && !hasIdentitySignal) continue;
     const proposedEntity = canonicalFromGroups(
       proposalGroups,
       `canonical-${entities.length + 1}`,
-      { name: proposed.name, aliases: proposed.aliases, summary: proposed.summary },
+      {
+        name: proposed.name,
+        type: proposed.type,
+        aliases: proposed.aliases,
+        summary: proposed.summary,
+        identityEvidence: proposed.identity_evidence,
+      },
       proposalGroups.length > 1 ? "ai" : "deterministic",
     );
+    if (isCrossType && proposedEntity.reconciliationEvidence.length === 0) continue;
+    if (proposalGroups.length > 1 && !hasIdentitySignal && proposedEntity.reconciliationEvidence.length === 0) continue;
     const typedName = `${proposedEntity.type}:${proposedEntity.normalizedName}`;
     // A model rename must not create a database collision or force an unsafe merge.
     // Reject that proposal and fall back to the deterministic groups instead.
-    if (usedCanonicalNames.has(typedName)) continue;
+    const collidesWithUnmergedGroup = groups.some((group) =>
+      !proposalGroups.includes(group)
+      && !claimed.has(group.id)
+      && group.type === proposedEntity.type
+      && group.candidates.some((candidate) => identityNames(candidate).has(proposedEntity.normalizedName)),
+    );
+    if (usedCanonicalNames.has(typedName) || collidesWithUnmergedGroup) continue;
     proposalGroups.forEach((group) => claimed.add(group.id));
     usedCanonicalNames.add(typedName);
     entities.push(proposedEntity);

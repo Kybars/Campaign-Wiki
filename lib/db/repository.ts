@@ -70,7 +70,7 @@ export async function createExtractionCacheRun(
     document_id: documentId,
     status: "started",
     extraction_model: extractionModel,
-    cache_schema_version: 2,
+    cache_schema_version: 3,
     chunking_metadata: chunkingMetadata,
   }).select("id").single();
   return requireData(data, error, "Create extraction cache run").id;
@@ -174,7 +174,12 @@ export async function persistCanonicalGraph(campaignId: string, documentId: stri
     aliases: entity.aliases,
     summary: entity.summary,
     sources: entity.sources,
-    metadata: { candidateIds: entity.candidateIds, mergeReason: entity.mergeReason, roleSources: entity.roleSources },
+    metadata: {
+      candidateIds: entity.candidateIds,
+      mergeReason: entity.mergeReason,
+      reconciliationEvidence: entity.reconciliationEvidence,
+      roleSources: entity.roleSources,
+    },
   }));
   const relationships = graph.relationships.map((relationship) => ({
     ...relationship,

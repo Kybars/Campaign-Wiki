@@ -4,6 +4,7 @@ import { RECONCILIATION_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { reconciliationDecisionSchema, type ReconciliationDecision } from "@/lib/ai/schemas";
 import { getOpenAIEnv } from "@/lib/env";
 import { modelCallUsage, type ModelCallUsage } from "@/lib/ai/usage";
+import { buildCrossTypeReconciliationCandidates } from "@/lib/graph/reconcile";
 import type { DeterministicGroup } from "@/lib/graph/types";
 
 export interface ReconciliationResult {
@@ -14,11 +15,17 @@ export interface ReconciliationResult {
 export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promise<ReconciliationResult> {
   if (groups.length <= 1) return { decision: undefined, usage: undefined };
 
+  const crossTypeCandidates = buildCrossTypeReconciliationCandidates(groups);
   const payload = groups.map((group) => ({
     group_id: group.id,
     type: group.type,
+    cross_type_candidate_group_ids: [...new Set(crossTypeCandidates
+      .filter((candidate) => candidate.groupIds.includes(group.id))
+      .flatMap((candidate) => candidate.groupIds.filter((groupId) => groupId !== group.id)))],
     references: group.candidates.map((candidate) => ({
+      candidate_id: candidate.id,
       name: candidate.name,
+      candidate_type: candidate.type,
       roles: candidate.roles,
       aliases: candidate.aliases,
       summary: candidate.summary,
