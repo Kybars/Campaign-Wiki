@@ -183,7 +183,10 @@ export async function persistCanonicalGraph(campaignId: string, documentId: stri
   }));
   const relationships = graph.relationships.map((relationship) => ({
     ...relationship,
-    metadata: { candidateRelationshipIds: relationship.candidateRelationshipIds },
+    metadata: {
+      candidateRelationshipIds: relationship.candidateRelationshipIds,
+      normalization: relationship.normalization,
+    },
   }));
   const { data, error } = await client.rpc("replace_campaign_graph", {
     p_campaign_id: campaignId,

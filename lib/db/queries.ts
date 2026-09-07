@@ -4,6 +4,15 @@ import { createAdminClient, requireData } from "@/lib/db/client";
 import type { EntityRole, EntityType } from "@/lib/db/types";
 import { relationshipsForEntity } from "@/lib/relationships/view";
 
+function deduplicateSources<T extends { document_id: string; page_number: number; supporting_text: string }>(sources: T[]): T[] {
+  const unique = new Map<string, T>();
+  for (const source of sources) {
+    const key = `${source.document_id}:${source.page_number}:${source.supporting_text.trim()}`;
+    if (!unique.has(key)) unique.set(key, source);
+  }
+  return [...unique.values()];
+}
+
 export async function getCampaign(campaignId: string) {
   const client = createAdminClient();
   const result = await client.from("campaigns").select("*").eq("id", campaignId).single();
@@ -74,7 +83,7 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
   const related = requireData(relatedResult.data, relatedResult.error, "Load related entities");
   const relatedById = new Map(related.map((item) => [item.id, item]));
 
-  const relationshipIds = relevant.map((relationship) => relationship.id);
+  const relationshipIds = [...new Set(relevant.flatMap((relationship) => relationship.relationshipIds))];
   const relationshipSourcesResult = relationshipIds.length
     ? await client.from("relationship_sources").select("*").in("relationship_id", relationshipIds).order("page_number")
     : { data: [], error: null };
@@ -93,8 +102,8 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
     relationships: relevant.map((relationship) => ({
       ...relationship,
       relatedEntity: relatedById.get(relationship.relatedEntityId),
-      sources: relationshipSources
-        .filter((source) => source.relationship_id === relationship.id)
+      sources: deduplicateSources(relationshipSources
+        .filter((source) => relationship.relationshipIds.includes(source.relationship_id)))
         .map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" })),
     })),
   };

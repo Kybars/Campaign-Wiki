@@ -60,6 +60,13 @@ export interface CanonicalRelationship {
   confidence: number;
   sources: SourceEvidence[];
   candidateRelationshipIds: string[];
+  normalization: {
+    semanticType: string;
+    forwardLabel: string;
+    inverseLabel: string;
+    originalRelationshipTypes: string[];
+    descriptions: string[];
+  };
 }
 
 export interface CanonicalGraph {
