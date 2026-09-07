@@ -33,3 +33,12 @@ export function hasEntityRole(entity: { roles: EntityRole[] }, role: EntityRole)
 export function isEntityType(value: string): value is EntityType {
   return ENTITY_TYPES.includes(value as EntityType);
 }
+
+export function filterEntitiesBySearchTerm<T extends { name: string; aliases: string[] }>(entities: T[], term: string): T[] {
+  const normalizedTerm = term.trim().toLocaleLowerCase("en-US");
+  if (!normalizedTerm) return [];
+  return entities.filter((entity) =>
+    entity.name.toLocaleLowerCase("en-US").includes(normalizedTerm)
+    || entity.aliases.some((alias) => alias.toLocaleLowerCase("en-US").includes(normalizedTerm)),
+  );
+}

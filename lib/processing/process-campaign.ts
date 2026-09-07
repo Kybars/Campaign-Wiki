@@ -63,7 +63,13 @@ export async function processCampaign(campaignId: string) {
     const reconciliationUsage = summarizeModelUsage("reconciliation", reconciliation.usage ? [reconciliation.usage] : []);
     await recordProcessingRun(campaignId, "reconciliation", "complete", {
       input: { candidateEntities: aggregate.entities.length, deterministicGroups: groups.length },
-      output: { canonicalEntities: graph.entities.length, resolvedRelationships: graph.relationships.length, discardedRelationships: graph.discardedRelationships.length, modelUsage: reconciliationUsage } as unknown as Json,
+      output: {
+        canonicalEntities: graph.entities.length,
+        resolvedRelationships: graph.relationships.length,
+        discardedRelationships: graph.discardedRelationships.length,
+        locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
+        modelUsage: reconciliationUsage,
+      } as unknown as Json,
     });
 
     await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki" });
@@ -76,6 +82,7 @@ export async function processCampaign(campaignId: string) {
       canonicalEntityCount: graph.entities.length,
       relationshipCount: graph.relationships.length,
       discardedRelationshipCount: graph.discardedRelationships.length,
+      locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
       rejectedSourceCount: rejectedSources,
       modelUsage: [extractionUsage, reconciliationUsage],
       durationMs,

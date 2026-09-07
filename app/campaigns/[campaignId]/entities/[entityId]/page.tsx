@@ -13,7 +13,7 @@ export default async function EntityPage({ params }: { params: Promise<{ campaig
   try {
     [campaign, detail] = await Promise.all([getCampaign(campaignId), getEntityDetail(campaignId, entityId)]);
   } catch { notFound(); }
-  const { entity, relationships, sources } = detail;
+  const { entity, relationships, sources, locationHierarchy } = detail;
   return (
     <>
       <WikiHeader campaignId={campaignId} campaignName={campaign.name} />
@@ -26,6 +26,27 @@ export default async function EntityPage({ params }: { params: Promise<{ campaig
         <h1 className="mt-2 font-serif text-5xl font-semibold tracking-tight">{entity.name}</h1>
         {entity.aliases.length ? <p className="mt-3 text-sm text-[var(--muted)]">Also known as {entity.aliases.join(", ")}</p> : null}
         <p className="mt-8 text-lg leading-8">{entity.summary}</p>
+
+        {locationHierarchy ? (
+          <section className="mt-10 rounded-xl border border-[var(--line)] bg-white/60 p-5">
+            <h2 className="font-serif text-xl font-semibold">Location hierarchy</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Parent: {locationHierarchy.parent ? (
+                <Link className="font-semibold text-[var(--accent)] hover:underline" href={`/campaigns/${campaignId}/entities/${locationHierarchy.parent.id}`}>{locationHierarchy.parent.name}</Link>
+              ) : locationHierarchy.isOrphan ? "Unresolved" : "Top-level location"}
+            </p>
+            {locationHierarchy.children.length ? (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold">Immediate sublocations</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {locationHierarchy.children.map((child) => (
+                    <li key={child.id}><Link className="text-[var(--accent)] hover:underline" href={`/campaigns/${campaignId}/entities/${child.id}`}>{child.name}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="mt-14">
           <h2 className="border-b border-[var(--line)] pb-3 font-serif text-2xl font-semibold">Relationships</h2>

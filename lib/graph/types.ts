@@ -1,5 +1,6 @@
 import type { CandidateEntity, CandidateRelationship, SourceEvidence } from "@/lib/ai/schemas";
 import type { EntityRole, EntityType } from "@/lib/db/types";
+import type { LocationHierarchyDiagnostic } from "@/lib/locations/hierarchy";
 
 export interface ChunkCandidateResult {
   chunkId: string;
@@ -73,5 +74,6 @@ export interface CanonicalGraph {
   entities: CanonicalEntity[];
   relationships: CanonicalRelationship[];
   discardedRelationships: Array<{ id: string; reason: string }>;
+  locationHierarchyDiagnostics: LocationHierarchyDiagnostic[];
   candidateToCanonical: Map<string, string>;
 }

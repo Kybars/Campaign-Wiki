@@ -65,13 +65,14 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       canonicalEntityCount: graph.entities.length,
       relationshipCount: graph.relationships.length,
       discardedRelationshipCount: graph.discardedRelationships.length,
+      locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
       durationMs: Date.now() - startedAt,
     };
     await updateCampaign(campaignId, {
       status: "complete",
       processing_stage: "Wiki replayed from extraction cache",
       error_message: null,
-      processing_diagnostics: mergeDiagnostics(campaign.processing_diagnostics, replayDiagnostics),
+      processing_diagnostics: mergeDiagnostics(campaign.processing_diagnostics, replayDiagnostics as unknown as Json),
     });
     await recordProcessingRun(campaignId, "replay", "complete", {
       output: {

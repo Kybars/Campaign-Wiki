@@ -2,6 +2,8 @@ import "server-only";
 
 import { createAdminClient, requireData } from "@/lib/db/client";
 import type { EntityRole, EntityType } from "@/lib/db/types";
+import { filterEntitiesBySearchTerm } from "@/lib/entities";
+import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipsForEntity } from "@/lib/relationships/view";
 
 function deduplicateSources<T extends { document_id: string; page_number: number; supporting_text: string }>(sources: T[]): T[] {
@@ -52,13 +54,8 @@ export async function getCampaignEntities(campaignId: string, type?: EntityType,
 }
 
 export async function searchCampaignEntities(campaignId: string, term: string) {
-  const normalizedTerm = term.trim().toLocaleLowerCase("en-US");
-  if (!normalizedTerm) return [];
   const entities = await getCampaignEntities(campaignId);
-  return entities.filter((entity) =>
-    entity.name.toLocaleLowerCase("en-US").includes(normalizedTerm)
-    || entity.aliases.some((alias) => alias.toLocaleLowerCase("en-US").includes(normalizedTerm)),
-  );
+  return filterEntitiesBySearchTerm(entities, term);
 }
 
 export async function getEntityDetail(campaignId: string, entityId: string) {
@@ -66,15 +63,20 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
   const entityResult = await client.from("entities").select("*").eq("campaign_id", campaignId).eq("id", entityId).single();
   const entity = requireData(entityResult.data, entityResult.error, "Load entity");
 
-  const [allRelationshipResult, entitySourcesResult] = await Promise.all([
-    client
-      .from("relationships")
-      .select("*")
-      .eq("campaign_id", campaignId)
-      .or(`source_entity_id.eq.${entity.id},target_entity_id.eq.${entity.id}`),
+  const relationshipQuery = client.from("relationships").select("*").eq("campaign_id", campaignId);
+  const relationshipPromise = entity.type === "location"
+    ? relationshipQuery
+    : relationshipQuery.or(`source_entity_id.eq.${entity.id},target_entity_id.eq.${entity.id}`);
+  const locationPromise = entity.type === "location"
+    ? client.from("entities").select("id,name").eq("campaign_id", campaignId).eq("type", "location")
+    : Promise.resolve({ data: [], error: null });
+  const [allRelationshipResult, entitySourcesResult, locationResult] = await Promise.all([
+    relationshipPromise,
     client.from("entity_sources").select("*").eq("entity_id", entityId).order("page_number"),
+    locationPromise,
   ]);
   const allRelationships = requireData(allRelationshipResult.data, allRelationshipResult.error, "Load relationships");
+  const locations = requireData(locationResult.data, locationResult.error, "Load campaign locations");
   const relevant = relationshipsForEntity(allRelationships, entityId);
   const relatedIds = [...new Set(relevant.map((relationship) => relationship.relatedEntityId))];
   const relatedResult = relatedIds.length
@@ -95,9 +97,27 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
     : { data: [], error: null };
   const documents = requireData(documentsResult.data, documentsResult.error, "Load source documents");
   const filenameById = new Map(documents.map((document) => [document.id, document.filename]));
+  const hierarchy = entity.type === "location"
+    ? buildLocationHierarchy(
+        locations,
+        allRelationships.map((relationship) => ({
+          id: relationship.id,
+          sourceId: relationship.source_entity_id,
+          targetId: relationship.target_entity_id,
+          relationshipType: relationship.relationship_type,
+          confidence: relationship.confidence,
+        })),
+      )
+    : undefined;
 
   return {
     entity,
+    locationHierarchy: hierarchy ? {
+      parent: hierarchy.getParent(entityId),
+      children: hierarchy.getChildren(entityId),
+      isRoot: hierarchy.getParent(entityId) === undefined,
+      isOrphan: hierarchy.getOrphans().some((location) => location.id === entityId),
+    } : undefined,
     sources: entitySources.map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" })),
     relationships: relevant.map((relationship) => ({
       ...relationship,
