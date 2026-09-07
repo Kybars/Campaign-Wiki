@@ -162,6 +162,10 @@ The normal test command makes no network or paid model calls. It covers:
 - source page/quote validation
 - bidirectional relationship rendering
 
+## Release notes
+
+The current application version is the `version` in `package.json`. Release notes live in `lib/changelog.ts`; the newest entry reads that manifest version and powers the version-badge preview and `/changelog` page. For each future release, run `npm version patch --no-git-tag-version` (or the intended semver command), add a concise newest-first entry to `lib/changelog.ts`, and keep the changelog tests passing.
+
 ## Extraction evaluation
 
 Generate or refresh the known PDF fixture:
