@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-07",
+    title: "Compact entity pages",
+    changes: [
+      "Made entity pages denser with prose-style connections.",
+      "Added compact, expandable source references and summaries.",
+    ],
+  },
+  {
+    version: "0.2.6",
+    date: "2026-09-07",
     title: "Versioning and changelog",
     changes: [
       "Added a site-wide changelog and release preview.",
