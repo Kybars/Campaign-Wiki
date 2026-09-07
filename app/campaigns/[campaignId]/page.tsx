@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
-import { getCampaign, getCampaignEntities } from "@/lib/db/queries";
+import { getCampaign, getCampaignEntities, getCampaignLocationHierarchy } from "@/lib/db/queries";
 import { ENTITY_TYPES, ENTITY_TYPE_LABELS, hasEntityRole } from "@/lib/entities";
+import { locationOverview } from "@/lib/locations/presentation";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
   let campaign;
   try { campaign = await getCampaign(campaignId); } catch { notFound(); }
   if (campaign.status !== "complete") redirect(`/campaigns/${campaignId}/processing`);
-  const entities = await getCampaignEntities(campaignId);
+  const [entities, locationHierarchy] = await Promise.all([getCampaignEntities(campaignId), getCampaignLocationHierarchy(campaignId)]);
   const grouped = Object.fromEntries(ENTITY_TYPES.map((type) => [type, entities.filter((entity) => entity.type === type)]));
   const enemies = entities.filter((entity) => hasEntityRole(entity, "enemy"));
 
@@ -45,7 +46,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
         </section>
 
         <div className="mt-14 grid gap-12 md:grid-cols-2">
-          {ENTITY_TYPES.filter((type) => grouped[type].length > 0).map((type) => (
+          {ENTITY_TYPES.filter((type) => type !== "location" && grouped[type].length > 0).map((type) => (
             <section key={type}>
               <div className="mb-4 flex items-baseline justify-between border-b border-[var(--line)] pb-2">
                 <h2 className="font-serif text-2xl font-semibold">{ENTITY_TYPE_LABELS[type]}</h2>
@@ -61,6 +62,19 @@ export default async function CampaignPage({ params }: { params: Promise<{ campa
               </ul>
             </section>
           ))}
+          <section className="md:col-span-2">
+            <div className="mb-4 flex items-baseline justify-between border-b border-[var(--line)] pb-2">
+              <h2 className="font-serif text-2xl font-semibold">Locations</h2>
+              <Link className="text-sm text-[var(--accent)]" href={`/campaigns/${campaignId}/categories/location`}>View all locations</Link>
+            </div>
+            {locationHierarchy.getRoots().length === 0 ? <p className="text-[var(--muted)]">No locations have been discovered yet.</p> : (
+              <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                {locationOverview(locationHierarchy).map(({ location, immediateChildCount }) => {
+                  return <li key={location.id}><Link className="font-semibold hover:text-[var(--accent)] hover:underline" href={`/campaigns/${campaignId}/entities/${location.id}`}>{location.name}</Link>{immediateChildCount ? <span className="ml-2 text-sm text-[var(--muted)]">{immediateChildCount} {immediateChildCount === 1 ? "sublocation" : "sublocations"}</span> : null}</li>;
+                })}
+              </ul>
+            )}
+          </section>
         </div>
       </main>
     </>

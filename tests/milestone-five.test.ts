@@ -125,6 +125,7 @@ describe("Milestone 5 compact entity presentation", () => {
       locationHierarchy: {
         parent: { id: "village", name: "Tomar's Crossing" },
         children: [{ id: "basement", name: "Basement" }],
+        path: [{ id: "village", name: "Tomar's Crossing" }, { id: "colinus", name: "Colinus Birthwitch" }],
         isRoot: false,
         isOrphan: false,
       },

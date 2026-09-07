@@ -58,6 +58,23 @@ export async function searchCampaignEntities(campaignId: string, term: string) {
   return filterEntitiesBySearchTerm(entities, term);
 }
 
+export async function getCampaignLocationHierarchy(campaignId: string) {
+  const client = createAdminClient();
+  const [locationsResult, relationshipsResult] = await Promise.all([
+    client.from("entities").select("id,name").eq("campaign_id", campaignId).eq("type", "location").order("name"),
+    client.from("relationships").select("id,source_entity_id,target_entity_id,relationship_type,confidence").eq("campaign_id", campaignId),
+  ]);
+  const locations = requireData(locationsResult.data, locationsResult.error, "Load campaign locations");
+  const relationships = requireData(relationshipsResult.data, relationshipsResult.error, "Load campaign containment relationships");
+  return buildLocationHierarchy(locations, relationships.map((relationship) => ({
+    id: relationship.id,
+    sourceId: relationship.source_entity_id,
+    targetId: relationship.target_entity_id,
+    relationshipType: relationship.relationship_type,
+    confidence: relationship.confidence,
+  })));
+}
+
 export async function getEntityDetail(campaignId: string, entityId: string) {
   const client = createAdminClient();
   const entityResult = await client.from("entities").select("*").eq("campaign_id", campaignId).eq("id", entityId).single();
@@ -115,6 +132,7 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
     locationHierarchy: hierarchy ? {
       parent: hierarchy.getParent(entityId),
       children: hierarchy.getChildren(entityId),
+      path: hierarchy.getPath(entityId),
       isRoot: hierarchy.getParent(entityId) === undefined,
       isOrphan: hierarchy.getOrphans().some((location) => location.id === entityId),
     } : undefined,

@@ -20,6 +20,7 @@ interface Relationship {
 interface LocationHierarchy {
   parent?: { id: string; name: string };
   children: Array<{ id: string; name: string }>;
+  path: Array<{ id: string; name: string }>;
   isRoot: boolean;
   isOrphan: boolean;
 }
@@ -114,8 +115,15 @@ function LocationContext({ campaignId, hierarchy }: { campaignId: string; hierar
   return (
     <section className="mt-7 border-l-2 border-[var(--line)] pl-4" aria-labelledby="location-context-heading">
       <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--muted)]" id="location-context-heading">Location context</h2>
-      <p className="mt-2 text-sm text-[var(--muted)]">Parent: {hierarchy.parent ? <EntityLink campaignId={campaignId} entity={hierarchy.parent} /> : hierarchy.isOrphan ? "Unresolved" : "Top-level location"}</p>
-      {hierarchy.children.length ? <p className="mt-2 text-sm text-[var(--muted)]">Sublocations: {hierarchy.children.map((child, index) => <span key={child.id}>{index ? " · " : ""}<EntityLink campaignId={campaignId} entity={child} /></span>)}</p> : null}
+      {hierarchy.path.length > 1 ? (
+        <nav aria-label="Location path" className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-[var(--muted)]">
+          {hierarchy.path.map((location, index) => index === hierarchy.path.length - 1
+            ? <span className="font-semibold text-[var(--ink)]" key={location.id}>{location.name}</span>
+            : <span className="flex items-center gap-x-1" key={location.id}><EntityLink campaignId={campaignId} entity={location} /><span aria-hidden="true">›</span></span>)}
+        </nav>
+      ) : null}
+      {hierarchy.parent ? <p className="mt-2 text-sm text-[var(--muted)]">Located in <EntityLink campaignId={campaignId} entity={hierarchy.parent} />.</p> : null}
+      {hierarchy.children.length ? <div className="mt-3 text-sm text-[var(--muted)]"><h3 className="font-semibold text-[var(--ink)]">Sublocations</h3><p className="mt-1">{hierarchy.children.map((child, index) => <span key={child.id}>{index ? " · " : ""}<EntityLink campaignId={campaignId} entity={child} /></span>)}</p></div> : null}
     </section>
   );
 }

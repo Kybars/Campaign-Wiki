@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-07",
+    title: "Location browsing and navigation",
+    changes: [
+      "Added hierarchical location browsing with expandable branches.",
+      "Added location breadcrumbs, sublocations, and full category navigation.",
+    ],
+  },
+  {
+    version: "0.2.7",
+    date: "2026-09-07",
     title: "Compact entity pages",
     changes: [
       "Made entity pages denser with prose-style connections.",
