@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest --configLoader runner",
     "evaluate": "tsx scripts/evaluate-extraction.ts",
+    "evaluate:replay": "tsx scripts/evaluate-replay-fixture.ts",
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
     "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",
     "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts"

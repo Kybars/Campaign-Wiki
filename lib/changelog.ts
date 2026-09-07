@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-07",
+    title: "Regression and replay validation",
+    changes: [
+      "Expanded campaign-data regression coverage.",
+      "Added deterministic replay evaluation and consistency metrics.",
+    ],
+  },
+  {
+    version: "0.2.8",
+    date: "2026-09-07",
     title: "Location browsing and navigation",
     changes: [
       "Added hierarchical location browsing with expandable branches.",

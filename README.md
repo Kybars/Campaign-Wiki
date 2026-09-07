@@ -166,6 +166,14 @@ The normal test command makes no network or paid model calls. It covers:
 
 The current application version is the `version` in `package.json`. Release notes live in `lib/changelog.ts`; the newest entry reads that manifest version and powers the version-badge preview and `/changelog` page. For each future release, run `npm version patch --no-git-tag-version` (or the intended semver command), add a concise newest-first entry to `lib/changelog.ts`, and keep the changelog tests passing.
 
+## Deterministic replay evaluation
+
+Run `npm run evaluate:replay` to build the small regression fixture from cached candidate data, apply its saved reconciliation decision, and report graph, source, role, and location metrics with zero OpenAI or Supabase calls. `npm run evaluate` remains the optional live fixture extraction evaluation and requires configured OpenAI credentials.
+
+## Milestone 8 benchmark checklist
+
+Before one final real import, record duplicate and false-merge rates, major missing entities, type/deity/enemy-role accuracy, missing or inverse-duplicate relationships, endpoint and source fidelity, parent/missing/incorrect containment, wiki compactness/navigation/source inspection, and extraction/reconciliation model calls, tokens, and estimated cost. Compare those results with the Test 2 baseline; do not overwrite it.
+
 ## Extraction evaluation
 
 Generate or refresh the known PDF fixture:

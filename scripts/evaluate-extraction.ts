@@ -5,6 +5,7 @@ import { extractChunksLimited } from "@/lib/ai/extract";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
 import { buildCanonicalGraph } from "@/lib/graph/build";
+import { buildEvaluationMetrics } from "@/lib/evaluation/metrics";
 import { normalizeName, normalizeRelationshipType } from "@/lib/graph/normalize";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
@@ -48,6 +49,7 @@ async function main() {
   );
 
   console.log(JSON.stringify({
+    mode: "live extraction",
     pages: pages.length,
     chunks: chunks.length,
     candidates: aggregate.entities.length,
@@ -60,6 +62,7 @@ async function main() {
     missedRelationships,
     rejectedSources: extracted.flatMap((result) => result.diagnostics),
     discardedRelationships: graph.discardedRelationships,
+    metrics: buildEvaluationMetrics(aggregate, graph),
   }, null, 2));
 }
 
