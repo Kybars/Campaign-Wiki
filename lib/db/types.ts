@@ -1,3 +1,10 @@
+import type {
+  EntityProminence,
+  KnowledgeSummaryKind,
+  KnowledgeVisibility,
+  ProvenanceOrigin,
+} from "@/lib/knowledge/types";
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export type CampaignStatus =
   | "uploaded"
@@ -21,8 +28,8 @@ export interface Database {
   public: {
     Tables: {
       campaigns: Table<
-        { id: string; name: string; status: CampaignStatus; error_message: string | null; processing_stage: string | null; processing_diagnostics: Json; created_at: string; updated_at: string },
-        { id?: string; name: string; status?: CampaignStatus; error_message?: string | null; processing_stage?: string | null; processing_diagnostics?: Json }
+        { id: string; name: string; status: CampaignStatus; error_message: string | null; processing_stage: string | null; processing_diagnostics: Json; gm_overview: string | null; player_overview: string | null; created_at: string; updated_at: string },
+        { id?: string; name: string; status?: CampaignStatus; error_message?: string | null; processing_stage?: string | null; processing_diagnostics?: Json; gm_overview?: string | null; player_overview?: string | null }
       >;
       documents: Table<
         { id: string; campaign_id: string; filename: string; storage_path: string; page_count: number | null; created_at: string },
@@ -33,20 +40,36 @@ export interface Database {
         { id?: string; document_id: string; page_number: number; text: string }
       >;
       entities: Table<
-        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles: EntityRole[]; aliases: string[]; summary: string; reconciliation_metadata: Json; created_at: string; updated_at: string },
-        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles?: EntityRole[]; aliases?: string[]; summary?: string; reconciliation_metadata?: Json }
+        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles: EntityRole[]; aliases: string[]; summary: string; gm_summary: string | null; player_summary: string | null; visibility: KnowledgeVisibility; prominence: EntityProminence | null; prominence_reason: string | null; reconciliation_metadata: Json; created_at: string; updated_at: string },
+        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles?: EntityRole[]; aliases?: string[]; summary?: string; gm_summary?: string | null; player_summary?: string | null; visibility?: KnowledgeVisibility; prominence?: EntityProminence | null; prominence_reason?: string | null; reconciliation_metadata?: Json }
       >;
       entity_sources: Table<
-        { id: string; entity_id: string; document_id: string; page_number: number; supporting_text: string; created_at: string },
-        { id?: string; entity_id: string; document_id: string; page_number: number; supporting_text: string }
+        { id: string; entity_id: string; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
+        { id?: string; entity_id: string; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
       >;
       relationships: Table<
-        { id: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; resolution_metadata: Json; created_at: string; updated_at: string },
-        { id?: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; resolution_metadata?: Json }
+        { id: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility: KnowledgeVisibility; origin: ProvenanceOrigin; resolution_metadata: Json; created_at: string; updated_at: string },
+        { id?: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility?: KnowledgeVisibility; origin?: ProvenanceOrigin; resolution_metadata?: Json }
       >;
       relationship_sources: Table<
-        { id: string; relationship_id: string; document_id: string; page_number: number; supporting_text: string; created_at: string },
-        { id?: string; relationship_id: string; document_id: string; page_number: number; supporting_text: string }
+        { id: string; relationship_id: string; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
+        { id?: string; relationship_id: string; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
+      >;
+      entity_facts: Table<
+        { id: string; entity_id: string; stable_key: string; field_key: string; content: string; structured_value: Json | null; visibility: KnowledgeVisibility; origin: ProvenanceOrigin; sort_order: number; context: Json; created_at: string; updated_at: string },
+        { id?: string; entity_id: string; stable_key: string; field_key: string; content: string; structured_value?: Json | null; visibility?: KnowledgeVisibility; origin?: ProvenanceOrigin; sort_order?: number; context?: Json }
+      >;
+      fact_evidence: Table<
+        { id: string; fact_id: string; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
+        { id?: string; fact_id: string; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
+      >;
+      entity_summary_evidence: Table<
+        { id: string; entity_id: string; summary_kind: KnowledgeSummaryKind; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
+        { id?: string; entity_id: string; summary_kind: KnowledgeSummaryKind; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
+      >;
+      campaign_overview_evidence: Table<
+        { id: string; campaign_id: string; summary_kind: KnowledgeSummaryKind; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
+        { id?: string; campaign_id: string; summary_kind: KnowledgeSummaryKind; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
       >;
       processing_runs: Table<
         { id: string; campaign_id: string; stage: string; status: string; input_metadata: Json; output_metadata: Json; error_message: string | null; created_at: string },
@@ -73,11 +96,12 @@ export interface Database {
           p_document_id: string;
           p_entities: Json;
           p_relationships: Json;
+          p_facts?: Json;
         };
         Returns: Json;
       };
     };
-    Enums: { campaign_status: CampaignStatus; entity_type: EntityType };
+    Enums: { campaign_status: CampaignStatus; entity_type: EntityType; knowledge_visibility: KnowledgeVisibility; entity_prominence: EntityProminence; provenance_origin: ProvenanceOrigin; knowledge_summary_kind: KnowledgeSummaryKind };
     CompositeTypes: Record<string, never>;
   };
 }

@@ -117,6 +117,8 @@ The migrations create:
 - `document_pages`
 - `entities`
 - `entity_sources`
+- `entity_facts` and fact-specific `fact_evidence`
+- separate entity-summary and campaign-overview evidence tables
 - `relationships`
 - `relationship_sources`
 - `processing_runs`
@@ -124,6 +126,7 @@ The migrations create:
 - `reconciliation_cache_results`
 - the private `campaign-pdfs` Storage bucket
 - `replace_campaign_graph(...)` for transactional/idempotent graph persistence
+- DM/player visibility, nullable universal prominence, and separate GM/player summaries and overviews
 - explicit `service_role` table grants (newer Supabase projects may not create these default grants)
 
 RLS is enabled with no public policies. The server-side service role performs all v0 access. Do not add a browser-facing service-role client.

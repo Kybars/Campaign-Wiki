@@ -1,6 +1,7 @@
 import type { CandidateEntity, CandidateRelationship, SourceEvidence } from "@/lib/ai/schemas";
 import type { EntityRole, EntityType } from "@/lib/db/types";
 import type { LocationHierarchyDiagnostic } from "@/lib/locations/hierarchy";
+import type { CanonicalFactDraft, EntityProminence, KnowledgeVisibility, ProvenanceOrigin } from "@/lib/knowledge/types";
 
 export interface ChunkCandidateResult {
   chunkId: string;
@@ -46,6 +47,13 @@ export interface CanonicalEntity {
   roleSources: Partial<Record<EntityRole, SourceEvidence[]>>;
   aliases: string[];
   summary: string;
+  gmSummary?: string | null;
+  gmSummarySources?: SourceEvidence[];
+  playerSummary?: string | null;
+  playerSummarySources?: SourceEvidence[];
+  visibility?: KnowledgeVisibility;
+  prominence?: EntityProminence | null;
+  prominenceReason?: string | null;
   sources: SourceEvidence[];
   candidateIds: string[];
   reconciliationEvidence: SourceEvidence[];
@@ -59,6 +67,8 @@ export interface CanonicalRelationship {
   relationshipType: string;
   description: string;
   confidence: number;
+  visibility?: KnowledgeVisibility;
+  origin?: ProvenanceOrigin;
   sources: SourceEvidence[];
   candidateRelationshipIds: string[];
   normalization: {
@@ -73,6 +83,7 @@ export interface CanonicalRelationship {
 export interface CanonicalGraph {
   entities: CanonicalEntity[];
   relationships: CanonicalRelationship[];
+  facts: CanonicalFactDraft[];
   discardedRelationships: Array<{ id: string; reason: string }>;
   locationHierarchyDiagnostics: LocationHierarchyDiagnostic[];
   candidateToCanonical: Map<string, string>;

@@ -27,6 +27,7 @@ export function buildCanonicalGraph(aggregate: CandidateAggregate, decision?: Re
   return {
     entities: reconciled.entities,
     relationships,
+    facts: [],
     discardedRelationships: [
       ...resolved.discarded,
       ...hierarchy.diagnostics.map((item) => ({ id: item.relationshipId, reason: item.reason })),

@@ -12,6 +12,14 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-08",
+    title: "Data and provenance foundation",
+    changes: [
+      "Prepared campaign data for richer source-backed articles and future player-safe views.",
+    ],
+  },
+  {
+    version: "0.2.9",
     date: "2026-09-07",
     title: "Regression and replay validation",
     changes: [

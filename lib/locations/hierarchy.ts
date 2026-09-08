@@ -1,4 +1,5 @@
 import { normalizeRelationshipFact } from "@/lib/relationships/normalize";
+import type { KnowledgeVisibility } from "@/lib/knowledge/types";
 
 export interface LocationRecord {
   id: string;
@@ -11,6 +12,7 @@ export interface HierarchyRelationship {
   targetId: string;
   relationshipType: string;
   confidence: number;
+  visibility?: KnowledgeVisibility;
 }
 
 export interface LocationTreeNode<T extends LocationRecord = LocationRecord> {

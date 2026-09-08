@@ -4,6 +4,7 @@ import {
   relationshipSemanticKey,
   type NormalizedRelationshipFact,
 } from "@/lib/relationships/normalize";
+import type { KnowledgeVisibility, ProvenanceOrigin } from "@/lib/knowledge/types";
 
 export interface RelationshipRow {
   id: string;
@@ -12,6 +13,8 @@ export interface RelationshipRow {
   relationship_type: string;
   description: string;
   confidence: number;
+  visibility?: KnowledgeVisibility;
+  origin?: ProvenanceOrigin;
   resolution_metadata?: unknown;
 }
 

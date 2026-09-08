@@ -7,6 +7,7 @@ import type { ReconciliationResult } from "@/lib/ai/reconcile";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 import type { CanonicalGraph } from "@/lib/graph/types";
 import type { DocumentPage } from "@/lib/pdf/types";
+import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
 
 export async function updateCampaign(campaignId: string, values: Database["public"]["Tables"]["campaigns"]["Update"]) {
   const client = createAdminClient();
@@ -165,34 +166,13 @@ export async function loadCampaignForProcessing(campaignId: string) {
 
 export async function persistCanonicalGraph(campaignId: string, documentId: string, graph: CanonicalGraph) {
   const client = createAdminClient();
-  const entities = graph.entities.map((entity) => ({
-    key: entity.key,
-    name: entity.name,
-    normalizedName: entity.normalizedName,
-    type: entity.type,
-    roles: entity.roles,
-    aliases: entity.aliases,
-    summary: entity.summary,
-    sources: entity.sources,
-    metadata: {
-      candidateIds: entity.candidateIds,
-      mergeReason: entity.mergeReason,
-      reconciliationEvidence: entity.reconciliationEvidence,
-      roleSources: entity.roleSources,
-    },
-  }));
-  const relationships = graph.relationships.map((relationship) => ({
-    ...relationship,
-    metadata: {
-      candidateRelationshipIds: relationship.candidateRelationshipIds,
-      normalization: relationship.normalization,
-    },
-  }));
+  const payload = canonicalGraphPersistencePayload(graph);
   const { data, error } = await client.rpc("replace_campaign_graph", {
     p_campaign_id: campaignId,
     p_document_id: documentId,
-    p_entities: entities as Json,
-    p_relationships: relationships as Json,
+    p_entities: payload.entities as Json,
+    p_relationships: payload.relationships as Json,
+    p_facts: payload.facts as Json,
   });
   return requireData(data, error, "Persist canonical graph");
 }
