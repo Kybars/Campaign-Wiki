@@ -62,10 +62,31 @@ export interface CanonicalEntity {
   visibility?: KnowledgeVisibility;
   prominence?: EntityProminence | null;
   prominenceReason?: string | null;
+  prominenceEvidence?: SourceEvidence[];
   sources: SourceEvidence[];
   candidateIds: string[];
   reconciliationEvidence: SourceEvidence[];
   mergeReason: "deterministic" | "ai";
+}
+
+export interface CampaignOverviewDraft {
+  gm: string | null;
+  gmSources: SourceEvidence[];
+  player: string | null;
+  playerSources: SourceEvidence[];
+}
+
+export type KnowledgeConsistencyDiagnosticKind =
+  | "visible_fact_references_hidden_entity"
+  | "visible_relationship_references_hidden_entity"
+  | "player_summary_references_hidden_knowledge"
+  | "player_overview_references_hidden_knowledge";
+
+export interface KnowledgeConsistencyDiagnostic {
+  kind: KnowledgeConsistencyDiagnosticKind;
+  ownerKey: string;
+  referencedEntityKey?: string;
+  detail: string;
 }
 
 export interface CanonicalRelationship {
@@ -96,4 +117,6 @@ export interface CanonicalGraph {
   discardedRelationships: Array<{ id: string; reason: string }>;
   locationHierarchyDiagnostics: LocationHierarchyDiagnostic[];
   candidateToCanonical: Map<string, string>;
+  campaignOverview?: CampaignOverviewDraft;
+  knowledgeConsistencyDiagnostics?: KnowledgeConsistencyDiagnostic[];
 }

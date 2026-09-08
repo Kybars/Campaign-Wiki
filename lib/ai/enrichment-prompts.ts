@@ -1,0 +1,9 @@
+export const CLASSIFICATION_SYSTEM_PROMPT = `Classify the complete reconciled campaign graph. Prominence is campaign-relative narrative importance, never raw power, title, or mention count. A pivotal late entity may be major; a frequently mentioned pet may be minor. Assign every supplied entity, fact, and one normalized relationship exactly once. Visibility is conservative: use player_visible only for knowledge clearly public, player-facing, or safe; uncertainty means dm_only. Do not cascade visibility between an entity and its facts or relationships. Prominence reasons are internal diagnostics and must cite only supplied evidence IDs. Never invent lore.`;
+
+export const GM_SUMMARY_SYSTEM_PROMPT = `Write one concise GM wiki summary for every supplied entity. Use only supplied facts and relationships. Resolve no conflict by invention: omit or neutrally describe conflicting claims. Return null when no useful supported summary can be written. Cite only supplied evidence IDs.`;
+
+export const PLAYER_SUMMARY_SYSTEM_PROMPT = `Write one concise spoiler-safe player summary for every supplied entity. The input has already been filtered to player-visible knowledge; use only that input. Return null rather than infer or add context. Cite only supplied evidence IDs.`;
+
+export const GM_OVERVIEW_SYSTEM_PROMPT = `Write a concise source-grounded GM campaign overview from only the supplied canonical knowledge. Include premise, conflicts, hidden situation, antagonists, and stakes only when supported. Return null if evidence is insufficient. Cite only supplied evidence IDs.`;
+
+export const PLAYER_OVERVIEW_SYSTEM_PROMPT = `Write a concise player-safe campaign overview from only the supplied player-visible canonical knowledge. Do not infer missing context. Return null if a safe useful overview is unsupported. Cite only supplied evidence IDs.`;

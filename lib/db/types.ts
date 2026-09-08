@@ -87,6 +87,10 @@ export interface Database {
         { id: string; cache_run_id: string; decision: Json; model: string | null; response_id: string | null; input_tokens: number | null; cached_input_tokens: number | null; cache_write_tokens: number | null; output_tokens: number | null; total_tokens: number | null; estimated_cost_usd: number | null; created_at: string },
         { id?: string; cache_run_id: string; decision?: Json; model?: string | null; response_id?: string | null; input_tokens?: number | null; cached_input_tokens?: number | null; cache_write_tokens?: number | null; output_tokens?: number | null; total_tokens?: number | null; estimated_cost_usd?: number | null }
       >;
+      enrichment_cache_runs: Table<
+        { id: string; campaign_id: string; document_id: string; extraction_cache_run_id: string | null; status: string; enrichment_model: string; cache_schema_version: number; prompt_version: string; graph_fingerprint: string; output: Json | null; usage_diagnostics: Json; error_message: string | null; created_at: string; completed_at: string | null },
+        { id?: string; campaign_id: string; document_id: string; extraction_cache_run_id?: string | null; status: string; enrichment_model: string; cache_schema_version: number; prompt_version: string; graph_fingerprint: string; output?: Json | null; usage_diagnostics?: Json; error_message?: string | null; completed_at?: string | null }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -98,6 +102,14 @@ export interface Database {
           p_relationships: Json;
           p_facts?: Json;
         };
+        Returns: Json;
+      };
+      persist_campaign_overviews: {
+        Args: { p_campaign_id: string; p_document_id: string; p_gm_overview: string | null; p_player_overview: string | null; p_gm_sources?: Json; p_player_sources?: Json };
+        Returns: undefined;
+      };
+      replace_campaign_graph_with_enrichment: {
+        Args: { p_campaign_id: string; p_document_id: string; p_entities: Json; p_relationships: Json; p_facts: Json; p_campaign_overview: Json };
         Returns: Json;
       };
     };

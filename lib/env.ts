@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-export function resolveOpenAIModels<T extends { OPENAI_MODEL: string; OPENAI_EXTRACTION_MODEL?: string; OPENAI_RECONCILIATION_MODEL?: string }>(env: T) {
+export function resolveOpenAIModels<T extends { OPENAI_MODEL: string; OPENAI_EXTRACTION_MODEL?: string; OPENAI_RECONCILIATION_MODEL?: string; OPENAI_ENRICHMENT_MODEL?: string }>(env: T) {
   return {
     ...env,
     OPENAI_EXTRACTION_MODEL: env.OPENAI_EXTRACTION_MODEL ?? env.OPENAI_MODEL,
     OPENAI_RECONCILIATION_MODEL: env.OPENAI_RECONCILIATION_MODEL ?? env.OPENAI_MODEL,
+    OPENAI_ENRICHMENT_MODEL: env.OPENAI_ENRICHMENT_MODEL ?? env.OPENAI_MODEL,
   };
 }
 
@@ -13,6 +14,7 @@ const openAIEnvSchema = z.object({
   OPENAI_MODEL: z.string().min(1).default("gpt-5.6-terra"),
   OPENAI_EXTRACTION_MODEL: z.string().min(1).optional(),
   OPENAI_RECONCILIATION_MODEL: z.string().min(1).optional(),
+  OPENAI_ENRICHMENT_MODEL: z.string().min(1).optional(),
   AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(3),
 }).transform(resolveOpenAIModels);
 

@@ -63,7 +63,7 @@ export function modelCallUsage(model: string, responseId: string | undefined, us
 }
 
 export interface StageUsageSummary {
-  stage: "candidate_extraction" | "reconciliation";
+  stage: "candidate_extraction" | "reconciliation" | "enrichment";
   models: string[];
   apiCalls: number;
   inputTokens: number;

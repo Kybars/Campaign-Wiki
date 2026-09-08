@@ -13,6 +13,14 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-08",
+    title: "Campaign knowledge classification",
+    changes: [
+      "Campaign knowledge now distinguishes major and minor entries and prepares separate GM and player-safe summaries.",
+    ],
+  },
+  {
+    version: "0.3.1",
+    date: "2026-09-08",
     title: "Richer source-backed campaign details",
     changes: [
       "Campaign extraction now captures richer source-backed details for characters, places, deities, factions, items, quests, and events.",

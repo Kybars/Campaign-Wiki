@@ -8,7 +8,8 @@ import type { ModelCallUsage } from "@/lib/ai/usage";
 import type { CanonicalGraph } from "@/lib/graph/types";
 import type { DocumentPage } from "@/lib/pdf/types";
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
-import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
+import { ENRICHMENT_CACHE_SCHEMA_VERSION, ENRICHMENT_PROMPT_VERSION, RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
+import type { CampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
 
 export async function updateCampaign(campaignId: string, values: Database["public"]["Tables"]["campaigns"]["Update"]) {
   const client = createAdminClient();
@@ -168,12 +169,36 @@ export async function loadCampaignForProcessing(campaignId: string) {
 export async function persistCanonicalGraph(campaignId: string, documentId: string, graph: CanonicalGraph) {
   const client = createAdminClient();
   const payload = canonicalGraphPersistencePayload(graph);
-  const { data, error } = await client.rpc("replace_campaign_graph", {
+  const args = {
     p_campaign_id: campaignId,
     p_document_id: documentId,
     p_entities: payload.entities as Json,
     p_relationships: payload.relationships as Json,
     p_facts: payload.facts as Json,
-  });
-  return requireData(data, error, "Persist canonical graph");
+  };
+  const result = payload.campaignOverview
+    ? await client.rpc("replace_campaign_graph_with_enrichment", { ...args, p_campaign_overview: payload.campaignOverview })
+    : await client.rpc("replace_campaign_graph", args);
+  return requireData(result.data, result.error, "Persist canonical graph");
+}
+
+export async function createEnrichmentCacheRun(campaignId: string, documentId: string, extractionCacheRunId: string | null, model: string, graphFingerprint: string) {
+  const client = createAdminClient();
+  const { data, error } = await client.from("enrichment_cache_runs").insert({ campaign_id: campaignId, document_id: documentId, extraction_cache_run_id: extractionCacheRunId, status: "started", enrichment_model: model, cache_schema_version: ENRICHMENT_CACHE_SCHEMA_VERSION, prompt_version: ENRICHMENT_PROMPT_VERSION, graph_fingerprint: graphFingerprint }).select("id").single();
+  return requireData(data, error, "Create enrichment cache run").id;
+}
+
+export async function finishEnrichmentCacheRun(id: string, status: "complete" | "failed", output?: CampaignEnrichmentOutput, usageDiagnostics: Json = {}, errorMessage?: string) {
+  const client = createAdminClient();
+  const { error } = await client.from("enrichment_cache_runs").update({ status, output: output as unknown as Json, usage_diagnostics: usageDiagnostics, error_message: errorMessage ?? null, completed_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw new Error(`Finish enrichment cache run: ${error.message}`);
+}
+
+export async function loadCompleteEnrichmentCache(campaignId: string, documentId: string, graphFingerprint: string, model?: string) {
+  const client = createAdminClient();
+  let query = client.from("enrichment_cache_runs").select("*").eq("campaign_id", campaignId).eq("document_id", documentId).eq("graph_fingerprint", graphFingerprint).eq("cache_schema_version", ENRICHMENT_CACHE_SCHEMA_VERSION).eq("prompt_version", ENRICHMENT_PROMPT_VERSION).eq("status", "complete");
+  if (model) query = query.eq("enrichment_model", model);
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (error) throw new Error(`Load enrichment cache: ${error.message}`);
+  return data;
 }

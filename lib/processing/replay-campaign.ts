@@ -3,10 +3,13 @@ import "server-only";
 import type { ReconciliationDecision } from "@/lib/ai/schemas";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
 import { summarizeModelUsage } from "@/lib/ai/usage";
+import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
+import { parseCampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 import {
   loadCampaignAndDocument,
   loadLatestCompleteExtractionCache,
+  loadCompleteEnrichmentCache,
   persistCanonicalGraph,
   recordProcessingRun,
   saveReconciliationCacheResult,
@@ -14,6 +17,7 @@ import {
 } from "@/lib/db/repository";
 import type { Json } from "@/lib/db/types";
 import { buildCanonicalGraph } from "@/lib/graph/build";
+import { applyCampaignEnrichment } from "@/lib/graph/enrichment";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { aggregateCachedChunks, parseCachedReconciliation } from "@/lib/processing/replay-cache";
 import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
@@ -56,7 +60,13 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       decision = cache.reconciliation ? parseCachedReconciliation(cache.reconciliation.decision, groups) : undefined;
     }
 
-    const graph = buildCanonicalGraph(aggregate, decision);
+    const canonicalGraph = buildCanonicalGraph(aggregate, decision);
+    const enrichmentCache = await loadCompleteEnrichmentCache(campaignId, document.id, enrichmentGraphFingerprint(canonicalGraph));
+    if (!enrichmentCache && cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION) {
+      throw new Error("Rich extraction is cached, but no matching enrichment result is cached. Run normal processing before replaying.");
+    }
+    const output = enrichmentCache?.output ? parseCampaignEnrichmentOutput(enrichmentCache.output) : undefined;
+    const graph = output ? applyCampaignEnrichment(canonicalGraph, output) : canonicalGraph;
     await persistCanonicalGraph(campaignId, document.id, graph);
     const replayDiagnostics = {
       cacheRunId: cache.run.id,
@@ -67,6 +77,8 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       cacheHits: cache.chunks.length,
       cacheMisses: 0,
       richFactReplay: cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION,
+      enrichmentApiCalls: 0,
+      enrichmentCacheHits: output ? 1 : 0,
       candidateEntityCount: aggregate.entities.length,
       canonicalEntityCount: graph.entities.length,
       ...graph.factAggregationDiagnostics,

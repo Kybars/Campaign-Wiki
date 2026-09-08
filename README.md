@@ -36,7 +36,7 @@ Important design properties:
 - `processing_runs` and reconciliation metadata preserve candidate IDs, merge reasons, counts, and discarded-item diagnostics.
 - Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
 
-The OpenAI integration follows the official [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) (`responses.parse` plus `zodTextFormat`). The default `gpt-5.6-terra` model supports both the Responses API and structured outputs. `OPENAI_EXTRACTION_MODEL` and `OPENAI_RECONCILIATION_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. See the official [model page](https://developers.openai.com/api/docs/models/gpt-5.6-terra).
+The OpenAI integration follows the official [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) (`responses.parse` plus `zodTextFormat`). The default `gpt-5.6-terra` model supports both the Responses API and structured outputs. `OPENAI_EXTRACTION_MODEL`, `OPENAI_RECONCILIATION_MODEL`, and `OPENAI_ENRICHMENT_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. See the official [model page](https://developers.openai.com/api/docs/models/gpt-5.6-terra).
 
 ## Key directories
 
@@ -69,6 +69,7 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5.6-terra
 OPENAI_EXTRACTION_MODEL=gpt-5.6-terra
 OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
+OPENAI_ENRICHMENT_MODEL=gpt-5.6-terra
 
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -125,6 +126,7 @@ The migrations create:
 - `processing_runs`
 - `extraction_cache_runs` and `extraction_cache_chunks`
 - `reconciliation_cache_results`
+- `enrichment_cache_runs`
 - the private `campaign-pdfs` Storage bucket
 - `replace_campaign_graph(...)` for transactional/idempotent graph persistence
 - DM/player visibility, nullable universal prominence, and separate GM/player summaries and overviews
@@ -175,6 +177,8 @@ The current application version is the `version` in `package.json`. Release note
 Run `npm run evaluate:replay` to build the small regression fixture from cached candidate data, apply its saved reconciliation decision, and report graph, source, role, and location metrics with zero OpenAI or Supabase calls. `npm run evaluate` remains the optional live fixture extraction evaluation and requires configured OpenAI credentials.
 
 The replay evaluation also exercises the v0.3 rich-fact fixture. Rich extraction cache schema version 4 requires per-candidate `facts`; older cache versions remain replayable as intentionally factless legacy data. See [`docs/V0_3_RICH_FACT_EXTRACTION.md`](./docs/V0_3_RICH_FACT_EXTRACTION.md).
+
+Run `npm run evaluate:enrichment` for the deterministic post-reconciliation prominence, visibility, summary, overview, and consistency fixture. It makes zero OpenAI and Supabase calls. See [`docs/V0_3_CANONICAL_ENRICHMENT.md`](./docs/V0_3_CANONICAL_ENRICHMENT.md).
 
 ## Milestone 8 benchmark checklist
 

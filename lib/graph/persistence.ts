@@ -28,6 +28,7 @@ export function canonicalGraphPersistencePayload(graph: CanonicalGraph) {
         mergeReason: entity.mergeReason,
         reconciliationEvidence: entity.reconciliationEvidence,
         roleSources: entity.roleSources,
+        prominenceEvidence: entity.prominenceEvidence,
       },
     })),
     relationships: graph.relationships.map((relationship) => defined({
@@ -43,5 +44,11 @@ export function canonicalGraphPersistencePayload(graph: CanonicalGraph) {
       ...fact,
       evidence: fact.evidence.map((evidence) => defined(evidence)),
     })),
-  } satisfies { entities: Json[]; relationships: Json[]; facts: Json[] };
+    campaignOverview: graph.campaignOverview ? {
+      gm: graph.campaignOverview.gm,
+      gmSources: graph.campaignOverview.gmSources,
+      player: graph.campaignOverview.player,
+      playerSources: graph.campaignOverview.playerSources,
+    } : undefined,
+  } satisfies { entities: Json[]; relationships: Json[]; facts: Json[]; campaignOverview?: Json };
 }
