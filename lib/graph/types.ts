@@ -3,16 +3,24 @@ import type { EntityRole, EntityType } from "@/lib/db/types";
 import type { LocationHierarchyDiagnostic } from "@/lib/locations/hierarchy";
 import type { CanonicalFactDraft, EntityProminence, KnowledgeVisibility, ProvenanceOrigin } from "@/lib/knowledge/types";
 
+export interface FactAggregationDiagnostics {
+  candidateFactCount: number;
+  canonicalFactCount: number;
+  deduplicatedFactCount: number;
+  factEvidenceCount: number;
+}
+
 export interface ChunkCandidateResult {
   chunkId: string;
   entities: CandidateEntity[];
   relationships: CandidateRelationship[];
 }
 
-export interface GlobalCandidateEntity extends Omit<CandidateEntity, "temporary_id"> {
+export interface GlobalCandidateEntity extends Omit<CandidateEntity, "temporary_id" | "facts"> {
   id: string;
   chunkId: string;
   temporaryId: string;
+  facts?: CandidateEntity["facts"];
 }
 
 export interface GlobalCandidateRelationship extends Omit<CandidateRelationship, "source_temporary_id" | "target_temporary_id"> {
@@ -84,6 +92,7 @@ export interface CanonicalGraph {
   entities: CanonicalEntity[];
   relationships: CanonicalRelationship[];
   facts: CanonicalFactDraft[];
+  factAggregationDiagnostics: FactAggregationDiagnostics;
   discardedRelationships: Array<{ id: string; reason: string }>;
   locationHierarchyDiagnostics: LocationHierarchyDiagnostic[];
   candidateToCanonical: Map<string, string>;

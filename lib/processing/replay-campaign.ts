@@ -16,6 +16,7 @@ import type { Json } from "@/lib/db/types";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { aggregateCachedChunks, parseCachedReconciliation } from "@/lib/processing/replay-cache";
+import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
 
 function mergeDiagnostics(current: Json, replay: Json): Json {
   if (current !== null && !Array.isArray(current) && typeof current === "object") return { ...current, replay };
@@ -27,7 +28,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
   const { campaign, document } = await loadCampaignAndDocument(campaignId);
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
-  if (![1, 2, 3].includes(cache.run.cache_schema_version)) {
+  if (![1, 2, 3, RICH_EXTRACTION_CACHE_SCHEMA_VERSION].includes(cache.run.cache_schema_version)) {
     throw new Error(`Unsupported extraction cache schema version ${cache.run.cache_schema_version}`);
   }
 
@@ -36,7 +37,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
   });
 
   try {
-    const aggregate = aggregateCachedChunks(cache.chunks);
+    const aggregate = aggregateCachedChunks(cache.chunks, cache.run.cache_schema_version);
     const groups = buildDeterministicGroups(aggregate);
     let decision: ReconciliationDecision | undefined;
     let reconciliationApiCalls = 0;
@@ -61,8 +62,14 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       cacheRunId: cache.run.id,
       extractionApiCalls: 0,
       reconciliationApiCalls,
+      mode: "replay" as const,
+      cacheSchemaVersion: cache.run.cache_schema_version,
+      cacheHits: cache.chunks.length,
+      cacheMisses: 0,
+      richFactReplay: cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION,
       candidateEntityCount: aggregate.entities.length,
       canonicalEntityCount: graph.entities.length,
+      ...graph.factAggregationDiagnostics,
       relationshipCount: graph.relationships.length,
       discardedRelationshipCount: graph.discardedRelationships.length,
       locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,

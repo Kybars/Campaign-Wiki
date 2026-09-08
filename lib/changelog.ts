@@ -13,6 +13,14 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-08",
+    title: "Richer source-backed campaign details",
+    changes: [
+      "Campaign extraction now captures richer source-backed details for characters, places, deities, factions, items, quests, and events.",
+    ],
+  },
+  {
+    version: "0.3.0",
+    date: "2026-09-08",
     title: "Data and provenance foundation",
     changes: [
       "Prepared campaign data for richer source-backed articles and future player-safe views.",

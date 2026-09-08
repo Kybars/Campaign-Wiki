@@ -2,18 +2,25 @@ import { chunkExtractionSchema, reconciliationDecisionSchema, type Reconciliatio
 import type { Json } from "@/lib/db/types";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
 import type { DeterministicGroup } from "@/lib/graph/types";
+import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
 
 export interface CachedChunkPayload {
   chunk_id: string;
   validated_output: Json;
 }
 
-function withLegacyEntityRoles(value: Json): Json {
+function withLegacyEntityFields(value: Json, cacheSchemaVersion: number): Json {
   if (!value || Array.isArray(value) || typeof value !== "object") return value;
   const entities = Array.isArray(value.entities)
     ? value.entities.map((entity) => {
         if (!entity || Array.isArray(entity) || typeof entity !== "object") return entity;
-        return { ...entity, roles: Array.isArray(entity.roles) ? entity.roles : [] };
+        return {
+          ...entity,
+          roles: Array.isArray(entity.roles) ? entity.roles : [],
+          facts: cacheSchemaVersion < RICH_EXTRACTION_CACHE_SCHEMA_VERSION && !Array.isArray(entity.facts)
+            ? []
+            : entity.facts,
+        };
       })
     : value.entities;
   return { ...value, entities };
@@ -46,11 +53,11 @@ function withLegacyReconciliationFields(value: Json, groups: DeterministicGroup[
   return { ...value, canonical_entities: canonicalEntities };
 }
 
-export function aggregateCachedChunks(chunks: CachedChunkPayload[]) {
+export function aggregateCachedChunks(chunks: CachedChunkPayload[], cacheSchemaVersion = 1) {
   if (chunks.length === 0) throw new Error("Extraction cache contains no chunks");
   return aggregateCandidates(chunks.map((chunk) => ({
     chunkId: chunk.chunk_id,
-    ...chunkExtractionSchema.parse(withLegacyEntityRoles(chunk.validated_output)),
+    ...chunkExtractionSchema.parse(withLegacyEntityFields(chunk.validated_output, cacheSchemaVersion)),
   })));
 }
 

@@ -8,6 +8,7 @@ import type { ModelCallUsage } from "@/lib/ai/usage";
 import type { CanonicalGraph } from "@/lib/graph/types";
 import type { DocumentPage } from "@/lib/pdf/types";
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
+import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
 
 export async function updateCampaign(campaignId: string, values: Database["public"]["Tables"]["campaigns"]["Update"]) {
   const client = createAdminClient();
@@ -71,7 +72,7 @@ export async function createExtractionCacheRun(
     document_id: documentId,
     status: "started",
     extraction_model: extractionModel,
-    cache_schema_version: 3,
+    cache_schema_version: RICH_EXTRACTION_CACHE_SCHEMA_VERSION,
     chunking_metadata: chunkingMetadata,
   }).select("id").single();
   return requireData(data, error, "Create extraction cache run").id;

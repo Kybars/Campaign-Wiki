@@ -35,6 +35,7 @@ async function main() {
         aliases: [],
         summary: "The owner of the Silver Stag Inn.",
         sources: [{ page_number: 1, supporting_text: sourceText }],
+        facts: [],
       },
       {
         temporary_id: "inn",
@@ -44,6 +45,7 @@ async function main() {
         aliases: [],
         summary: "An inn owned by Hanna Stone.",
         sources: [{ page_number: 1, supporting_text: sourceText }],
+        facts: [],
       },
     ],
     relationships: [{

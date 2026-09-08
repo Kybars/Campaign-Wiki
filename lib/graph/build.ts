@@ -3,6 +3,7 @@ import { applyReconciliation, buildDeterministicGroups } from "@/lib/graph/recon
 import { resolveRelationships } from "@/lib/graph/relationships";
 import type { CandidateAggregate, CanonicalGraph } from "@/lib/graph/types";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
+import { aggregateCanonicalFacts } from "@/lib/graph/facts";
 
 export function buildCanonicalGraph(aggregate: CandidateAggregate, decision?: ReconciliationDecision): CanonicalGraph {
   const groups = buildDeterministicGroups(aggregate);
@@ -24,10 +25,12 @@ export function buildCanonicalGraph(aggregate: CandidateAggregate, decision?: Re
     !hierarchy.consideredRelationshipIds.has(relationship.key)
     || hierarchy.selectedRelationshipIds.has(relationship.key),
   );
+  const factAggregation = aggregateCanonicalFacts(aggregate, reconciled.candidateToCanonical);
   return {
     entities: reconciled.entities,
     relationships,
-    facts: [],
+    facts: factAggregation.facts,
+    factAggregationDiagnostics: factAggregation.diagnostics,
     discardedRelationships: [
       ...resolved.discarded,
       ...hierarchy.diagnostics.map((item) => ({ id: item.relationshipId, reason: item.reason })),

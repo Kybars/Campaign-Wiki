@@ -15,7 +15,7 @@ describe("source validation", () => {
 
   it("drops entities without evidence and relationships with bad endpoints", () => {
     const result = validateChunkExtraction({
-      entities: [{ temporary_id: "e1", name: "Ralekai", type: "npc", roles: [], aliases: [], summary: "Scientist.", sources: [{ page_number: 99, supporting_text: "Ralekai is a scientist" }] }],
+      entities: [{ temporary_id: "e1", name: "Ralekai", type: "npc", roles: [], aliases: [], summary: "Scientist.", sources: [{ page_number: 99, supporting_text: "Ralekai is a scientist" }], facts: [] }],
       relationships: [{ source_temporary_id: "e1", target_temporary_id: "e2", relationship_type: "needs", description: "Needs it.", confidence: 0.9, sources: [{ page_number: 4, supporting_text: pages[0].text }] }],
     }, pages);
     expect(result.extraction.entities).toHaveLength(0);

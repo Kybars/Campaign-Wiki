@@ -1,8 +1,8 @@
-import type { CandidateEntity, CandidateRelationship, ChunkExtraction, SourceEvidence } from "@/lib/ai/schemas";
+import type { CandidateEntity, CandidateFact, CandidateRelationship, ChunkExtraction, SourceEvidence } from "@/lib/ai/schemas";
 import type { DocumentPage } from "@/lib/pdf/types";
 
 export interface ValidationDiagnostic {
-  kind: "source" | "entity" | "relationship";
+  kind: "source" | "entity" | "fact" | "relationship";
   identifier: string;
   reason: string;
 }
@@ -46,7 +46,7 @@ export function validateSource(source: SourceEvidence, pages: DocumentPage[]): s
   return null;
 }
 
-function validSources<T extends CandidateEntity | CandidateRelationship>(
+function validSources<T extends CandidateEntity | CandidateFact | CandidateRelationship>(
   item: T,
   pages: DocumentPage[],
   identifier: string,
@@ -75,7 +75,22 @@ export function validateChunkExtraction(raw: ChunkExtraction, pages: DocumentPag
       diagnostics.push({ kind: "entity", identifier: entity.temporary_id, reason: "no valid source evidence" });
       continue;
     }
-    entities.push({ ...entity, sources });
+    const usedFactIds = new Set<string>();
+    const facts = entity.facts.flatMap((fact) => {
+      const factIdentifier = `${entity.temporary_id}:${fact.temporary_id}`;
+      if (usedFactIds.has(fact.temporary_id)) {
+        diagnostics.push({ kind: "fact", identifier: factIdentifier, reason: "duplicate fact temporary ID" });
+        return [];
+      }
+      usedFactIds.add(fact.temporary_id);
+      const factSources = validSources(fact, pages, factIdentifier, diagnostics);
+      if (factSources.length === 0) {
+        diagnostics.push({ kind: "fact", identifier: factIdentifier, reason: "no valid source evidence" });
+        return [];
+      }
+      return [{ ...fact, sources: factSources }];
+    });
+    entities.push({ ...entity, sources, facts } as CandidateEntity);
   }
 
   const entityIds = new Set(entities.map((entity) => entity.temporary_id));

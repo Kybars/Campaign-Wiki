@@ -52,7 +52,16 @@ export async function processCampaign(campaignId: string) {
     const aggregate = aggregateCandidates(extracted.map((chunk) => ({ chunkId: chunk.chunkId, ...chunk.extraction })));
     const extractionUsage = summarizeModelUsage("candidate_extraction", extracted.map((chunk) => chunk.usage));
     await recordProcessingRun(campaignId, "candidate_extraction", "complete", {
-      output: { entityCandidates: aggregate.entities.length, relationshipCandidates: aggregate.relationships.length, rejectedItems: rejectedSources, modelUsage: extractionUsage } as unknown as Json,
+      output: {
+        mode: "live",
+        cacheHits: 0,
+        cacheMisses: chunks.length,
+        entityCandidates: aggregate.entities.length,
+        factCandidates: aggregate.entities.reduce((count, entity) => count + (entity.facts?.length ?? 0), 0),
+        relationshipCandidates: aggregate.relationships.length,
+        rejectedItems: rejectedSources,
+        modelUsage: extractionUsage,
+      } as unknown as Json,
     });
 
     await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Connecting campaign information" });
@@ -65,6 +74,7 @@ export async function processCampaign(campaignId: string) {
       input: { candidateEntities: aggregate.entities.length, deterministicGroups: groups.length },
       output: {
         canonicalEntities: graph.entities.length,
+        ...graph.factAggregationDiagnostics,
         resolvedRelationships: graph.relationships.length,
         discardedRelationships: graph.discardedRelationships.length,
         locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
@@ -80,11 +90,15 @@ export async function processCampaign(campaignId: string) {
       chunkCount: chunks.length,
       candidateEntityCount: aggregate.entities.length,
       canonicalEntityCount: graph.entities.length,
+      ...graph.factAggregationDiagnostics,
       relationshipCount: graph.relationships.length,
       discardedRelationshipCount: graph.discardedRelationships.length,
       locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
       rejectedSourceCount: rejectedSources,
       modelUsage: [extractionUsage, reconciliationUsage],
+      mode: "live",
+      cacheHits: 0,
+      cacheMisses: chunks.length,
       durationMs,
     };
     await updateCampaign(campaignId, { status: "complete", processing_stage: "Wiki generated", processing_diagnostics: diagnostics as unknown as Json });

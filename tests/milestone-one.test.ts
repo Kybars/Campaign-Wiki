@@ -42,6 +42,7 @@ describe("Milestone 1 entity ontology", () => {
         aliases: [],
         summary: `${name} is a campaign antagonist.`,
         sources: [{ page_number: 1, supporting_text: `${name} is a campaign antagonist.` }],
+        facts: [],
       });
       expect(hasEntityRole(parsed, "enemy")).toBe(true);
     }

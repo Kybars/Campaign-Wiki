@@ -18,6 +18,7 @@ export function buildEvaluationMetrics(aggregate: CandidateAggregate, graph: Can
     candidateEntityCount: aggregate.entities.length,
     canonicalEntityCount: graph.entities.length,
     duplicateCandidatesResolved: aggregate.entities.length - graph.entities.length,
+    ...graph.factAggregationDiagnostics,
     candidateRelationshipCount: aggregate.relationships.length,
     relationshipsCreated: graph.relationships.length,
     relationshipsDeduplicatedOrDiscarded: aggregate.relationships.length - graph.relationships.length,

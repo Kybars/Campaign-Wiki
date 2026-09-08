@@ -46,6 +46,7 @@ The OpenAI integration follows the official [Structured Outputs guide](https://d
 - `lib/graph/` — aggregation, normalization, duplicate grouping, canonicalization, and relationship resolution
 - `lib/processing/process-campaign.ts` — end-to-end processing orchestration
 - `lib/db/` — typed Supabase access, persistence, and wiki queries
+- `lib/knowledge/` — shared fact fields, provenance, visibility, and prominence domain types
 - `supabase/migrations/` — schema, private storage bucket, constraints, RLS, and transactional persistence function
 - `fixtures/` — six-page evaluation campaign in JSON and PDF form
 - `scripts/` — fixture generation and optional live extraction evaluation
@@ -172,6 +173,8 @@ The current application version is the `version` in `package.json`. Release note
 ## Deterministic replay evaluation
 
 Run `npm run evaluate:replay` to build the small regression fixture from cached candidate data, apply its saved reconciliation decision, and report graph, source, role, and location metrics with zero OpenAI or Supabase calls. `npm run evaluate` remains the optional live fixture extraction evaluation and requires configured OpenAI credentials.
+
+The replay evaluation also exercises the v0.3 rich-fact fixture. Rich extraction cache schema version 4 requires per-candidate `facts`; older cache versions remain replayable as intentionally factless legacy data. See [`docs/V0_3_RICH_FACT_EXTRACTION.md`](./docs/V0_3_RICH_FACT_EXTRACTION.md).
 
 ## Milestone 8 benchmark checklist
 
