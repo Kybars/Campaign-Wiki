@@ -129,10 +129,21 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
   const relevant = relationshipsForEntity(safeRelationships, entityId);
   const relatedIds = [...new Set(relevant.map((relationship) => relationship.relatedEntityId))];
   const relatedResult = relatedIds.length
-    ? await client.from("entities").select("id,name,type,visibility").in("id", relatedIds)
+    ? await client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility").in("id", relatedIds)
     : { data: [], error: null };
   const related = requireData(relatedResult.data, relatedResult.error, "Load related entities");
-  const relatedById = new Map(related.map((item) => [item.id, item]));
+  const relatedFactsResult = relatedIds.length
+    ? await client.from("entity_facts").select("id,entity_id,field_key,content,structured_value,visibility,sort_order").in("entity_id", relatedIds).order("sort_order").order("id")
+    : { data: [], error: null };
+  const relatedFacts = visibleFacts(requireData(relatedFactsResult.data, relatedFactsResult.error, "Load related entity facts"), allEntities, viewMode);
+  const relatedById = new Map(related.map((item) => {
+    const { gm_summary, player_summary, summary: legacySummary, ...safeEntity } = item;
+    return [item.id, {
+      ...safeEntity,
+      summary: visibleSummary({ ...safeEntity, gm_summary, player_summary, summary: legacySummary }, viewMode),
+      previewFacts: relatedFacts.filter((fact) => fact.entity_id === item.id).slice(0, 3).map((fact) => fact.content),
+    }];
+  }));
 
   const relationshipIds = [...new Set(relevant.flatMap((relationship) => relationship.relationshipIds))];
   const relationshipSourcesResult = relationshipIds.length
@@ -204,15 +215,13 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
       origin: fact.origin,
       sortOrder: fact.sort_order,
       context: fact.context,
-      evidence: factEvidence.filter((evidence) => evidence.fact_id === fact.id).map((evidence) => ({
+      evidence: factEvidence.filter((evidence) => evidence.fact_id === fact.id
+        && evidence.document_id !== null && evidence.page_number !== null && evidence.supporting_text !== null).map((evidence) => ({
         id: evidence.id,
-        origin: evidence.origin,
-        documentId: evidence.document_id,
-        filename: evidence.document_id ? filenameById.get(evidence.document_id) ?? "Campaign PDF" : null,
-        pageNumber: evidence.page_number,
-        supportingText: evidence.supporting_text,
-        sourceLocation: evidence.source_location,
-        originMetadata: evidence.origin_metadata,
+        document_id: evidence.document_id!,
+        filename: filenameById.get(evidence.document_id!) ?? "Campaign PDF",
+        page_number: evidence.page_number!,
+        supporting_text: evidence.supporting_text!,
       })),
     })),
     relationships: relevant.map((relationship) => ({

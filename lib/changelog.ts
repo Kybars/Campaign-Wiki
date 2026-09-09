@@ -13,9 +13,9 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-08",
-    title: "Player View preview",
+    title: "Rich source-backed entity articles",
     changes: [
-      "Added a Player View preview so campaign knowledge can be checked without revealing GM-only information.",
+      "Entity pages now present richer source-backed campaign details, natural connections, and inspectable citations.",
     ],
   },
   {
