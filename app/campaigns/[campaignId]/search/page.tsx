@@ -19,7 +19,7 @@ export default async function SearchPage({ params, searchParams }: {
   const results = q.trim() ? await searchCampaignEntities(campaignId, q, viewMode) : [];
   return (
     <>
-      <WikiHeader campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={q.trim() ? `/campaigns/${campaignId}/search?q=${encodeURIComponent(q)}` : `/campaigns/${campaignId}/search`} />
+      <WikiHeader campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={q.trim() ? `/campaigns/${campaignId}/search?q=${encodeURIComponent(q)}` : `/campaigns/${campaignId}/search`} active="search" />
       <main className="mx-auto max-w-4xl px-6 py-12">
         <h1 className="font-serif text-4xl font-semibold">Search campaign</h1>
         <form className="mt-6 flex gap-2">

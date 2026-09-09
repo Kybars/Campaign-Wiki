@@ -80,8 +80,7 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
                 ? `/campaigns/${campaign.id}`
                 : `/campaigns/${campaign.id}/processing`;
 
-              return (
-                <li key={campaign.id} className="rounded-xl border border-[var(--line)] bg-white/60 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
+              const card = <>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
                       <h3 className="truncate font-serif text-xl font-semibold">{campaign.name}</h3>
@@ -91,15 +90,13 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
                     </div>
                     <p className="mt-2 text-sm text-[var(--muted)]">
                       Created <time dateTime={campaign.created_at}>{new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(campaign.created_at))}</time>
-                      {completed ? ` · ${campaign.entityCount} ${campaign.entityCount === 1 ? "entity" : "entities"}` : ""}
+                      {completed ? ` · ${campaign.entityCount} ${campaign.entityCount === 1 ? "entry" : "entries"}` : ""}
                     </p>
                     {failed ? <p className="mt-2 text-sm text-red-800">{campaign.error_message ?? "Campaign processing failed."}</p> : null}
                   </div>
-                  <Link className="mt-4 inline-block shrink-0 font-semibold text-[var(--accent)] hover:underline sm:mt-0" href={href}>
-                    {completed ? "Open wiki" : failed ? "View failure" : "View progress"} →
-                  </Link>
-                </li>
-              );
+                  {completed ? <span className="mt-4 inline-block shrink-0 font-semibold text-[var(--accent)] sm:mt-0">Open wiki →</span> : null}
+                </>;
+              return completed ? <li key={campaign.id}><Link className="block rounded-xl border border-[var(--line)] bg-white/60 p-5 hover:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] sm:flex sm:items-center sm:justify-between sm:gap-6" href={href}>{card}</Link></li> : <li key={campaign.id} className="rounded-xl border border-[var(--line)] bg-white/60 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">{card}<Link className="mt-4 inline-block shrink-0 font-semibold text-[var(--accent)] hover:underline sm:mt-0" href={href}>{failed ? "View failure" : "View progress"} →</Link></li>;
             })}
           </ul>
         )}

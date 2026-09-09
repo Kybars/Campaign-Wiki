@@ -1,9 +1,9 @@
 {
   "name": "campaign-wiki",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

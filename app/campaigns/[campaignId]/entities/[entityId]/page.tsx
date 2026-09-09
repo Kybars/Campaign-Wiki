@@ -17,7 +17,7 @@ export default async function EntityPage({ params, searchParams }: { params: Pro
   } catch { notFound(); }
   return (
     <>
-      <WikiHeader campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={`/campaigns/${campaignId}/entities/${entityId}`} />
+      <WikiHeader campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={`/campaigns/${campaignId}/entities/${entityId}`} active={detail.entity.type} />
       <main className="mx-auto max-w-6xl px-6 py-10 sm:py-14">
         <Link className="text-sm text-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}`, viewMode)}>← Campaign home</Link>
         <div className="mt-8"><EntityDetail campaignId={campaignId} detail={detail} viewMode={viewMode} /></div>

@@ -9,6 +9,7 @@
 }
 
 * { box-sizing: border-box; }
+html { scroll-padding-top: 9rem; }
 body {
   margin: 0;
   background: var(--paper);
