@@ -13,9 +13,9 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-08",
-    title: "Campaign knowledge classification",
+    title: "Player View preview",
     changes: [
-      "Campaign knowledge now distinguishes major and minor entries and prepares separate GM and player-safe summaries.",
+      "Added a Player View preview so campaign knowledge can be checked without revealing GM-only information.",
     ],
   },
   {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ENTITY_ROLE_LABELS, ENTITY_TYPE_SINGULAR_LABELS, hasEntityRole } from "@/lib/entities";
 import type { EntityRole, EntityType } from "@/lib/db/types";
 import { groupSourceEvidence, sourceReference, type SourceEvidence } from "@/lib/wiki/source-presentation";
+import { campaignHref, type CampaignViewMode } from "@/lib/campaign-view";
 
 interface RelatedEntity {
   id: string;
@@ -39,24 +40,24 @@ export interface EntityDetailView {
   locationHierarchy?: LocationHierarchy;
 }
 
-function EntityLink({ campaignId, entity, className = "" }: { campaignId: string; entity: { id: string; name: string }; className?: string }) {
-  return <Link className={`font-semibold text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 hover:decoration-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${className}`} href={`/campaigns/${campaignId}/entities/${entity.id}`}>{entity.name}</Link>;
+function EntityLink({ campaignId, entity, viewMode, className = "" }: { campaignId: string; entity: { id: string; name: string }; viewMode: CampaignViewMode; className?: string }) {
+  return <Link className={`font-semibold text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 hover:decoration-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${className}`} href={campaignHref(`/campaigns/${campaignId}/entities/${entity.id}`, viewMode)}>{entity.name}</Link>;
 }
 
-function RelationshipText({ campaignId, relationship }: { campaignId: string; relationship: Relationship }) {
+function RelationshipText({ campaignId, relationship, viewMode }: { campaignId: string; relationship: Relationship; viewMode: CampaignViewMode }) {
   const related = relationship.relatedEntity;
   if (!related) return null;
   const description = relationship.description.trim();
   if (!description) {
-    return <><span className="capitalize">{relationship.displayLabel}</span> <EntityLink campaignId={campaignId} entity={related} />.</>;
+    return <><span className="capitalize">{relationship.displayLabel}</span> <EntityLink campaignId={campaignId} entity={related} viewMode={viewMode} />.</>;
   }
   const targetIndex = description.toLocaleLowerCase("en-US").indexOf(related.name.toLocaleLowerCase("en-US"));
   if (targetIndex < 0) {
-    return <>{description} <span className="whitespace-nowrap">(<span className="capitalize">{relationship.displayLabel}</span> <EntityLink campaignId={campaignId} entity={related} />)</span></>;
+    return <>{description} <span className="whitespace-nowrap">(<span className="capitalize">{relationship.displayLabel}</span> <EntityLink campaignId={campaignId} entity={related} viewMode={viewMode} />)</span></>;
   }
   const before = description.slice(0, targetIndex);
   const after = description.slice(targetIndex + related.name.length);
-  return <>{before}<EntityLink campaignId={campaignId} entity={related} />{after}</>;
+  return <>{before}<EntityLink campaignId={campaignId} entity={related} viewMode={viewMode} />{after}</>;
 }
 
 function SourceReference({ sources, label }: { sources: SourceEvidence[]; label: string }) {
@@ -111,7 +112,7 @@ function EntitySources({ sources }: { sources: SourceEvidence[] }) {
   );
 }
 
-function LocationContext({ campaignId, hierarchy }: { campaignId: string; hierarchy: LocationHierarchy }) {
+function LocationContext({ campaignId, hierarchy, viewMode }: { campaignId: string; hierarchy: LocationHierarchy; viewMode: CampaignViewMode }) {
   return (
     <section className="mt-7 border-l-2 border-[var(--line)] pl-4" aria-labelledby="location-context-heading">
       <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--muted)]" id="location-context-heading">Location context</h2>
@@ -119,16 +120,16 @@ function LocationContext({ campaignId, hierarchy }: { campaignId: string; hierar
         <nav aria-label="Location path" className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-[var(--muted)]">
           {hierarchy.path.map((location, index) => index === hierarchy.path.length - 1
             ? <span className="font-semibold text-[var(--ink)]" key={location.id}>{location.name}</span>
-            : <span className="flex items-center gap-x-1" key={location.id}><EntityLink campaignId={campaignId} entity={location} /><span aria-hidden="true">›</span></span>)}
+            : <span className="flex items-center gap-x-1" key={location.id}><EntityLink campaignId={campaignId} entity={location} viewMode={viewMode} /><span aria-hidden="true">›</span></span>)}
         </nav>
       ) : null}
-      {hierarchy.parent ? <p className="mt-2 text-sm text-[var(--muted)]">Located in <EntityLink campaignId={campaignId} entity={hierarchy.parent} />.</p> : null}
-      {hierarchy.children.length ? <div className="mt-3 text-sm text-[var(--muted)]"><h3 className="font-semibold text-[var(--ink)]">Sublocations</h3><p className="mt-1">{hierarchy.children.map((child, index) => <span key={child.id}>{index ? " · " : ""}<EntityLink campaignId={campaignId} entity={child} /></span>)}</p></div> : null}
+      {hierarchy.parent ? <p className="mt-2 text-sm text-[var(--muted)]">Located in <EntityLink campaignId={campaignId} entity={hierarchy.parent} viewMode={viewMode} />.</p> : null}
+      {hierarchy.children.length ? <div className="mt-3 text-sm text-[var(--muted)]"><h3 className="font-semibold text-[var(--ink)]">Sublocations</h3><p className="mt-1">{hierarchy.children.map((child, index) => <span key={child.id}>{index ? " · " : ""}<EntityLink campaignId={campaignId} entity={child} viewMode={viewMode} /></span>)}</p></div> : null}
     </section>
   );
 }
 
-export function EntityDetail({ campaignId, detail }: { campaignId: string; detail: EntityDetailView }) {
+export function EntityDetail({ campaignId, detail, viewMode = "dm" }: { campaignId: string; detail: EntityDetailView; viewMode?: CampaignViewMode }) {
   const { entity, relationships, sources, locationHierarchy } = detail;
   const relatedEntities = [...new Map(relationships.flatMap((relationship) => relationship.relatedEntity ? [[relationship.relatedEntity.id, relationship.relatedEntity] as const] : [])).values()];
 
@@ -145,7 +146,7 @@ export function EntityDetail({ campaignId, detail }: { campaignId: string; detai
           {entity.summary ? <p className="mt-5 max-w-3xl text-lg leading-8">{entity.summary}</p> : null}
         </header>
 
-        {locationHierarchy ? <LocationContext campaignId={campaignId} hierarchy={locationHierarchy} /> : null}
+        {locationHierarchy ? <LocationContext campaignId={campaignId} hierarchy={locationHierarchy} viewMode={viewMode} /> : null}
 
         <section className="mt-10" aria-labelledby="connections-heading">
           <h2 className="border-b border-[var(--line)] pb-3 font-serif text-2xl font-semibold" id="connections-heading">Connections</h2>
@@ -153,7 +154,7 @@ export function EntityDetail({ campaignId, detail }: { campaignId: string; detai
             <ul className="divide-y divide-[var(--line)]">
               {relationships.map((relationship) => relationship.relatedEntity ? (
                 <li className="py-3 leading-7" key={relationship.id}>
-                  <RelationshipText campaignId={campaignId} relationship={relationship} /> <SourceReference label={relationship.displayLabel} sources={relationship.sources} />
+                  <RelationshipText campaignId={campaignId} relationship={relationship} viewMode={viewMode} /> <SourceReference label={relationship.displayLabel} sources={relationship.sources} />
                 </li>
               ) : null)}
             </ul>
@@ -166,7 +167,7 @@ export function EntityDetail({ campaignId, detail }: { campaignId: string; detai
           <section aria-labelledby="related-heading">
             <h2 className="font-serif text-xl font-semibold" id="related-heading">Related</h2>
             <ul className="mt-3 space-y-2 text-sm">
-              {relatedEntities.map((related) => <li key={related.id}><EntityLink campaignId={campaignId} entity={related} /> <span className="text-[var(--muted)]">· {ENTITY_TYPE_SINGULAR_LABELS[related.type]}</span></li>)}
+              {relatedEntities.map((related) => <li key={related.id}><EntityLink campaignId={campaignId} entity={related} viewMode={viewMode} /> <span className="text-[var(--muted)]">· {ENTITY_TYPE_SINGULAR_LABELS[related.type]}</span></li>)}
             </ul>
           </section>
         ) : null}

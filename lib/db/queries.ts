@@ -5,6 +5,7 @@ import type { Database, EntityRole, EntityType } from "@/lib/db/types";
 import { filterEntitiesBySearchTerm } from "@/lib/entities";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipsForEntity } from "@/lib/relationships/view";
+import { visibleEntities, visibleFacts, visibleRelationships, visibleSummary, type CampaignViewMode } from "@/lib/campaign-view";
 
 type EntitySourceRow = Database["public"]["Tables"]["entity_sources"]["Row"];
 type RelationshipSourceRow = Database["public"]["Tables"]["relationship_sources"]["Row"];
@@ -34,10 +35,12 @@ function deduplicateSources<T extends { document_id: string; page_number: number
   return [...unique.values()];
 }
 
-export async function getCampaign(campaignId: string) {
+export async function getCampaign(campaignId: string, viewMode: CampaignViewMode = "dm") {
   const client = createAdminClient();
   const result = await client.from("campaigns").select("*").eq("id", campaignId).single();
-  return requireData(result.data, result.error, "Load campaign");
+  const campaign = requireData(result.data, result.error, "Load campaign");
+  const { gm_overview, player_overview, ...safeCampaign } = campaign;
+  return { ...safeCampaign, overview: viewMode === "dm" ? gm_overview : player_overview };
 }
 
 export async function getCampaigns() {
@@ -63,29 +66,36 @@ export async function getCampaigns() {
   }));
 }
 
-export async function getCampaignEntities(campaignId: string, type?: EntityType, role?: EntityRole) {
+export async function getCampaignEntities(campaignId: string, type?: EntityType, role?: EntityRole, viewMode: CampaignViewMode = "dm") {
   const client = createAdminClient();
   let query = client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility,prominence").eq("campaign_id", campaignId);
   if (type) query = query.eq("type", type);
   if (role) query = query.contains("roles", [role]);
+  if (viewMode === "player") query = query.eq("visibility", "player_visible");
   const result = await query.order("name");
-  return requireData(result.data, result.error, "Load campaign entities");
+  return visibleEntities(requireData(result.data, result.error, "Load campaign entities"), viewMode)
+    .map((entity) => {
+      const { gm_summary, player_summary, summary: legacySummary, ...safeEntity } = entity;
+      return { ...safeEntity, summary: visibleSummary({ ...safeEntity, gm_summary, player_summary, summary: legacySummary }, viewMode) };
+    });
 }
 
-export async function searchCampaignEntities(campaignId: string, term: string) {
-  const entities = await getCampaignEntities(campaignId);
+export async function searchCampaignEntities(campaignId: string, term: string, viewMode: CampaignViewMode = "dm") {
+  const entities = await getCampaignEntities(campaignId, undefined, undefined, viewMode);
   return filterEntitiesBySearchTerm(entities, term);
 }
 
-export async function getCampaignLocationHierarchy(campaignId: string) {
+export async function getCampaignLocationHierarchy(campaignId: string, viewMode: CampaignViewMode = "dm") {
   const client = createAdminClient();
   const [locationsResult, relationshipsResult] = await Promise.all([
-    client.from("entities").select("id,name").eq("campaign_id", campaignId).eq("type", "location").order("name"),
+    client.from("entities").select("id,name,visibility").eq("campaign_id", campaignId).eq("type", "location").order("name"),
     client.from("relationships").select("id,source_entity_id,target_entity_id,relationship_type,confidence,visibility").eq("campaign_id", campaignId),
   ]);
   const locations = requireData(locationsResult.data, locationsResult.error, "Load campaign locations");
   const relationships = requireData(relationshipsResult.data, relationshipsResult.error, "Load campaign containment relationships");
-  return buildLocationHierarchy(locations, relationships.map((relationship) => ({
+  const visibleLocations = visibleEntities(locations.map((location) => ({ ...location, type: "location" as const, roles: [], aliases: [] })), viewMode);
+  const visibleRelationshipsForView = visibleRelationships(relationships, locations.map((location) => ({ ...location, type: "location" as const, roles: [], aliases: [] })), viewMode);
+  return buildLocationHierarchy(visibleLocations, visibleRelationshipsForView.map((relationship) => ({
     id: relationship.id,
     sourceId: relationship.source_entity_id,
     targetId: relationship.target_entity_id,
@@ -95,31 +105,31 @@ export async function getCampaignLocationHierarchy(campaignId: string) {
   })));
 }
 
-export async function getEntityDetail(campaignId: string, entityId: string) {
+export async function getEntityDetail(campaignId: string, entityId: string, viewMode: CampaignViewMode = "dm") {
   const client = createAdminClient();
-  const entityResult = await client.from("entities").select("*").eq("campaign_id", campaignId).eq("id", entityId).single();
+  let entityQuery = client.from("entities").select("*").eq("campaign_id", campaignId).eq("id", entityId);
+  if (viewMode === "player") entityQuery = entityQuery.eq("visibility", "player_visible");
+  const entityResult = await entityQuery.single();
   const entity = requireData(entityResult.data, entityResult.error, "Load entity");
 
   const relationshipQuery = client.from("relationships").select("*").eq("campaign_id", campaignId);
   const relationshipPromise = entity.type === "location"
     ? relationshipQuery
     : relationshipQuery.or(`source_entity_id.eq.${entity.id},target_entity_id.eq.${entity.id}`);
-  const locationPromise = entity.type === "location"
-    ? client.from("entities").select("id,name").eq("campaign_id", campaignId).eq("type", "location")
-    : Promise.resolve({ data: [], error: null });
-  const [allRelationshipResult, entitySourcesResult, factResult, locationResult] = await Promise.all([
+  const [allRelationshipResult, entitySourcesResult, factResult, allEntitiesResult] = await Promise.all([
     relationshipPromise,
     client.from("entity_sources").select("*").eq("entity_id", entityId).order("page_number"),
     client.from("entity_facts").select("*").eq("entity_id", entityId).order("sort_order").order("id"),
-    locationPromise,
+    client.from("entities").select("id,name,type,roles,aliases,visibility").eq("campaign_id", campaignId),
   ]);
   const allRelationships = requireData(allRelationshipResult.data, allRelationshipResult.error, "Load relationships");
-  const locations = requireData(locationResult.data, locationResult.error, "Load campaign locations");
-  const facts = requireData(factResult.data, factResult.error, "Load entity facts");
-  const relevant = relationshipsForEntity(allRelationships, entityId);
+  const allEntities = requireData(allEntitiesResult.data, allEntitiesResult.error, "Load campaign entities");
+  const facts = visibleFacts(requireData(factResult.data, factResult.error, "Load entity facts"), allEntities, viewMode);
+  const safeRelationships = visibleRelationships(allRelationships, allEntities, viewMode);
+  const relevant = relationshipsForEntity(safeRelationships, entityId);
   const relatedIds = [...new Set(relevant.map((relationship) => relationship.relatedEntityId))];
   const relatedResult = relatedIds.length
-    ? await client.from("entities").select("id,name,type").in("id", relatedIds)
+    ? await client.from("entities").select("id,name,type,visibility").in("id", relatedIds)
     : { data: [], error: null };
   const related = requireData(relatedResult.data, relatedResult.error, "Load related entities");
   const relatedById = new Map(related.map((item) => [item.id, item]));
@@ -155,10 +165,11 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
     : { data: [], error: null };
   const documents = requireData(documentsResult.data, documentsResult.error, "Load source documents");
   const filenameById = new Map(documents.map((document) => [document.id, document.filename]));
+  const safeLocations = visibleEntities(allEntities.filter((item) => item.type === "location"), viewMode);
   const hierarchy = entity.type === "location"
     ? buildLocationHierarchy(
-        locations,
-        allRelationships.map((relationship) => ({
+        safeLocations,
+        visibleRelationships(allRelationships, allEntities, viewMode).map((relationship) => ({
           id: relationship.id,
           sourceId: relationship.source_entity_id,
           targetId: relationship.target_entity_id,
@@ -170,7 +181,10 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
     : undefined;
 
   return {
-    entity,
+    entity: (() => {
+      const { gm_summary, player_summary, summary: legacySummary, ...safeEntity } = entity;
+      return { ...safeEntity, summary: visibleSummary({ ...safeEntity, gm_summary, player_summary, summary: legacySummary }, viewMode) };
+    })(),
     locationHierarchy: hierarchy ? {
       parent: hierarchy.getParent(entityId),
       children: hierarchy.getChildren(entityId),
@@ -178,7 +192,8 @@ export async function getEntityDetail(campaignId: string, entityId: string) {
       isRoot: hierarchy.getParent(entityId) === undefined,
       isOrphan: hierarchy.getOrphans().some((location) => location.id === entityId),
     } : undefined,
-    sources: documentEntitySources.map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" })),
+    // Legacy entity excerpts are not fact-scoped, so Player View omits them fail-closed.
+    sources: viewMode === "dm" ? documentEntitySources.map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" })) : [],
     facts: facts.map((fact) => ({
       id: fact.id,
       stableKey: fact.stable_key,

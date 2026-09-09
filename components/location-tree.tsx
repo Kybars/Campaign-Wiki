@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { LocationTreeNode } from "@/lib/locations/hierarchy";
+import { campaignHref, type CampaignViewMode } from "@/lib/campaign-view";
 
-function LocationTreeItem({ campaignId, node, depth, ancestry }: {
+function LocationTreeItem({ campaignId, node, depth, ancestry, viewMode }: {
   campaignId: string;
   node: LocationTreeNode;
   depth: number;
   ancestry: ReadonlySet<string>;
+  viewMode: CampaignViewMode;
 }) {
   const hasChildren = node.children.length > 0 && !ancestry.has(node.location.id);
   const [expanded, setExpanded] = useState(depth === 0);
@@ -29,22 +31,22 @@ function LocationTreeItem({ campaignId, node, depth, ancestry }: {
             <span aria-hidden="true">{expanded ? "▾" : "▸"}</span>
           </button>
         ) : <span aria-hidden="true" className="mt-0.5 w-5 shrink-0 text-center text-[var(--line)]">•</span>}
-        <Link className={`min-w-0 break-words font-semibold hover:text-[var(--accent)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${depth === 0 ? "font-serif text-lg" : ""}`} href={`/campaigns/${campaignId}/entities/${node.location.id}`}>{node.location.name}</Link>
+        <Link className={`min-w-0 break-words font-semibold hover:text-[var(--accent)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${depth === 0 ? "font-serif text-lg" : ""}`} href={campaignHref(`/campaigns/${campaignId}/entities/${node.location.id}`, viewMode)}>{node.location.name}</Link>
       </div>
       {hasChildren && expanded ? (
         <ul className="m-0 list-none p-0" id={`location-children-${node.location.id}`}>
-          {node.children.map((child) => <LocationTreeItem ancestry={nextAncestry} campaignId={campaignId} depth={depth + 1} key={child.location.id} node={child} />)}
+          {node.children.map((child) => <LocationTreeItem ancestry={nextAncestry} campaignId={campaignId} depth={depth + 1} key={child.location.id} node={child} viewMode={viewMode} />)}
         </ul>
       ) : null}
     </li>
   );
 }
 
-export function LocationTree({ campaignId, roots }: { campaignId: string; roots: LocationTreeNode[] }) {
+export function LocationTree({ campaignId, roots, viewMode = "dm" }: { campaignId: string; roots: LocationTreeNode[]; viewMode?: CampaignViewMode }) {
   if (roots.length === 0) return <p className="text-[var(--muted)]">No locations have been discovered yet.</p>;
   return (
     <ul className="m-0 list-none space-y-2 p-0" aria-label="Location hierarchy">
-      {roots.map((root) => <LocationTreeItem ancestry={new Set()} campaignId={campaignId} depth={0} key={root.location.id} node={root} />)}
+      {roots.map((root) => <LocationTreeItem ancestry={new Set()} campaignId={campaignId} depth={0} key={root.location.id} node={root} viewMode={viewMode} />)}
     </ul>
   );
 }
