@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
-import { getCampaign, getCampaignEntities } from "@/lib/db/queries";
+import { CampaignOverview } from "@/components/campaign-overview";
+import { getCampaign, getCampaignEntities, getCampaignOverviewEvidence } from "@/lib/db/queries";
 import { ENTITY_TYPE_LABELS, ENTITY_TYPES, hasEntityRole } from "@/lib/entities";
 import { campaignHref, campaignViewMode, type CampaignViewMode } from "@/lib/campaign-view";
 import type { EntityRole, EntityType } from "@/lib/db/types";
@@ -30,7 +31,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const { campaignId } = await params; const viewMode = campaignViewMode((await searchParams).view);
   let campaign; try { campaign = await getCampaign(campaignId, viewMode); } catch { notFound(); }
   if (campaign.status !== "complete") redirect(`/campaigns/${campaignId}/processing`);
-  const entries = await getCampaignEntities(campaignId, undefined, undefined, viewMode);
+  const [entries, overviewEvidence] = await Promise.all([getCampaignEntities(campaignId, undefined, undefined, viewMode), getCampaignOverviewEvidence(campaignId, viewMode)]);
   const grouped = Object.fromEntries(ENTITY_TYPES.map((type) => [type, entries.filter((entry) => entry.type === type)])) as Record<EntityType, CampaignEntry[]>;
   const enemies = entries.filter((entry) => hasEntityRole(entry, "enemy"));
   return <>
@@ -39,6 +40,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--accent)]">Campaign wiki</p>
       <h1 className="mt-2 font-serif text-5xl font-semibold tracking-tight">{campaign.name} <span className="font-sans text-lg font-normal text-[var(--muted)]">({entries.length} {entries.length === 1 ? "entry" : "entries"})</span></h1>
       {viewMode === "player" && entries.length === 0 ? <p className="mt-4 rounded-lg border border-[var(--line)] bg-white/60 px-4 py-3 text-sm text-[var(--muted)]">This campaign does not currently have player-visible entries. Switch to DM View to see the full wiki.</p> : null}
+      <CampaignOverview overview={campaign.overview} evidence={overviewEvidence} />
       <section className="mt-10" aria-label="Campaign categories">
         <div className="grid gap-3">
           {categoryOrder.filter((type) => grouped[type].length > 0).map((type) => <details key={type} className="rounded-xl border border-[var(--line)] bg-white/60 p-4"><summary className="cursor-pointer font-serif text-xl font-semibold marker:text-[var(--accent)]">{ENTITY_TYPE_LABELS[type]} <span className="font-sans text-sm font-normal text-[var(--muted)]">({grouped[type].length})</span></summary><ProminenceGroups campaignId={campaignId} entries={grouped[type]} viewMode={viewMode} categoryPath={type} categoryLabel={ENTITY_TYPE_LABELS[type]} /></details>)}

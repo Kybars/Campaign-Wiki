@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
 import { LocationTree } from "@/components/location-tree";
-import { getCampaign, getCampaignEntities, getCampaignLocationHierarchy } from "@/lib/db/queries";
+import { EventChronology } from "@/components/event-chronology";
+import { getCampaign, getCampaignEntities, getCampaignLocationHierarchy, getEventChronologyEntries } from "@/lib/db/queries";
 import { ENTITY_TYPE_LABELS, ENTITY_TYPE_SINGULAR_LABELS, hasEntityRole, isEntityType } from "@/lib/entities";
 import { campaignHref, campaignViewMode } from "@/lib/campaign-view";
 
@@ -15,11 +16,12 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   if (!isEnemiesView && !isEntityType(type)) notFound();
   let campaign;
   try { campaign = await getCampaign(campaignId, viewMode); } catch { notFound(); }
-  const [entities, locationHierarchy] = await Promise.all([
+  const [entities, locationHierarchy, eventEntries] = await Promise.all([
     type === "location" ? Promise.resolve([]) : isEnemiesView
       ? getCampaignEntities(campaignId, undefined, "enemy", viewMode)
       : getCampaignEntities(campaignId, type, undefined, viewMode),
     type === "location" ? getCampaignLocationHierarchy(campaignId, viewMode) : Promise.resolve(undefined),
+    type === "event" ? getEventChronologyEntries(campaignId, viewMode) : Promise.resolve([]),
   ]);
   const title = isEnemiesView ? "Enemies" : ENTITY_TYPE_LABELS[type];
   return (
@@ -29,7 +31,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         <Link className="text-sm text-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}`, viewMode)}>← Campaign home</Link>
         <h1 className="mt-5 font-serif text-4xl font-semibold">{title}</h1>
         <p className="mt-2 text-[var(--muted)]">{type === "location" ? locationHierarchy!.getRoots().length : entities.length} {type === "location" ? "top-level location" : "entries"}{type === "location" && locationHierarchy!.getRoots().length === 1 ? "" : type === "location" ? "s" : ""}</p>
-        {type === "location" ? <div className="mt-8 border-y border-[var(--line)] py-4"><LocationTree campaignId={campaignId} roots={locationHierarchy!.buildTree()} viewMode={viewMode} /></div> : <div className="mt-8 space-y-8">
+        {type === "location" ? <div className="mt-8 border-y border-[var(--line)] py-4"><LocationTree campaignId={campaignId} roots={locationHierarchy!.buildTree()} viewMode={viewMode} /></div> : type === "event" ? <div className="mt-8"><EventChronology campaignId={campaignId} events={eventEntries} viewMode={viewMode} /></div> : <div className="mt-8 space-y-8">
           {(["major", "supporting", "minor"] as const).map((prominence) => {
             const entries = entities.filter((entity) => (entity.prominence ?? "supporting") === prominence);
             const label = prominence === "major" ? "Major" : prominence === "supporting" ? "Supporting" : "Minor";

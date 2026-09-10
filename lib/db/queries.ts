@@ -43,6 +43,20 @@ export async function getCampaign(campaignId: string, viewMode: CampaignViewMode
   return { ...safeCampaign, overview: viewMode === "dm" ? gm_overview : player_overview };
 }
 
+export async function getCampaignOverviewEvidence(campaignId: string, viewMode: CampaignViewMode = "dm") {
+  const client = createAdminClient();
+  const summaryKind = viewMode === "dm" ? "gm" : "player";
+  const evidenceResult = await client.from("campaign_overview_evidence").select("*")
+    .eq("campaign_id", campaignId).eq("summary_kind", summaryKind).order("page_number");
+  const evidence = requireData(evidenceResult.data, evidenceResult.error, "Load campaign overview evidence")
+    .filter((source) => source.origin === "document" && source.document_id && source.page_number && source.supporting_text);
+  const documentIds = [...new Set(evidence.map((source) => source.document_id!))];
+  const documentsResult = documentIds.length ? await client.from("documents").select("id,filename").in("id", documentIds) : { data: [], error: null };
+  const documents = requireData(documentsResult.data, documentsResult.error, "Load overview source documents");
+  const filenames = new Map(documents.map((document) => [document.id, document.filename]));
+  return evidence.map((source) => ({ id: source.id, document_id: source.document_id!, filename: filenames.get(source.document_id!) ?? "Campaign PDF", page_number: source.page_number!, supporting_text: source.supporting_text! }));
+}
+
 export async function getCampaigns() {
   const client = createAdminClient();
   const [campaignResult, entityResult] = await Promise.all([
@@ -78,6 +92,18 @@ export async function getCampaignEntities(campaignId: string, type?: EntityType,
       const { gm_summary, player_summary, summary: legacySummary, ...safeEntity } = entity;
       return { ...safeEntity, summary: visibleSummary({ ...safeEntity, gm_summary, player_summary, summary: legacySummary }, viewMode) };
     });
+}
+
+export async function getEventChronologyEntries(campaignId: string, viewMode: CampaignViewMode = "dm") {
+  const events = await getCampaignEntities(campaignId, "event", undefined, viewMode);
+  if (!events.length) return [];
+  const client = createAdminClient();
+  const allEntitiesResult = await client.from("entities").select("id,name,type,roles,aliases,visibility").eq("campaign_id", campaignId);
+  const allEntities = requireData(allEntitiesResult.data, allEntitiesResult.error, "Load event visibility context");
+  const factsResult = await client.from("entity_facts").select("entity_id,field_key,content,structured_value,visibility,sort_order,id")
+    .in("entity_id", events.map((event) => event.id)).order("sort_order").order("id");
+  const facts = visibleFacts(requireData(factsResult.data, factsResult.error, "Load event chronology facts"), allEntities, viewMode);
+  return events.map((event) => ({ ...event, facts: facts.filter((fact) => fact.entity_id === event.id).map((fact) => ({ fieldKey: fact.field_key, content: fact.content, structuredValue: fact.structured_value })) }));
 }
 
 export async function searchCampaignEntities(campaignId: string, term: string, viewMode: CampaignViewMode = "dm") {

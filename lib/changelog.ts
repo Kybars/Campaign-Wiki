@@ -12,6 +12,15 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-10",
+    title: "Campaign overviews, Quests, and Event chronology",
+    changes: [
+      "Added source-backed GM and Player campaign overviews.",
+      "Made Quest pages faster reference guides and Events easier to browse by supported chronology.",
+    ],
+  },
+  {
+    version: "0.3.6",
     date: "2026-09-09",
     title: "Prominence-aware campaign browsing",
     changes: [
