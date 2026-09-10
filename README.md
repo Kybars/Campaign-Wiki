@@ -36,7 +36,7 @@ Important design properties:
 - `processing_runs` and reconciliation metadata preserve candidate IDs, merge reasons, counts, and discarded-item diagnostics.
 - Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
 
-The OpenAI integration follows the official [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) (`responses.parse` plus `zodTextFormat`). The default `gpt-5.6-terra` model supports both the Responses API and structured outputs. `OPENAI_EXTRACTION_MODEL`, `OPENAI_RECONCILIATION_MODEL`, and `OPENAI_ENRICHMENT_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. See the official [model page](https://developers.openai.com/api/docs/models/gpt-5.6-terra).
+The OpenAI integration follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`). `OPENAI_EXTRACTION_MODEL`, `OPENAI_RECONCILIATION_MODEL`, and `OPENAI_ENRICHMENT_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. Enrichment also supports an explicit local OpenAI-compatible provider for development; see [`docs/local_ai.md`](./docs/local_ai.md).
 
 ## Key directories
 
@@ -70,6 +70,7 @@ OPENAI_MODEL=gpt-5.6-terra
 OPENAI_EXTRACTION_MODEL=gpt-5.6-terra
 OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
 OPENAI_ENRICHMENT_MODEL=gpt-5.6-terra
+AI_PROVIDER=openai
 
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -81,6 +82,10 @@ ALLOW_CAMPAIGN_UPLOADS=true
 AI_EXTRACTION_CONCURRENCY=3
 PDF_CHUNK_TARGET_CHARACTERS=45000
 ```
+
+Run `npm run ai:preflight` to validate the configured enrichment provider without making a paid generation call. For local Ollama/LM Studio configuration, see [`docs/local_ai.md`](./docs/local_ai.md).
+
+In v0.4.0, enrichment uses the provider-independent boundary. Extraction and reconciliation retain their existing OpenAI adapters and stage-specific model settings; they are intentionally not executed by local enrichment recovery and can migrate mechanically to the same boundary in a later milestone.
 
 `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only secrets. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or expose them in browser code. The anon key is included for conventional Supabase project configuration, although v0 database access is server-only.
 

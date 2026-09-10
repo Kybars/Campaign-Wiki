@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-10",
+    title: "Local AI development provider",
+    changes: [
+      "Added a provider-independent structured AI boundary with local model support.",
+      "Added provider preflight and provider-aware recovery diagnostics.",
+    ],
+  },
+  {
+    version: "0.3.10",
+    date: "2026-09-10",
     title: "Enrichment evidence validation",
     changes: [
       "Enforced owner-scoped evidence validation before later enrichment stages.",

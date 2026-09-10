@@ -2,7 +2,7 @@ import "server-only";
 
 import { EnrichmentFailure, enrichCanonicalGraphWithAI, expectedEnrichmentCallBreakdown } from "@/lib/ai/enrich";
 import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
-import { getOpenAIEnv } from "@/lib/env";
+import { getAIProviderConfig } from "@/lib/env";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { buildEnrichmentDiagnostics } from "@/lib/graph/enrichment";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
@@ -40,11 +40,13 @@ export async function preflightCachedRecovery(campaignId: string) {
 
 export async function recoverCampaignFromCachedExtraction(campaignId: string, options: { execute?: boolean } = {}) {
   const preflight = await preflightCachedRecovery(campaignId);
-  const report = { campaign: preflight.campaign.name, campaignId, extractionCacheId: preflight.cache.run.id, extraction: "REUSE" as const, reconciliation: "REUSE" as const, extractionApiCalls: 0, reconciliationApiCalls: 0, canonicalEntities: preflight.graph.entities.length, canonicalFacts: preflight.graph.facts.length, canonicalRelationships: preflight.graph.relationships.length, graphFingerprint: preflight.graphFingerprint, enrichmentModel: getOpenAIEnv().OPENAI_ENRICHMENT_MODEL, expectedEnrichmentCallBreakdown: preflight.callBreakdown, expectedEnrichmentCalls: preflight.expectedEnrichmentCalls, persistence: options.execute ? "will run after successful enrichment" : "dry-run; no writes or model calls" };
+  const provider = getAIProviderConfig("enrichment");
+  const report = { campaign: preflight.campaign.name, campaignId, extractionCacheId: preflight.cache.run.id, extraction: "REUSE" as const, reconciliation: "REUSE" as const, extractionApiCalls: 0, reconciliationApiCalls: 0, canonicalEntities: preflight.graph.entities.length, canonicalFacts: preflight.graph.facts.length, canonicalRelationships: preflight.graph.relationships.length, graphFingerprint: preflight.graphFingerprint, enrichmentProvider: provider.providerId, enrichmentModel: provider.modelId, expectedEnrichmentCallBreakdown: preflight.callBreakdown, expectedEnrichmentCalls: preflight.expectedEnrichmentCalls, plannedOpenAICalls: provider.providerId === "openai" ? preflight.expectedEnrichmentCalls : 0, plannedLocalCalls: provider.providerId === "local" ? preflight.expectedEnrichmentCalls : 0, persistence: options.execute ? "will run after successful enrichment" : "dry-run; no writes or model calls" };
   if (!options.execute) return report;
   await recordProcessingRun(campaignId, "cached_recovery", "started", { input: { extractionCacheId: preflight.cache.run.id, extractionApiCalls: 0, reconciliationApiCalls: 0 } });
   await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Reusing cached campaign knowledge", error_message: null });
-  const cacheId = await createEnrichmentCacheRun(campaignId, preflight.document.id, preflight.cache.run.id, report.enrichmentModel, preflight.graphFingerprint);
+  const cacheModelId = provider.providerId === "openai" ? provider.modelId : `local:${provider.modelId}`;
+  const cacheId = await createEnrichmentCacheRun(campaignId, preflight.document.id, preflight.cache.run.id, cacheModelId, preflight.graphFingerprint);
   try {
     await recordProcessingRun(campaignId, "cached_extraction_reuse", "complete", { output: { cacheRunId: preflight.cache.run.id, apiCalls: 0 } });
     await recordProcessingRun(campaignId, "cached_reconciliation_reuse", "complete", { output: { apiCalls: 0, canonicalEntities: preflight.graph.entities.length, canonicalRelationships: preflight.graph.relationships.length } });

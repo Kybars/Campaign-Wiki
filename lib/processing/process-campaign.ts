@@ -19,7 +19,7 @@ import {
   saveReconciliationCacheResult,
   updateCampaign,
 } from "@/lib/db/repository";
-import { getOpenAIEnv, getProcessingEnv } from "@/lib/env";
+import { getAIProviderConfig, getOpenAIEnv, getProcessingEnv } from "@/lib/env";
 import { summarizeModelUsage, type ModelCallUsage } from "@/lib/ai/usage";
 import type { Json } from "@/lib/db/types";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
@@ -91,7 +91,8 @@ export async function processCampaign(campaignId: string) {
     });
 
     await updateCampaign(campaignId, { processing_stage: "Classifying campaign knowledge" });
-    const enrichmentModel = getOpenAIEnv().OPENAI_ENRICHMENT_MODEL;
+    const enrichmentProvider = getAIProviderConfig("enrichment");
+    const enrichmentModel = enrichmentProvider.providerId === "openai" ? enrichmentProvider.modelId : `local:${enrichmentProvider.modelId}`;
     const graphFingerprint = enrichmentGraphFingerprint(canonicalGraph);
     const cachedEnrichment = await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint, enrichmentModel);
     let graph: CanonicalGraph;
@@ -121,6 +122,8 @@ export async function processCampaign(campaignId: string) {
       cacheHits: enrichmentMode === "replay" ? 1 : 0,
       cacheMisses: enrichmentMode === "live" ? enrichmentCalls.length : 0,
       modelUsage: enrichmentUsage,
+      provider: enrichmentProvider.providerId,
+      model: enrichmentProvider.modelId,
       ...buildEnrichmentDiagnostics(graph),
     } as unknown as Json });
 

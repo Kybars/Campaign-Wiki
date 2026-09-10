@@ -31,6 +31,25 @@ const processingEnvSchema = z.object({
 export type OpenAIEnv = z.infer<typeof openAIEnvSchema>;
 export type SupabaseEnv = z.infer<typeof supabaseEnvSchema>;
 export type ProcessingEnv = z.infer<typeof processingEnvSchema>;
+export type AIStage = "extraction" | "reconciliation" | "enrichment";
+export type ResolvedAIProviderConfig =
+  | { providerId: "openai"; modelId: string }
+  | { providerId: "local"; modelId: string; baseUrl: string; apiKey?: string };
+
+export function resolveAIProviderConfig(env: Record<string, string | undefined>, stage: AIStage): ResolvedAIProviderConfig {
+  const provider = env.AI_PROVIDER ?? "openai";
+  if (provider === "openai") {
+    const models = resolveOpenAIModels({ OPENAI_MODEL: env.OPENAI_MODEL || "gpt-5.6-terra", OPENAI_EXTRACTION_MODEL: env.OPENAI_EXTRACTION_MODEL, OPENAI_RECONCILIATION_MODEL: env.OPENAI_RECONCILIATION_MODEL, OPENAI_ENRICHMENT_MODEL: env.OPENAI_ENRICHMENT_MODEL });
+    if (!env.OPENAI_API_KEY) throw new Error("Invalid OpenAI configuration. Check: OPENAI_API_KEY");
+    const modelId = stage === "extraction" ? models.OPENAI_EXTRACTION_MODEL : stage === "reconciliation" ? models.OPENAI_RECONCILIATION_MODEL : models.OPENAI_ENRICHMENT_MODEL;
+    return { providerId: "openai", modelId };
+  }
+  if (provider !== "local") throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
+  if (env.VERCEL === "1") throw new Error("AI_PROVIDER=local is not allowed on Vercel");
+  const parsed = z.object({ LOCAL_AI_BASE_URL: z.string().url(), LOCAL_AI_MODEL: z.string().min(1), LOCAL_AI_API_KEY: z.string().min(1).optional() }).safeParse({ ...env, LOCAL_AI_API_KEY: env.LOCAL_AI_API_KEY || undefined });
+  if (!parsed.success) throw new Error(`Invalid local AI configuration. Check: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+  return { providerId: "local", modelId: parsed.data.LOCAL_AI_MODEL, baseUrl: parsed.data.LOCAL_AI_BASE_URL.replace(/\/$/, ""), apiKey: parsed.data.LOCAL_AI_API_KEY };
+}
 
 function parseEnv<T>(schema: z.ZodType<T>, label: string): T {
   const result = schema.safeParse(process.env);
@@ -55,4 +74,8 @@ export function getSupabaseEnv(): SupabaseEnv {
 
 export function getProcessingEnv(): ProcessingEnv {
   return cachedProcessingEnv ??= parseEnv(processingEnvSchema, "processing");
+}
+
+export function getAIProviderConfig(stage: AIStage): ResolvedAIProviderConfig {
+  return resolveAIProviderConfig(process.env, stage);
 }
