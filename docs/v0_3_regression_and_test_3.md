@@ -10,3 +10,7 @@ Evaluation definitions:
 - **fact evidence**, **relationship evidence**, and **entity-existence evidence** are reported separately.
 
 For Test 3, preserve Test 2 unchanged, create a distinct campaign explicitly, import only once, and record actual stage model usage/cost diagnostics. Audit representative rich facts against excerpts, Player/DM separation, hierarchy, Quest/Event behavior, and the evaluation output. Do not treat deterministic fixture metrics as Test 3 results.
+
+## Test 3 interruption and cached recovery
+
+`Demonplague - Test 3` (`d14f9875-5ebf-46c6-b07e-d65a3e65c5f4`) began as the v0.3.8 benchmark. Its 9/9 Luna extraction chunks and Terra reconciliation completed, but the single large Terra enrichment classification response failed exact relationship completeness. The extraction and reconciliation caches remain preserved. v0.3.9 introduces bounded exact-key enrichment batches and performs recovery by reusing those exact cached stages, rerunning enrichment only. Historical failed enrichment usage remains explicitly unmeasured where it was not persisted.

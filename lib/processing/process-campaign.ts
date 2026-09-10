@@ -2,7 +2,7 @@ import "server-only";
 
 import { extractChunksLimited } from "@/lib/ai/extract";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
-import { enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
+import { EnrichmentFailure, enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
 import { parseCampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
 import {
@@ -110,7 +110,8 @@ export async function processCampaign(campaignId: string) {
         await finishEnrichmentCacheRun(enrichmentCacheId, "complete", enriched.output, usage as unknown as Json);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown enrichment failure";
-        await finishEnrichmentCacheRun(enrichmentCacheId, "failed", undefined, {}, message).catch(() => undefined);
+        enrichmentCalls = error instanceof EnrichmentFailure ? error.usage : enrichmentCalls;
+        await finishEnrichmentCacheRun(enrichmentCacheId, "failed", undefined, summarizeModelUsage("enrichment", enrichmentCalls) as unknown as Json, message).catch(() => undefined);
         throw error;
       }
     }

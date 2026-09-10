@@ -9,7 +9,7 @@ import { applyCampaignEnrichment, buildEnrichmentDiagnostics, findKnowledgeConsi
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
 import { isEntityProminence, isKnowledgeVisibility } from "@/lib/knowledge/types";
 import { ENRICHMENT_CACHE_SCHEMA_VERSION, ENRICHMENT_PROMPT_VERSION } from "@/lib/processing/cache-version";
-import { expectedEnrichmentCallCount } from "@/lib/ai/enrich";
+import { expectedEnrichmentCallBreakdown, expectedEnrichmentCallCount, validateExactKeys } from "@/lib/ai/enrich";
 import { resolveOpenAIModels } from "@/lib/env";
 
 function enriched() {
@@ -231,7 +231,7 @@ describe("v0.3 Milestone 2 summary isolation, persistence, and replay", () => {
 
   it("invalidates enrichment independently through explicit schema and prompt versions", () => {
     expect(ENRICHMENT_CACHE_SCHEMA_VERSION).toBe(1);
-    expect(ENRICHMENT_PROMPT_VERSION).toMatch(/^v0\.3-m2-/);
+    expect(ENRICHMENT_PROMPT_VERSION).toMatch(/^v0\.3-m/);
   });
 
   it("configures enrichment independently with an OPENAI_MODEL fallback", () => {
@@ -250,6 +250,17 @@ describe("v0.3 Milestone 2 summary isolation, persistence, and replay", () => {
   it("batches entity summaries instead of making one call per entity", () => {
     expect(expectedEnrichmentCallCount(156, 60)).toBe(21);
     expect(expectedEnrichmentCallCount(156, 60)).toBeLessThan(156);
+  });
+
+  it("uses bounded fact and relationship classification batches for large graphs", () => {
+    expect(expectedEnrichmentCallBreakdown(112, 502, 145, 112)).toMatchObject({ entityClassification: 1, factClassification: 6, relationshipClassification: 3, gmSummaries: 10, playerSummaries: 10, overviews: 2, retries: 0 });
+    expect(expectedEnrichmentCallCount(112, 112, 502, 145)).toBe(32);
+  });
+
+  it("rejects missing, duplicate, and unexpected exact-key assignments before later enrichment", () => {
+    expect(() => validateExactKeys([{ key: "a" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/missing: b/);
+    expect(() => validateExactKeys([{ key: "a" }, { key: "a" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/duplicates: a/);
+    expect(() => validateExactKeys([{ key: "a" }, { key: "z" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/unexpected: z/);
   });
 
   it("adds a migration-backed private enrichment cache and overview RPC", () => {

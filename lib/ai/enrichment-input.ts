@@ -45,6 +45,21 @@ export function buildClassificationInput(graph: CanonicalGraph) {
   };
 }
 
+export function buildEntityClassificationInput(graph: CanonicalGraph) {
+  const input = buildClassificationInput(graph);
+  return { entities: input.entities, campaign_context: { entity_count: graph.entities.length, fact_count: graph.facts.length, relationship_count: graph.relationships.length } };
+}
+
+export function buildFactVisibilityInput(graph: CanonicalGraph) {
+  return buildClassificationInput(graph).facts;
+}
+
+export function buildRelationshipVisibilityInput(graph: CanonicalGraph) {
+  const input = buildClassificationInput(graph);
+  const names = new Map(input.entities.map((entity) => [entity.key, entity.name]));
+  return input.relationships.map((relationship) => ({ ...relationship, source_name: names.get(relationship.source_entity_key), target_name: names.get(relationship.target_entity_key) }));
+}
+
 export function buildEntitySummaryInput(graph: CanonicalGraph, mode: "gm" | "player") {
   const visibleEntities = new Set(graph.entities.filter((entity) => mode === "gm" || entity.visibility === "player_visible").map((entity) => entity.key));
   const catalog = buildEvidenceCatalog(graph);

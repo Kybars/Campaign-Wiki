@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-10",
+    title: "Enrichment recovery reliability",
+    changes: [
+      "Made large-campaign knowledge classification reliable with bounded, verified batches.",
+      "Added safe cached enrichment recovery for failed imports.",
+    ],
+  },
+  {
+    version: "0.3.8",
+    date: "2026-09-10",
     title: "Regression and replay readiness",
     changes: [
       "Expanded deterministic regression coverage and replay diagnostics ahead of the next campaign benchmark.",

@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -15,6 +15,7 @@
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
     "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",
+    "recover:campaign": "node --use-system-ca --conditions=react-server --import tsx scripts/recover-campaign.ts",
     "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts"
   },
   "dependencies": {

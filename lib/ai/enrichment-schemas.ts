@@ -16,6 +16,16 @@ export const campaignClassificationSchema = z.object({
   relationships: z.array(z.object({ relationship_key: z.string().min(1), visibility: visibilitySchema })),
 });
 
+export const entityClassificationSchema = z.object({
+  entities: campaignClassificationSchema.shape.entities,
+});
+export const factVisibilitySchema = z.object({
+  facts: campaignClassificationSchema.shape.facts,
+});
+export const relationshipVisibilitySchema = z.object({
+  relationships: campaignClassificationSchema.shape.relationships,
+});
+
 export const entitySummariesSchema = z.object({
   summaries: z.array(z.object({
     entity_key: z.string().min(1),
