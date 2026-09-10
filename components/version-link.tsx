@@ -5,7 +5,7 @@ export function VersionLink() {
   const previewId = "current-release-preview";
 
   return (
-    <div className="group fixed right-3 top-3 z-50">
+    <div className="group relative w-fit">
       <Link
         aria-describedby={previewId}
         aria-label={`Campaign Wiki version ${currentChangelog.version}. View changelog.`}

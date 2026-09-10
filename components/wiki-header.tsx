@@ -17,10 +17,10 @@ export function WikiHeader({ campaignId, campaignName, viewMode = "dm", currentP
     <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[color:var(--paper)]/95 shadow-sm backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <Link aria-current={active === "home" ? "page" : undefined} className="min-w-0 truncate font-serif text-xl font-bold hover:text-[var(--accent)]" href={href(`/campaigns/${campaignId}`)}>{campaignName}</Link>
+          <Link aria-current={active === "home" ? "page" : undefined} className="min-w-0 flex-1 truncate font-serif text-xl font-bold hover:text-[var(--accent)]" href={href(`/campaigns/${campaignId}`)}>{campaignName}</Link>
           <Link className="shrink-0 border-l border-[var(--line)] pl-4 text-sm font-semibold text-[var(--muted)] hover:text-[var(--accent)]" href="/">All Campaigns</Link>
           <div className="order-last w-full sm:order-none sm:ml-auto sm:w-72"><CampaignSearch campaignId={campaignId} viewMode={viewMode} /></div>
-          <span className="flex shrink-0 rounded-md border border-[var(--line)] text-xs font-semibold" aria-label="Campaign preview mode">
+          <span className="flex shrink-0 self-start rounded-md border border-[var(--line)] text-xs font-semibold" aria-label="Campaign preview mode">
             <Link aria-current={viewMode === "dm" ? "page" : undefined} className={`rounded-l px-2 py-1 ${viewMode === "dm" ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)] hover:bg-white"}`} href={campaignHref(modePath, "dm")}>DM View</Link>
             <Link aria-current={viewMode === "player" ? "page" : undefined} className={`rounded-r px-2 py-1 ${viewMode === "player" ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)] hover:bg-white"}`} href={campaignHref(modePath, "player")}>Player View</Link>
           </span>

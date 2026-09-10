@@ -12,10 +12,47 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
-    date: "2026-09-08",
-    title: "Rich source-backed entity articles",
+    date: "2026-09-09",
+    title: "Prominence-aware campaign browsing",
     changes: [
-      "Entity pages now present richer source-backed campaign details, natural connections, and inspectable citations.",
+      "Added sticky campaign navigation and integrated campaign search.",
+      "Refined the campaign home and category pages around the most prominent entries.",
+    ],
+  },
+  {
+    version: "0.3.5",
+    date: "2026-09-09",
+    title: "Campaign discovery navigation",
+    changes: [
+      "Added integrated campaign search and clearer category browsing.",
+      "Improved campaign discovery across the homepage and navigation.",
+    ],
+  },
+  {
+    version: "0.3.4",
+    date: "2026-09-09",
+    title: "Rich entity articles",
+    changes: [
+      "Added type-specific campaign articles with natural connections and entity previews.",
+      "Made supporting citations and evidence easier to inspect.",
+    ],
+  },
+  {
+    version: "0.3.3",
+    date: "2026-09-09",
+    title: "Player View preview",
+    changes: [
+      "Added a centralized Player and DM read model.",
+      "Added a Player View preview for checking player-safe campaign knowledge.",
+    ],
+  },
+  {
+    version: "0.3.2",
+    date: "2026-09-08",
+    title: "Campaign knowledge enrichment",
+    changes: [
+      "Classified campaign knowledge by prominence and GM or Player visibility.",
+      "Added campaign overviews and richer, audience-appropriate summaries.",
     ],
   },
   {

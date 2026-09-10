@@ -11,7 +11,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <VersionLink />
+        <div className="border-b border-[var(--line)] bg-[color:var(--paper)]">
+          <div className="mx-auto flex max-w-6xl justify-end px-4 py-2 sm:px-6">
+            <VersionLink />
+          </div>
+        </div>
         {children}
       </body>
     </html>

@@ -17,6 +17,10 @@ describe("changelog", () => {
     expect(isNewestFirst(changelog)).toBe(true);
   });
 
+  it("records each implemented v0.3 milestone release", () => {
+    expect(changelog.slice(0, 5).map((release) => release.version)).toEqual(["0.3.6", "0.3.5", "0.3.4", "0.3.3", "0.3.2"]);
+  });
+
   it("supplies a complete current-release preview and changelog route", () => {
     expect(CHANGELOG_PATH).toBe("/changelog");
     expect(currentChangelog.title).not.toHaveLength(0);
@@ -31,6 +35,7 @@ describe("changelog", () => {
     expect(badge).toContain(`v${currentVersion}`);
     expect(badge).toContain(currentChangelog.title);
     expect(badge).toContain("group-focus-within:visible");
+    expect(badge).not.toContain("fixed");
   });
 
   it("renders the changelog in the declared newest-first order", () => {
