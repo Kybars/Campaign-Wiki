@@ -18,7 +18,7 @@ describe("changelog", () => {
   });
 
   it("records each implemented v0.3 milestone release", () => {
-    expect(changelog.slice(1, 6).map((release) => release.version)).toEqual(["0.3.6", "0.3.5", "0.3.4", "0.3.3", "0.3.2"]);
+    expect(changelog.slice(2, 7).map((release) => release.version)).toEqual(["0.3.6", "0.3.5", "0.3.4", "0.3.3", "0.3.2"]);
   });
 
   it("supplies a complete current-release preview and changelog route", () => {

@@ -13,6 +13,14 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-10",
+    title: "Regression and replay readiness",
+    changes: [
+      "Expanded deterministic regression coverage and replay diagnostics ahead of the next campaign benchmark.",
+    ],
+  },
+  {
+    version: "0.3.7",
+    date: "2026-09-10",
     title: "Campaign overviews, Quests, and Event chronology",
     changes: [
       "Added source-backed GM and Player campaign overviews.",

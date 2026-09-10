@@ -75,4 +75,13 @@ describe("Milestone 7 deterministic regression and replay fixture", () => {
       roleCounts: { enemy: 3 },
     });
   });
+
+  it("keeps v0.3 fact, provenance, and chronology metrics internally consistent", () => {
+    const { aggregate, graph } = replayFixture();
+    const metrics = buildEvaluationMetrics(aggregate, graph);
+    expect(Object.values(metrics.entityTypeCounts).reduce((sum, value) => sum + value, 0)).toBe(metrics.canonicalEntityCount);
+    expect(metrics.chronologyCoverage.knownEvents + metrics.chronologyCoverage.unknownEvents).toBe(metrics.chronologyCoverage.totalEvents);
+    expect(metrics.richFactFieldCoverage.populatedFields + metrics.richFactFieldCoverage.emptyOrUnsupportedSlots).toBe(metrics.richFactFieldCoverage.supportedSlots);
+    expect(metrics.factEvidenceCount).toBeGreaterThanOrEqual(metrics.canonicalFactCount);
+  });
 });

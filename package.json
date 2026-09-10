@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",

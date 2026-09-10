@@ -4,6 +4,7 @@ import { buildCanonicalGraph } from "@/lib/graph/build";
 import { aggregateCachedChunks } from "@/lib/processing/replay-cache";
 import { richFactCachedChunks } from "@/fixtures/rich-fact-cache";
 import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
+import { summarizeModelUsage } from "@/lib/ai/usage";
 
 const aggregate = aggregateCachedChunks(regressionCachedChunks);
 const graph = buildCanonicalGraph(aggregate, regressionReconciliationDecision(aggregate));
@@ -14,6 +15,12 @@ console.log(JSON.stringify({
   cacheSchemaVersion: RICH_EXTRACTION_CACHE_SCHEMA_VERSION,
   extractionApiCalls: 0,
   reconciliationApiCalls: 0,
+  stageUsage: [
+    summarizeModelUsage("candidate_extraction", []),
+    summarizeModelUsage("reconciliation", []),
+    summarizeModelUsage("enrichment", []),
+  ],
+  callScaling: { extraction: "chunk-scaled in live processing", reconciliation: "one campaign/global stage", enrichment: "post-reconciliation batches" },
   legacyRegression: buildEvaluationMetrics(aggregate, graph),
   richFactFixture: buildEvaluationMetrics(richAggregate, richGraph),
 }, null, 2));
