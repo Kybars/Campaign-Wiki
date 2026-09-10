@@ -9,7 +9,7 @@ import { applyCampaignEnrichment, buildEnrichmentDiagnostics, findKnowledgeConsi
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
 import { isEntityProminence, isKnowledgeVisibility } from "@/lib/knowledge/types";
 import { ENRICHMENT_CACHE_SCHEMA_VERSION, ENRICHMENT_PROMPT_VERSION } from "@/lib/processing/cache-version";
-import { expectedEnrichmentCallBreakdown, expectedEnrichmentCallCount, validateExactKeys } from "@/lib/ai/enrich";
+import { evidenceIdsForEntityClassificationInput, evidenceIdsForSummaryEntityInput, expectedEnrichmentCallBreakdown, expectedEnrichmentCallCount, validateExactKeys, validateOwnedEvidence } from "@/lib/ai/enrich";
 import { resolveOpenAIModels } from "@/lib/env";
 
 function enriched() {
@@ -261,6 +261,25 @@ describe("v0.3 Milestone 2 summary isolation, persistence, and replay", () => {
     expect(() => validateExactKeys([{ key: "a" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/missing: b/);
     expect(() => validateExactKeys([{ key: "a" }, { key: "a" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/duplicates: a/);
     expect(() => validateExactKeys([{ key: "a" }, { key: "z" }], "key", ["a", "b"], "fact classification", 1)).toThrow(/unexpected: z/);
+  });
+
+  it("enforces entity-local prominence evidence rather than accepting another entity's evidence", () => {
+    const own = { evidence: [{ id: "entity:a:1:0" }] };
+    const other = { evidence: [{ id: "entity:b:2:0" }] };
+    expect(() => validateOwnedEvidence(["entity:a:1:0"], evidenceIdsForEntityClassificationInput(own), "Entity classification", "a")).not.toThrow();
+    expect(() => validateOwnedEvidence(["entity:b:2:0"], evidenceIdsForEntityClassificationInput(own), "Entity classification", "a")).toThrow(/cross-owner evidence entity:b:2:0/);
+    expect(() => validateOwnedEvidence(["missing"], evidenceIdsForEntityClassificationInput(own), "Entity classification", "a")).toThrow(/unavailable/);
+    expect(() => validateOwnedEvidence([], evidenceIdsForEntityClassificationInput(own), "Entity classification", "a")).not.toThrow();
+    expect(evidenceIdsForEntityClassificationInput(other)).toContain("entity:b:2:0");
+  });
+
+  it("scopes each summary to its own entity, facts, and relationships", () => {
+    const first = { evidence: [{ id: "entity:first:1:0" }], facts: [{ evidence: [{ id: "fact:first:f:1:0" }] }], relationships: [{ evidence: [{ id: "relationship:first:1:0" }] }] };
+    const second = { evidence: [{ id: "entity:second:2:0" }] };
+    const allowed = evidenceIdsForSummaryEntityInput(first);
+    expect(() => validateOwnedEvidence(["entity:first:1:0", "fact:first:f:1:0", "relationship:first:1:0"], allowed, "GM summary", "first")).not.toThrow();
+    expect(() => validateOwnedEvidence(["entity:second:2:0"], allowed, "GM summary", "first")).toThrow(/cross-owner/);
+    expect(evidenceIdsForSummaryEntityInput(second)).toContain("entity:second:2:0");
   });
 
   it("adds a migration-backed private enrichment cache and overview RPC", () => {

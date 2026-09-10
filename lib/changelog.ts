@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-10",
+    title: "Enrichment evidence validation",
+    changes: [
+      "Enforced owner-scoped evidence validation before later enrichment stages.",
+      "Prevented cross-entity evidence citations in classifications and summaries.",
+    ],
+  },
+  {
+    version: "0.3.9",
+    date: "2026-09-10",
     title: "Enrichment recovery reliability",
     changes: [
       "Made large-campaign knowledge classification reliable with bounded, verified batches.",

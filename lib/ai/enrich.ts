@@ -38,23 +38,34 @@ const liveParse = async <T>(system: string, payload: unknown, schema: Parameters
   if (!response.output_parsed) throw new Error(`Model returned no parsed ${name} result`);
   return { output: response.output_parsed as T, usage: modelCallUsage(response.model, response.id, response.usage) };
 };
-async function exactBatch<T extends { [key: string]: unknown }>(parse: Parse, usage: ModelCallUsage[], system: string, payload: unknown, schema: Parameters<typeof zodTextFormat>[0], name: string, field: string, expected: string[], label: string, batchNumber: number, select: (output: T) => { [key: string]: unknown }[]) {
+async function exactBatch<T extends { [key: string]: unknown }>(parse: Parse, usage: ModelCallUsage[], system: string, payload: unknown, schema: Parameters<typeof zodTextFormat>[0], name: string, field: string, expected: string[], label: string, batchNumber: number, select: (output: T) => { [key: string]: unknown }[], validate?: (output: T) => void) {
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const result = await parse<T>(attempt === 1 ? system : `${system} Correction: return the exact supplied key set once each, with no omissions, duplicates, or extra keys.`, payload, schema, `${name}_${batchNumber}_attempt_${attempt}`);
+    const correction = label === "entity classification"
+      ? " For each entity, prominence evidence may only use IDs in that entity's own evidence array; empty evidence is preferable to unsupported evidence."
+      : label === "summary"
+        ? " Each summary may cite only evidence inside that entity's supplied record; null with no evidence is preferable to unsupported evidence."
+        : "";
+    const result = await parse<T>(attempt === 1 ? system : `${system} Correction: return the exact supplied key set once each, with no omissions, duplicates, or extra keys.${correction}`, payload, schema, `${name}_${batchNumber}_attempt_${attempt}`);
     usage.push(result.usage);
-    try { validateExactKeys(select(result.output), field, expected, label, batchNumber); return result.output; } catch (error) { lastError = error instanceof Error ? error : new Error("Invalid enrichment batch"); }
+    try { validateExactKeys(select(result.output), field, expected, label, batchNumber); validate?.(result.output); return result.output; } catch (error) { lastError = error instanceof Error ? error : new Error("Invalid enrichment batch"); }
   }
   throw lastError!;
 }
-function evidenceIds(input: unknown) { return new Set(JSON.stringify(input).match(/(?:entity|fact|relationship):[^"\s,}]+:\d+:\d+/g) ?? []); }
-function validateEvidence(ids: string[], allowed: Set<string>, label: string) { for (const id of ids) if (!allowed.has(id)) throw new Error(`${label} cited unavailable evidence ${id}`); }
+type EvidenceRecord = { evidence: { id: string }[]; facts?: { evidence: { id: string }[] }[]; relationships?: { evidence: { id: string }[] }[] };
+export function evidenceIdsForEntityClassificationInput(entity: EvidenceRecord) { return new Set(entity.evidence.map((evidence) => evidence.id)); }
+export function evidenceIdsForSummaryEntityInput(entity: EvidenceRecord) { return new Set([entity.evidence, ...(entity.facts ?? []).map((fact) => fact.evidence), ...(entity.relationships ?? []).map((relationship) => relationship.evidence)].flat().map((evidence) => evidence.id)); }
+function evidenceIdsForOverviewInput(input: { entities: EvidenceRecord[] }) { return new Set(input.entities.flatMap((entity) => [...evidenceIdsForSummaryEntityInput(entity)])); }
+export function validateOwnedEvidence(ids: string[], allowed: Set<string>, label: string, owner: string) { for (const id of ids) if (!allowed.has(id)) throw new Error(`${label} ${owner} cited unavailable or cross-owner evidence ${id}`); }
 async function summarizeBatches(parse: Parse, system: string, input: ReturnType<typeof buildEntitySummaryInput>, name: string, usage: ModelCallUsage[]) {
   const summaries: CampaignEnrichmentOutput["gmSummaries"]["summaries"] = [];
   for (let index = 0; index < input.length; index += ENTITY_SUMMARY_BATCH_SIZE) {
     const batchInput = input.slice(index, index + ENTITY_SUMMARY_BATCH_SIZE);
-    const batch = await exactBatch<CampaignEnrichmentOutput["gmSummaries"]>(parse, usage, system, batchInput, entitySummariesSchema, name, "entity_key", batchInput.map((entity) => entity.key), "summary", Math.floor(index / ENTITY_SUMMARY_BATCH_SIZE) + 1, (output) => output.summaries);
-    const allowed = evidenceIds(batchInput); batch.summaries.forEach((summary) => validateEvidence(summary.evidence_ids, allowed, `${name} summary`)); summaries.push(...batch.summaries);
+    const batch = await exactBatch<CampaignEnrichmentOutput["gmSummaries"]>(parse, usage, system, batchInput, entitySummariesSchema, name, "entity_key", batchInput.map((entity) => entity.key), "summary", Math.floor(index / ENTITY_SUMMARY_BATCH_SIZE) + 1, (output) => output.summaries, (output) => {
+      const inputByKey = new Map(batchInput.map((entity) => [entity.key, entity]));
+      output.summaries.forEach((summary) => validateOwnedEvidence(summary.evidence_ids, evidenceIdsForSummaryEntityInput(inputByKey.get(summary.entity_key)!), `${name} summary`, summary.entity_key));
+    });
+    summaries.push(...batch.summaries);
   }
   return { summaries };
 }
@@ -62,7 +73,10 @@ export async function enrichCanonicalGraphWithAI(graph: CanonicalGraph, options:
   const parse = options.parse ?? liveParse; const usage: ModelCallUsage[] = [];
   try {
     const entityInput = buildEntityClassificationInput(graph);
-    const entities = await exactBatch<CampaignEnrichmentOutput["classification"]>(parse, usage, ENTITY_CLASSIFICATION_SYSTEM_PROMPT, entityInput, entityClassificationSchema, "entity_classification", "entity_key", graph.entities.map((entity) => entity.key), "entity classification", 1, (output) => output.entities);
+    const entities = await exactBatch<CampaignEnrichmentOutput["classification"]>(parse, usage, ENTITY_CLASSIFICATION_SYSTEM_PROMPT, entityInput, entityClassificationSchema, "entity_classification", "entity_key", graph.entities.map((entity) => entity.key), "entity classification", 1, (output) => output.entities, (output) => {
+      const inputByKey = new Map(entityInput.entities.map((entity) => [entity.key, entity]));
+      output.entities.forEach((entity) => validateOwnedEvidence(entity.prominence_evidence_ids, evidenceIdsForEntityClassificationInput(inputByKey.get(entity.entity_key)!), "Entity classification", entity.entity_key));
+    });
     const factsInput = buildFactVisibilityInput(graph); const facts: CampaignEnrichmentOutput["classification"]["facts"] = [];
     for (let index = 0; index < factsInput.length; index += FACT_CLASSIFICATION_BATCH_SIZE) { const batchInput = factsInput.slice(index, index + FACT_CLASSIFICATION_BATCH_SIZE); const result = await exactBatch<CampaignEnrichmentOutput["classification"]>(parse, usage, FACT_VISIBILITY_SYSTEM_PROMPT, { facts: batchInput }, factVisibilitySchema, "fact_visibility", "fact_key", batchInput.map((fact) => fact.key), "fact classification", Math.floor(index / FACT_CLASSIFICATION_BATCH_SIZE) + 1, (output) => output.facts); facts.push(...result.facts); }
     const relationshipInput = buildRelationshipVisibilityInput(graph); const relationships: CampaignEnrichmentOutput["classification"]["relationships"] = [];
@@ -72,9 +86,9 @@ export async function enrichCanonicalGraphWithAI(graph: CanonicalGraph, options:
     const gmSummaries = await summarizeBatches(parse, GM_SUMMARY_SYSTEM_PROMPT, buildEntitySummaryInput(classified, "gm"), "gm_entity_summaries", usage);
     const playerSummaries = await summarizeBatches(parse, PLAYER_SUMMARY_SYSTEM_PROMPT, buildEntitySummaryInput(classified, "player"), "player_entity_summaries", usage);
     const gmInput = buildCampaignOverviewInput({ ...classified, entities: classified.entities.map((entity) => ({ ...entity, gmSummary: gmSummaries.summaries.find((summary) => summary.entity_key === entity.key)?.summary ?? null })) }, "gm");
-    const gmOverview = await parse<CampaignEnrichmentOutput["gmOverview"]>(GM_OVERVIEW_SYSTEM_PROMPT, gmInput, campaignOverviewSchema, "gm_campaign_overview"); usage.push(gmOverview.usage); validateEvidence(gmOverview.output.evidence_ids, evidenceIds(gmInput), "GM overview");
+    const gmOverview = await parse<CampaignEnrichmentOutput["gmOverview"]>(GM_OVERVIEW_SYSTEM_PROMPT, gmInput, campaignOverviewSchema, "gm_campaign_overview"); usage.push(gmOverview.usage); validateOwnedEvidence(gmOverview.output.evidence_ids, evidenceIdsForOverviewInput(gmInput), "GM overview", "campaign");
     const playerInput = buildCampaignOverviewInput({ ...classified, entities: classified.entities.map((entity) => ({ ...entity, playerSummary: playerSummaries.summaries.find((summary) => summary.entity_key === entity.key)?.summary ?? null })) }, "player");
-    const playerOverview = await parse<CampaignEnrichmentOutput["playerOverview"]>(PLAYER_OVERVIEW_SYSTEM_PROMPT, playerInput, campaignOverviewSchema, "player_campaign_overview"); usage.push(playerOverview.usage); validateEvidence(playerOverview.output.evidence_ids, evidenceIds(playerInput), "Player overview");
+    const playerOverview = await parse<CampaignEnrichmentOutput["playerOverview"]>(PLAYER_OVERVIEW_SYSTEM_PROMPT, playerInput, campaignOverviewSchema, "player_campaign_overview"); usage.push(playerOverview.usage); validateOwnedEvidence(playerOverview.output.evidence_ids, evidenceIdsForOverviewInput(playerInput), "Player overview", "campaign");
     const output = { classification, gmSummaries: { summaries: gmSummaries.summaries }, playerSummaries: { summaries: playerSummaries.summaries }, gmOverview: gmOverview.output, playerOverview: playerOverview.output };
     return { graph: applyCampaignEnrichment(graph, output), output, usage };
   } catch (error) { throw new EnrichmentFailure(error instanceof Error ? error.message : "Unknown enrichment failure", usage); }

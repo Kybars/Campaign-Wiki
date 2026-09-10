@@ -18,7 +18,7 @@ describe("changelog", () => {
   });
 
   it("records each implemented v0.3 milestone release", () => {
-    expect(changelog.slice(3, 8).map((release) => release.version)).toEqual(["0.3.6", "0.3.5", "0.3.4", "0.3.3", "0.3.2"]);
+    expect(changelog.slice(4, 9).map((release) => release.version)).toEqual(["0.3.6", "0.3.5", "0.3.4", "0.3.3", "0.3.2"]);
   });
 
   it("supplies a complete current-release preview and changelog route", () => {
@@ -42,7 +42,7 @@ describe("changelog", () => {
     const page = renderToStaticMarkup(createElement(ChangelogPage));
     let previousIndex = -1;
     for (const release of changelog) {
-      const currentIndex = page.indexOf(`v${release.version}`);
+      const currentIndex = page.indexOf(`>v${release.version}</h2>`);
       expect(currentIndex).toBeGreaterThan(previousIndex);
       previousIndex = currentIndex;
     }
