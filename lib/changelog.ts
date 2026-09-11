@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-11",
+    title: "Lean default campaign processing",
+    changes: [
+      "Made source-backed canonical wiki generation complete without mandatory post-reconciliation enrichment.",
+      "Added explicit lean/full processing modes, safe Player defaults, and zero-call cached recovery diagnostics.",
+    ],
+  },
+  {
+    version: "0.4.2",
+    date: "2026-09-11",
     title: "Lean processing decision",
     changes: [
       "Evaluated enrichment value and cost and defined the lean processing target for v0.4.",

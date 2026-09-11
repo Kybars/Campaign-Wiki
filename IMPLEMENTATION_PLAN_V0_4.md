@@ -579,6 +579,10 @@ No normal production behavior changes yet except small deterministic instrumenta
 
 # 12. Milestone 2 — Lean Default Pipeline
 
+## Status
+
+Completed as v0.4.3. Lean is the server-side default for normal processing, cached replay, and cached recovery; full enrichment remains an explicit reference mode. Deterministic diagnostics and the Test 3 cache evaluation prove zero post-reconciliation model calls without mutating Test 2 or Test 3.
+
 ## Goal
 
 Make the canonical source-backed GM wiki a first-class successful output, independent of mandatory full enrichment.

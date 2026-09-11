@@ -1,4 +1,5 @@
 import type { EntityRole, EntityType } from "@/lib/db/types";
+import type { EntityProminence } from "@/lib/knowledge/types";
 
 export const ENTITY_TYPES: EntityType[] = ["npc", "deity", "location", "faction", "item", "event", "quest", "other"];
 
@@ -25,6 +26,17 @@ export const ENTITY_TYPE_SINGULAR_LABELS: Record<EntityType, string> = {
 };
 
 export const ENTITY_ROLE_LABELS: Record<EntityRole, string> = { enemy: "Enemy" };
+
+export const PROMINENCE_GROUPS = ["major", "supporting", "minor", "unclassified"] as const;
+export type ProminenceGroup = (typeof PROMINENCE_GROUPS)[number];
+
+export function prominenceGroup(prominence: EntityProminence | null | undefined): ProminenceGroup {
+  return prominence ?? "unclassified";
+}
+
+export function prominenceGroupLabel(group: ProminenceGroup): string {
+  return group === "unclassified" ? "Unclassified" : group[0].toLocaleUpperCase("en-US") + group.slice(1);
+}
 
 export function hasEntityRole(entity: { roles: EntityRole[] }, role: EntityRole): boolean {
   return entity.roles.includes(role);

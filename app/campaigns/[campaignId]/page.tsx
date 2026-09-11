@@ -3,22 +3,21 @@ import { notFound, redirect } from "next/navigation";
 import { WikiHeader } from "@/components/wiki-header";
 import { CampaignOverview } from "@/components/campaign-overview";
 import { getCampaign, getCampaignEntities, getCampaignOverviewEvidence } from "@/lib/db/queries";
-import { ENTITY_TYPE_LABELS, ENTITY_TYPES, hasEntityRole } from "@/lib/entities";
+import { ENTITY_TYPE_LABELS, ENTITY_TYPES, PROMINENCE_GROUPS, hasEntityRole, prominenceGroup, prominenceGroupLabel } from "@/lib/entities";
 import { campaignHref, campaignViewMode, type CampaignViewMode } from "@/lib/campaign-view";
 import type { EntityRole, EntityType } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
-const prominenceOrder = ["major", "supporting", "minor"] as const;
 const categoryOrder = ["npc", "location", "faction", "item", "quest", "event", "deity"] as const;
 
 type CampaignEntry = Awaited<ReturnType<typeof getCampaignEntities>>[number];
 
 function ProminenceGroups({ campaignId, entries, viewMode, categoryPath, categoryLabel, role }: { campaignId: string; entries: CampaignEntry[]; viewMode: CampaignViewMode; categoryPath: string; categoryLabel: string; role?: EntityRole }) {
-  const previewEntries = prominenceOrder.flatMap((prominence) => entries.filter((entry) => (entry.prominence ?? "supporting") === prominence)).slice(0, 10);
+  const previewEntries = PROMINENCE_GROUPS.flatMap((prominence) => entries.filter((entry) => prominenceGroup(entry.prominence) === prominence)).slice(0, 10);
   return <div className="mt-3 space-y-2 border-t border-[var(--line)] pt-3">
-    {prominenceOrder.filter((prominence) => previewEntries.some((entry) => (entry.prominence ?? "supporting") === prominence)).map((prominence) => {
-      const grouped = previewEntries.filter((entry) => (entry.prominence ?? "supporting") === prominence);
-      const label = prominence[0].toLocaleUpperCase("en-US") + prominence.slice(1);
+    {PROMINENCE_GROUPS.filter((prominence) => previewEntries.some((entry) => prominenceGroup(entry.prominence) === prominence)).map((prominence) => {
+      const grouped = previewEntries.filter((entry) => prominenceGroup(entry.prominence) === prominence);
+      const label = prominenceGroupLabel(prominence);
       return <details key={prominence} open={prominence !== "minor"} className="rounded-lg bg-white/50 px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-[var(--muted)]">{label} ({grouped.length})</summary>
         <ul className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-x-5 gap-y-1">{grouped.map((entry) => <li key={entry.id}><Link className="text-sm hover:text-[var(--accent)] hover:underline" href={campaignHref(`/campaigns/${campaignId}/entities/${entry.id}`, viewMode)}>{entry.name}</Link>{role && hasEntityRole(entry, role) ? <span className="ml-2 text-xs text-[var(--muted)]">{ENTITY_TYPE_LABELS[entry.type]}</span> : null}</li>)}</ul>
       </details>;

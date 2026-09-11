@@ -22,7 +22,7 @@ async function main() {
   const { parseCampaignEnrichmentOutput } = await import("@/lib/ai/enrichment-schemas");
   const { applyCampaignEnrichment } = await import("@/lib/graph/enrichment");
 
-  const { graph, graphFingerprint } = await preflightCachedRecovery(TEST_THREE_CAMPAIGN_ID);
+  const { graph, graphFingerprint } = await preflightCachedRecovery(TEST_THREE_CAMPAIGN_ID, { processingMode: "full" });
   const cacheResult = await createAdminClient().from("enrichment_cache_runs")
     .select("id,status,created_at,output,usage_diagnostics")
     .eq("campaign_id", TEST_THREE_CAMPAIGN_ID)

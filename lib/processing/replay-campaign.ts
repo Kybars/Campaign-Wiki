@@ -18,17 +18,20 @@ import {
 import type { Json } from "@/lib/db/types";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { applyCampaignEnrichment } from "@/lib/graph/enrichment";
+import { applyLeanGraphDefaults, buildLeanDiagnostics } from "@/lib/graph/lean";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { aggregateCachedChunks, parseCachedReconciliation } from "@/lib/processing/replay-cache";
 import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
+import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 
 function mergeDiagnostics(current: Json, replay: Json): Json {
   if (current !== null && !Array.isArray(current) && typeof current === "object") return { ...current, replay };
   return { replay };
 }
 
-export async function replayCampaignFromCache(campaignId: string, options: { refreshReconciliation?: boolean } = {}) {
+export async function replayCampaignFromCache(campaignId: string, options: { refreshReconciliation?: boolean; processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
+  const processingMode = resolveProcessingMode(options.processingMode);
   const { campaign, document } = await loadCampaignAndDocument(campaignId);
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
@@ -37,7 +40,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
   }
 
   await recordProcessingRun(campaignId, "replay", "started", {
-    input: { cacheRunId: cache.run.id, refreshReconciliation: options.refreshReconciliation === true },
+    input: { processingMode, cacheRunId: cache.run.id, refreshReconciliation: options.refreshReconciliation === true },
   });
 
   try {
@@ -61,24 +64,33 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
     }
 
     const canonicalGraph = buildCanonicalGraph(aggregate, decision);
-    const enrichmentCache = await loadCompleteEnrichmentCache(campaignId, document.id, enrichmentGraphFingerprint(canonicalGraph));
-    if (!enrichmentCache && cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION) {
-      throw new Error("Rich extraction is cached, but no matching enrichment result is cached. Run normal processing before replaying.");
+    const graphFingerprint = enrichmentGraphFingerprint(canonicalGraph);
+    const enrichmentCache = processingMode === "full"
+      ? await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint)
+      : undefined;
+    if (processingMode === "full" && !enrichmentCache && cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION) {
+      throw new Error("Full replay requires a matching complete enrichment result. Select lean replay or run full processing first.");
     }
     const output = enrichmentCache?.output ? parseCampaignEnrichmentOutput(enrichmentCache.output) : undefined;
-    const graph = output ? applyCampaignEnrichment(canonicalGraph, output) : canonicalGraph;
+    const graph = processingMode === "lean"
+      ? applyLeanGraphDefaults(canonicalGraph)
+      : output ? applyCampaignEnrichment(canonicalGraph, output) : canonicalGraph;
     await persistCanonicalGraph(campaignId, document.id, graph);
     const replayDiagnostics = {
       cacheRunId: cache.run.id,
       extractionApiCalls: 0,
       reconciliationApiCalls,
       mode: "replay" as const,
+      processingMode,
+      enrichmentRequired: processingMode === "full",
       cacheSchemaVersion: cache.run.cache_schema_version,
       cacheHits: cache.chunks.length,
       cacheMisses: 0,
       richFactReplay: cache.run.cache_schema_version >= RICH_EXTRACTION_CACHE_SCHEMA_VERSION,
       enrichmentApiCalls: 0,
       enrichmentCacheHits: output ? 1 : 0,
+      openAIGenerationCallsAfterReconciliation: 0,
+      graphFingerprint,
       candidateEntityCount: aggregate.entities.length,
       canonicalEntityCount: graph.entities.length,
       ...graph.factAggregationDiagnostics,
@@ -86,6 +98,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       discardedRelationshipCount: graph.discardedRelationships.length,
       locationHierarchyDiagnostics: graph.locationHierarchyDiagnostics,
       durationMs: Date.now() - startedAt,
+      ...(processingMode === "lean" ? buildLeanDiagnostics(graph) : {}),
     };
     await updateCampaign(campaignId, {
       status: "complete",

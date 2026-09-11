@@ -19,7 +19,9 @@ browser upload
   -> deterministic normalized-name and explicit-alias grouping
   -> conservative AI global reconciliation
   -> canonical endpoint remapping and relationship deduplication
+  -> explicit lean defaults (DM-only visibility, unclassified prominence)
   -> transactional PostgreSQL graph replacement
+  -> wiki ready (full AI enrichment is optional)
   -> server-rendered campaign, category, search, and entity pages
 ```
 
@@ -71,6 +73,7 @@ OPENAI_EXTRACTION_MODEL=gpt-5.6-terra
 OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
 OPENAI_ENRICHMENT_MODEL=gpt-5.6-terra
 AI_PROVIDER=openai
+CAMPAIGN_PROCESSING_MODE=lean
 
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -86,6 +89,8 @@ PDF_CHUNK_TARGET_CHARACTERS=45000
 Run `npm run ai:preflight` to validate the configured enrichment provider without making a paid generation call. For local Ollama/LM Studio configuration, see [`docs/local_ai.md`](./docs/local_ai.md).
 
 In v0.4.0, enrichment uses the provider-independent boundary. Extraction and reconciliation retain their existing OpenAI adapters and stage-specific model settings; they are intentionally not executed by local enrichment recovery and can migrate mechanically to the same boundary in a later milestone.
+
+`CAMPAIGN_PROCESSING_MODE` is server-only and accepts `lean` or `full`. It defaults to `lean`: normal imports persist the rich canonical graph with DM-only visibility, nullable/unclassified prominence, source-backed canonical summaries, and no post-reconciliation model calls. Set `CAMPAIGN_PROCESSING_MODE=full` only to run the strict v0.3 enrichment/reference workflow. The browser cannot select or override this mode.
 
 `AI_PROVIDER=local` is safe for preflight and recovery dry-runs. A live local enrichment run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
 
@@ -185,6 +190,8 @@ Run `npm run evaluate:replay` to build the small regression fixture from cached 
 
 The replay evaluation also exercises the v0.3 rich-fact fixture. Rich extraction cache schema version 4 requires per-candidate `facts`; older cache versions remain replayable as intentionally factless legacy data. See [`docs/V0_3_RICH_FACT_EXTRACTION.md`](./docs/V0_3_RICH_FACT_EXTRACTION.md).
 
+Run `npm run evaluate:lean` for a read-only Test 3 cache dry-run. It reuses extraction and reconciliation, projects the lean defaults, verifies the preserved 112/502/145 graph and fingerprint, and reports zero writes and zero post-reconciliation model calls.
+
 Run `npm run evaluate:enrichment` for the deterministic post-reconciliation prominence, visibility, summary, overview, and consistency fixture. It makes zero OpenAI and Supabase calls. See [`docs/V0_3_CANONICAL_ENRICHMENT.md`](./docs/V0_3_CANONICAL_ENRICHMENT.md).
 
 ## Milestone 8 benchmark checklist
@@ -223,11 +230,13 @@ After applying the Milestone 0 migration, every new successful import persists i
 npm run replay -- CAMPAIGN_UUID
 ```
 
-This reuses both the validated candidates and latest cached reconciliation decision. To deliberately rerun only reconciliation while still avoiding all chunk extraction calls:
+This reuses both the validated candidates and latest cached reconciliation decision in the default lean mode; it does not require an enrichment cache. To explicitly replay the legacy full-enrichment result, add `--mode=full`. To deliberately rerun only reconciliation while still avoiding all chunk extraction calls:
 
 ```bash
 npm run replay -- CAMPAIGN_UUID --refresh-reconciliation
 ```
+
+For a failed rich-cache import, preview a zero-write lean recovery with `npm run recover:campaign -- CAMPAIGN_UUID --dry-run`. Execute only against an intentionally selected campaign with `--execute`; use `--mode=full` only for the explicit full enrichment/reference path. Lean recovery creates no dummy enrichment cache record.
 
 The refresh form requires `OPENAI_API_KEY`; the default replay only requires Supabase configuration. Graph replacement remains transactional. Validation or model failures before replacement leave the previously persisted graph and campaign status intact.
 

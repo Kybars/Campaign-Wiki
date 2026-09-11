@@ -34,4 +34,12 @@ describe("rich type-specific articles", () => {
     const preview = renderToStaticMarkup(createElement(EntityPreviewLink, { campaignId: "campaign", viewMode: "player", entity: { id: "friend", name: "Friend", type: "npc", summary: "A safe ally.", quickFacts: ["Guide"] } }));
     expect(preview).toContain('href="/campaigns/campaign/entities/friend?view=player"');
   });
+  it("renders source-backed facts without a generated summary or placeholder prose", () => {
+    const withoutSummary = detail("npc", [fact("job", "occupation", "Hunter")]);
+    withoutSummary.entity.summary = "";
+    const page = renderToStaticMarkup(createElement(EntityDetail, { campaignId: "campaign", detail: withoutSummary }));
+    expect(page).toContain("Hunter");
+    expect(page).not.toContain("Unknown");
+    expect(page).not.toContain("A useful campaign reference.");
+  });
 });

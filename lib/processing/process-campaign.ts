@@ -25,14 +25,15 @@ import type { Json } from "@/lib/db/types";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { applyCampaignEnrichment, buildEnrichmentDiagnostics } from "@/lib/graph/enrichment";
+import { applyLeanGraphDefaults, buildLeanDiagnostics } from "@/lib/graph/lean";
 import type { CanonicalGraph } from "@/lib/graph/types";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
+import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 
-export async function processCampaign(campaignId: string) {
+export async function processCampaign(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
-  const enrichmentProvider = getAIProviderConfig("enrichment");
-  assertAIProviderPersistenceAllowed(enrichmentProvider);
+  const processingMode = resolveProcessingMode(options.processingMode);
   let ownsProcessing = false;
   let cacheRunId: string | undefined;
   let cacheComplete = false;
@@ -52,7 +53,7 @@ export async function processCampaign(campaignId: string) {
       getOpenAIEnv().OPENAI_EXTRACTION_MODEL,
       { ...chunking, pageCount: pages.length, chunkCount: chunks.length },
     );
-    await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { pageCount: pages.length, chunkCount: chunks.length } });
+    await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length } });
     const extracted = await extractChunksLimited(chunks, undefined, async (result, chunk, index) => {
       await saveExtractionCacheChunk(cacheRunId!, result, index, chunk.pages.map((page) => page.pageNumber));
     });
@@ -64,6 +65,7 @@ export async function processCampaign(campaignId: string) {
     await recordProcessingRun(campaignId, "candidate_extraction", "complete", {
       output: {
         mode: "live",
+        processingMode,
         cacheHits: 0,
         cacheMisses: chunks.length,
         entityCandidates: aggregate.entities.length,
@@ -84,6 +86,7 @@ export async function processCampaign(campaignId: string) {
       input: { candidateEntities: aggregate.entities.length, deterministicGroups: groups.length },
       output: {
         canonicalEntities: canonicalGraph.entities.length,
+        processingMode,
         ...canonicalGraph.factAggregationDiagnostics,
         resolvedRelationships: canonicalGraph.relationships.length,
         discardedRelationships: canonicalGraph.discardedRelationships.length,
@@ -92,41 +95,66 @@ export async function processCampaign(campaignId: string) {
       } as unknown as Json,
     });
 
-    await updateCampaign(campaignId, { processing_stage: "Classifying campaign knowledge" });
-    const enrichmentModel = enrichmentProvider.providerId === "openai" ? enrichmentProvider.modelId : `local:${enrichmentProvider.modelId}`;
     const graphFingerprint = enrichmentGraphFingerprint(canonicalGraph);
-    const cachedEnrichment = await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint, enrichmentModel);
     let graph: CanonicalGraph;
     let enrichmentCalls: ModelCallUsage[] = [];
-    let enrichmentMode: "live" | "replay" = "replay";
-    if (cachedEnrichment?.output) {
-      graph = applyCampaignEnrichment(canonicalGraph, parseCampaignEnrichmentOutput(cachedEnrichment.output));
+    let openAIGenerationCallsAfterReconciliation = 0;
+    let enrichmentDiagnostics: ReturnType<typeof buildEnrichmentDiagnostics> | ReturnType<typeof buildLeanDiagnostics>;
+    if (processingMode === "lean") {
+      graph = applyLeanGraphDefaults(canonicalGraph);
+      enrichmentDiagnostics = buildLeanDiagnostics(graph);
+      await recordProcessingRun(campaignId, "enrichment", "complete", { output: {
+        ...enrichmentDiagnostics,
+        mode: "skipped_by_processing_mode",
+        cacheHits: 0,
+        cacheMisses: 0,
+        provider: null,
+        model: null,
+        modelUsage: summarizeModelUsage("enrichment", []),
+      } as unknown as Json });
     } else {
-      enrichmentMode = "live";
-      const enrichmentCacheId = await createEnrichmentCacheRun(campaignId, document.id, cacheRunId, enrichmentModel, graphFingerprint);
-      try {
-        const enriched = await enrichCanonicalGraphWithAI(canonicalGraph);
-        graph = enriched.graph;
-        enrichmentCalls = enriched.usage;
-        const usage = summarizeModelUsage("enrichment", enrichmentCalls);
-        await finishEnrichmentCacheRun(enrichmentCacheId, "complete", enriched.output, usage as unknown as Json);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown enrichment failure";
-        enrichmentCalls = error instanceof EnrichmentFailure ? error.usage : enrichmentCalls;
-        await finishEnrichmentCacheRun(enrichmentCacheId, "failed", undefined, summarizeModelUsage("enrichment", enrichmentCalls) as unknown as Json, message).catch(() => undefined);
-        throw error;
+      await updateCampaign(campaignId, { processing_stage: "Classifying campaign knowledge" });
+      const enrichmentProvider = getAIProviderConfig("enrichment");
+      assertAIProviderPersistenceAllowed(enrichmentProvider);
+      const enrichmentModel = enrichmentProvider.providerId === "openai" ? enrichmentProvider.modelId : `local:${enrichmentProvider.modelId}`;
+      const cachedEnrichment = await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint, enrichmentModel);
+      let enrichmentMode: "live" | "replay" = "replay";
+      if (cachedEnrichment?.output) {
+        graph = applyCampaignEnrichment(canonicalGraph, parseCampaignEnrichmentOutput(cachedEnrichment.output));
+      } else {
+        enrichmentMode = "live";
+        const enrichmentCacheId = await createEnrichmentCacheRun(campaignId, document.id, cacheRunId, enrichmentModel, graphFingerprint);
+        try {
+          const enriched = await enrichCanonicalGraphWithAI(canonicalGraph);
+          graph = enriched.graph;
+          enrichmentCalls = enriched.usage;
+          const usage = summarizeModelUsage("enrichment", enrichmentCalls);
+          await finishEnrichmentCacheRun(enrichmentCacheId, "complete", enriched.output, usage as unknown as Json);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown enrichment failure";
+          enrichmentCalls = error instanceof EnrichmentFailure ? error.usage : enrichmentCalls;
+          await finishEnrichmentCacheRun(enrichmentCacheId, "failed", undefined, summarizeModelUsage("enrichment", enrichmentCalls) as unknown as Json, message).catch(() => undefined);
+          throw error;
+        }
       }
+      enrichmentDiagnostics = buildEnrichmentDiagnostics(graph);
+      const enrichmentUsage = summarizeModelUsage("enrichment", enrichmentCalls);
+      openAIGenerationCallsAfterReconciliation = enrichmentProvider.providerId === "openai" ? enrichmentCalls.length : 0;
+      await recordProcessingRun(campaignId, "enrichment", "complete", { output: {
+        processingMode,
+        enrichmentRequired: true,
+        enrichmentCalls: enrichmentCalls.length,
+        openAIGenerationCallsAfterReconciliation,
+        mode: enrichmentMode,
+        cacheHits: enrichmentMode === "replay" ? 1 : 0,
+        cacheMisses: enrichmentMode === "live" ? enrichmentCalls.length : 0,
+        modelUsage: enrichmentUsage,
+        provider: enrichmentProvider.providerId,
+        model: enrichmentProvider.modelId,
+        ...enrichmentDiagnostics,
+      } as unknown as Json });
     }
     const enrichmentUsage = summarizeModelUsage("enrichment", enrichmentCalls);
-    await recordProcessingRun(campaignId, "enrichment", "complete", { output: {
-      mode: enrichmentMode,
-      cacheHits: enrichmentMode === "replay" ? 1 : 0,
-      cacheMisses: enrichmentMode === "live" ? enrichmentCalls.length : 0,
-      modelUsage: enrichmentUsage,
-      provider: enrichmentProvider.providerId,
-      model: enrichmentProvider.modelId,
-      ...buildEnrichmentDiagnostics(graph),
-    } as unknown as Json });
 
     await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki" });
     await persistCanonicalGraph(campaignId, document.id, graph);
@@ -143,7 +171,12 @@ export async function processCampaign(campaignId: string) {
       rejectedSourceCount: rejectedSources,
       modelUsage: [extractionUsage, reconciliationUsage, enrichmentUsage],
       knowledgeConsistencyDiagnostics: graph.knowledgeConsistencyDiagnostics,
-      enrichmentDiagnostics: buildEnrichmentDiagnostics(graph),
+      processingMode,
+      enrichmentRequired: processingMode === "full",
+      enrichmentCalls: enrichmentCalls.length,
+      openAIGenerationCallsAfterReconciliation,
+      graphFingerprint,
+      enrichmentDiagnostics,
       mode: "live",
       cacheHits: 0,
       cacheMisses: chunks.length,
@@ -156,7 +189,7 @@ export async function processCampaign(campaignId: string) {
     if (cacheRunId && !cacheComplete) await finishExtractionCacheRun(cacheRunId, "failed", message).catch(() => undefined);
     if (ownsProcessing) {
       await updateCampaign(campaignId, { status: "failed", processing_stage: "Processing failed", error_message: message }).catch(() => undefined);
-      await recordProcessingRun(campaignId, "pipeline", "failed", { error: message });
+      await recordProcessingRun(campaignId, "pipeline", "failed", { input: { processingMode }, error: message });
     }
     throw error;
   }
