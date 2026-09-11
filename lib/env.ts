@@ -15,7 +15,6 @@ const openAIEnvSchema = z.object({
   OPENAI_EXTRACTION_MODEL: z.string().min(1).optional(),
   OPENAI_RECONCILIATION_MODEL: z.string().min(1).optional(),
   OPENAI_ENRICHMENT_MODEL: z.string().min(1).optional(),
-  AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(3),
 }).transform(resolveOpenAIModels);
 
 const supabaseEnvSchema = z.object({
@@ -26,6 +25,8 @@ const supabaseEnvSchema = z.object({
 
 const processingEnvSchema = z.object({
   PDF_CHUNK_TARGET_CHARACTERS: z.coerce.number().int().min(5000).max(100000).default(45000),
+  AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(3),
+  LOCAL_AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(1),
 });
 
 export type OpenAIEnv = z.infer<typeof openAIEnvSchema>;
@@ -46,7 +47,8 @@ export function resolveAIProviderConfig(env: Record<string, string | undefined>,
   }
   if (provider !== "local") throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
   if (env.VERCEL === "1") throw new Error("AI_PROVIDER=local is not allowed on Vercel");
-  const parsed = z.object({ LOCAL_AI_BASE_URL: z.string().url(), LOCAL_AI_MODEL: z.string().min(1), LOCAL_AI_API_KEY: z.string().min(1).optional(), LOCAL_AI_ALLOW_PERSISTENCE: z.enum(["true", "false"]).optional().default("false") }).safeParse({ ...env, LOCAL_AI_API_KEY: env.LOCAL_AI_API_KEY || undefined });
+  const stageModel = stage === "extraction" ? env.LOCAL_AI_EXTRACTION_MODEL : stage === "reconciliation" ? env.LOCAL_AI_RECONCILIATION_MODEL : env.LOCAL_AI_ENRICHMENT_MODEL;
+  const parsed = z.object({ LOCAL_AI_BASE_URL: z.string().url(), LOCAL_AI_MODEL: z.string().min(1), LOCAL_AI_API_KEY: z.string().min(1).optional(), LOCAL_AI_ALLOW_PERSISTENCE: z.enum(["true", "false"]).optional().default("false") }).safeParse({ ...env, LOCAL_AI_MODEL: stageModel || env.LOCAL_AI_MODEL, LOCAL_AI_API_KEY: env.LOCAL_AI_API_KEY || undefined });
   if (!parsed.success) throw new Error(`Invalid local AI configuration. Check: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
   return { providerId: "local", modelId: parsed.data.LOCAL_AI_MODEL, baseUrl: parsed.data.LOCAL_AI_BASE_URL.replace(/\/$/, ""), apiKey: parsed.data.LOCAL_AI_API_KEY, allowPersistence: parsed.data.LOCAL_AI_ALLOW_PERSISTENCE === "true" };
 }

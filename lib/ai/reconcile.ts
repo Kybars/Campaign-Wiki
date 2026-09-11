@@ -1,9 +1,7 @@
-import { zodTextFormat } from "openai/helpers/zod";
-import { getOpenAIClient } from "@/lib/ai/client";
 import { RECONCILIATION_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { reconciliationDecisionSchema, type ReconciliationDecision } from "@/lib/ai/schemas";
-import { getOpenAIEnv } from "@/lib/env";
-import { modelCallUsage, type ModelCallUsage } from "@/lib/ai/usage";
+import type { ModelCallUsage } from "@/lib/ai/usage";
+import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { buildCrossTypeReconciliationCandidates } from "@/lib/graph/reconcile";
 import type { DeterministicGroup } from "@/lib/graph/types";
 
@@ -12,7 +10,16 @@ export interface ReconciliationResult {
   usage: ModelCallUsage | undefined;
 }
 
-export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promise<ReconciliationResult> {
+export function validateReconciliationCoverage(decision: ReconciliationDecision, groups: DeterministicGroup[]) {
+  const expected = groups.map((group) => group.id);
+  const assigned = decision.canonical_entities.flatMap((entity) => entity.group_ids);
+  const missing = expected.filter((id) => !assigned.includes(id));
+  const duplicate = expected.filter((id) => assigned.filter((assignedId) => assignedId === id).length > 1);
+  const unexpected = assigned.filter((id) => !expected.includes(id));
+  if (missing.length || duplicate.length || unexpected.length) throw new Error(`Reconciliation group coverage failed (missing: ${missing.join(",") || "none"}; duplicate: ${duplicate.join(",") || "none"}; unexpected: ${[...new Set(unexpected)].join(",") || "none"})`);
+}
+
+export async function reconcileGroupsWithAI(groups: DeterministicGroup[], provider?: StructuredModelProvider): Promise<ReconciliationResult> {
   if (groups.length <= 1) return { decision: undefined, usage: undefined };
 
   const crossTypeCandidates = buildCrossTypeReconciliationCandidates(groups);
@@ -32,17 +39,11 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[]): Promi
       evidence: candidate.sources.slice(0, 3),
     })),
   }));
-  const response = await getOpenAIClient().responses.parse({
-    model: getOpenAIEnv().OPENAI_RECONCILIATION_MODEL,
-    input: [
-      { role: "system", content: RECONCILIATION_SYSTEM_PROMPT },
-      { role: "user", content: `Reconcile every candidate group in this JSON data:\n${JSON.stringify(payload)}` },
-    ],
-    text: { format: zodTextFormat(reconciliationDecisionSchema, "campaign_entity_reconciliation") },
-  });
-  if (!response.output_parsed) throw new Error("Model returned no parsed reconciliation result");
+  const resolvedProvider = provider ?? (await import("@/lib/ai/structured-model-provider-runtime")).getStructuredModelProvider("reconciliation");
+  const response = await resolvedProvider.parseStructured({ system: RECONCILIATION_SYSTEM_PROMPT, payload: `Reconcile every candidate group in this JSON data:\n${JSON.stringify(payload)}`, schema: reconciliationDecisionSchema, schemaName: "campaign_entity_reconciliation" });
+  validateReconciliationCoverage(response.output, groups);
   return {
-    decision: response.output_parsed,
-    usage: modelCallUsage(response.model, response.id, response.usage),
+    decision: response.output,
+    usage: response.usage,
   };
 }

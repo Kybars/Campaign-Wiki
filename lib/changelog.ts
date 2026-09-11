@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-11",
+    title: "Local core processing providers",
+    changes: [
+      "Extended the structured-model provider to extraction and reconciliation without weakening validation.",
+      "Added stage-specific local models, three-stage preflight, fixture smoke, and extraction workload diagnostics.",
+    ],
+  },
+  {
+    version: "0.4.3",
+    date: "2026-09-11",
     title: "Lean default campaign processing",
     changes: [
       "Made source-backed canonical wiki generation complete without mandatory post-reconciliation enrichment.",

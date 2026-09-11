@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   extractChunksLimited: vi.fn(), reconcileGroupsWithAI: vi.fn(), enrichCanonicalGraphWithAI: vi.fn(),
   aggregateCandidates: vi.fn(), buildCanonicalGraph: vi.fn(), buildDeterministicGroups: vi.fn(),
   getAIProviderConfig: vi.fn(), assertAIProviderPersistenceAllowed: vi.fn(),
+  getStructuredModelProvider: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -34,6 +35,7 @@ vi.mock("@/lib/env", () => ({
   getAIProviderConfig: mocks.getAIProviderConfig,
   assertAIProviderPersistenceAllowed: mocks.assertAIProviderPersistenceAllowed,
 }));
+vi.mock("@/lib/ai/structured-model-provider-runtime", () => ({ getStructuredModelProvider: mocks.getStructuredModelProvider }));
 
 import { processCampaign } from "@/lib/processing/process-campaign";
 
@@ -66,13 +68,16 @@ beforeEach(() => {
   mocks.buildCanonicalGraph.mockReturnValue(canonicalGraph);
   mocks.loadCompleteEnrichmentCache.mockResolvedValue(null);
   mocks.getAIProviderConfig.mockReturnValue({ providerId: "openai", modelId: "model" });
+  mocks.getStructuredModelProvider.mockImplementation((stage: string) => ({ providerId: "openai", modelId: `${stage}-model`, parseStructured: vi.fn() }));
   mocks.enrichCanonicalGraphWithAI.mockResolvedValue({ graph: { ...canonicalGraph, entities: canonicalGraph.entities.map((entity) => ({ ...entity, visibility: "player_visible", prominence: "major" })) }, output: {}, usage: [usage] });
 });
 
 describe("v0.4 processing orchestration", () => {
   it("uses lean by default, persists safe canonical data, and completes without resolving enrichment", async () => {
     const result = await processCampaign("campaign");
-    expect(mocks.getAIProviderConfig).not.toHaveBeenCalled();
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("reconciliation");
+    expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
     expect(mocks.createEnrichmentCacheRun).not.toHaveBeenCalled();
     expect(mocks.persistCanonicalGraph).toHaveBeenCalledWith("campaign", "document", expect.objectContaining({ entities: [expect.objectContaining({ visibility: "dm_only", prominence: null, playerSummary: null })] }));
@@ -89,6 +94,17 @@ describe("v0.4 processing orchestration", () => {
     expect(mocks.enrichCanonicalGraphWithAI).toHaveBeenCalledWith(canonicalGraph);
     expect(mocks.createEnrichmentCacheRun).toHaveBeenCalled();
     expect(result).toMatchObject({ processingMode: "full", enrichmentRequired: true, enrichmentCalls: 1, openAIGenerationCallsAfterReconciliation: 1 });
+  });
+
+  it("runs a local lean import through local core providers without touching the enrichment/OpenAI path", async () => {
+    mocks.getAIProviderConfig.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, baseUrl: "http://localhost:11434/v1", allowPersistence: true }));
+    mocks.getStructuredModelProvider.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, parseStructured: vi.fn() }));
+    const result = await processCampaign("campaign");
+    expect(mocks.extractChunksLimited.mock.calls[0][3]).toMatchObject({ providerId: "local", modelId: "extraction-local" });
+    expect(mocks.reconcileGroupsWithAI.mock.calls[0][1]).toMatchObject({ providerId: "local", modelId: "reconciliation-local" });
+    expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
+    expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ processingMode: "lean", enrichmentCalls: 0, openAIGenerationCallsAfterReconciliation: 0 });
   });
 
   it("marks persistence failures failed and never marks the campaign complete", async () => {

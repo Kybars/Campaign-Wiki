@@ -627,6 +627,10 @@ Using cached canonical data, lean mode produces a useful DM wiki with correct co
 
 # 13. Milestone 3 — Provider Coverage for Full Local Development
 
+## Status
+
+Completed as v0.4.4. Extraction and reconciliation now use the shared structured-model provider with stage-specific local model fallback, provider-aware concurrency and diagnostics, strict shared validation, a three-stage zero-generation preflight, deterministic Test 3 extraction-workload instrumentation, and a non-persisting small-fixture local smoke path.
+
 ## Goal
 
 Allow end-to-end development on new PDFs without requiring OpenAI credits where technically practical.

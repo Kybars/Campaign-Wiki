@@ -38,7 +38,7 @@ Important design properties:
 - `processing_runs` and reconciliation metadata preserve candidate IDs, merge reasons, counts, and discarded-item diagnostics.
 - Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
 
-The OpenAI integration follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`). `OPENAI_EXTRACTION_MODEL`, `OPENAI_RECONCILIATION_MODEL`, and `OPENAI_ENRICHMENT_MODEL` configure the stages independently and each falls back to `OPENAI_MODEL`, preserving existing `.env.local` files. Enrichment also supports an explicit local OpenAI-compatible provider for development; see [`docs/local_ai.md`](./docs/local_ai.md).
+All three model stages use one provider-independent structured-output boundary. The OpenAI adapter follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`); the local adapter uses an OpenAI-compatible Chat Completions endpoint and applies the same schemas and domain validation. Stage-specific OpenAI models fall back to `OPENAI_MODEL`, while stage-specific local models fall back to `LOCAL_AI_MODEL`. See [`docs/local_ai.md`](./docs/local_ai.md).
 
 ## Key directories
 
@@ -74,6 +74,11 @@ OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
 OPENAI_ENRICHMENT_MODEL=gpt-5.6-terra
 AI_PROVIDER=openai
 CAMPAIGN_PROCESSING_MODE=lean
+# Local mode only; optional stage overrides fall back to LOCAL_AI_MODEL.
+LOCAL_AI_MODEL=
+LOCAL_AI_EXTRACTION_MODEL=
+LOCAL_AI_RECONCILIATION_MODEL=
+LOCAL_AI_ENRICHMENT_MODEL=
 
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -83,16 +88,17 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ALLOW_CAMPAIGN_UPLOADS=true
 
 AI_EXTRACTION_CONCURRENCY=3
+LOCAL_AI_EXTRACTION_CONCURRENCY=1
 PDF_CHUNK_TARGET_CHARACTERS=45000
 ```
 
 Run `npm run ai:preflight` to validate the configured enrichment provider without making a paid generation call. For local Ollama/LM Studio configuration, see [`docs/local_ai.md`](./docs/local_ai.md).
 
-In v0.4.0, enrichment uses the provider-independent boundary. Extraction and reconciliation retain their existing OpenAI adapters and stage-specific model settings; they are intentionally not executed by local enrichment recovery and can migrate mechanically to the same boundary in a later milestone.
+Extraction, reconciliation, and enrichment all use the provider-independent boundary. Provider selection is server-side, local failure never falls back to OpenAI, and existing OpenAI stage-model fallbacks remain unchanged.
 
 `CAMPAIGN_PROCESSING_MODE` is server-only and accepts `lean` or `full`. It defaults to `lean`: normal imports persist the rich canonical graph with DM-only visibility, nullable/unclassified prominence, source-backed canonical summaries, and no post-reconciliation model calls. Set `CAMPAIGN_PROCESSING_MODE=full` only to run the strict v0.3 enrichment/reference workflow. The browser cannot select or override this mode.
 
-`AI_PROVIDER=local` is safe for preflight and recovery dry-runs. A live local enrichment run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
+`AI_PROVIDER=local` is safe for preflight, non-persisting fixture smoke, and recovery dry-runs. A live local run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
 
 `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only secrets. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or expose them in browser code. The anon key is included for conventional Supabase project configuration, although v0 database access is server-only.
 
@@ -192,6 +198,8 @@ The replay evaluation also exercises the v0.3 rich-fact fixture. Rich extraction
 
 Run `npm run evaluate:lean` for a read-only Test 3 cache dry-run. It reuses extraction and reconciliation, projects the lean defaults, verifies the preserved 112/502/145 graph and fingerprint, and reports zero writes and zero post-reconciliation model calls.
 
+Run `npm run evaluate:extraction-workload` for read-only size/count instrumentation over the preserved Test 3 extraction cache. It performs no generation and no writes. Developers with an already-running local server can use `npm run smoke:local` to process only the small fixture into an in-memory lean graph.
+
 Run `npm run evaluate:enrichment` for the deterministic post-reconciliation prominence, visibility, summary, overview, and consistency fixture. It makes zero OpenAI and Supabase calls. See [`docs/V0_3_CANONICAL_ENRICHMENT.md`](./docs/V0_3_CANONICAL_ENRICHMENT.md).
 
 ## Milestone 8 benchmark checklist
@@ -252,7 +260,7 @@ This test makes no OpenAI request and reads no PDF. It creates a uniquely named 
 
 ## Processing and debugging
 
-`processCampaign(campaignId)` owns the orchestration. Chunk extraction is limited to `AI_EXTRACTION_CONCURRENCY` concurrent calls. Any chunk/model/persistence failure marks the campaign failed; failed chunks are never silently skipped. Retrying replaces the prior graph instead of appending duplicates.
+`processCampaign(campaignId)` owns the orchestration. OpenAI chunk extraction is limited by `AI_EXTRACTION_CONCURRENCY`; local extraction defaults to the separately configurable, safer `LOCAL_AI_EXTRACTION_CONCURRENCY=1`. Any chunk/model/persistence failure marks the campaign failed; failed chunks are never silently skipped. Retrying replaces the prior graph instead of appending duplicates.
 
 For debugging, inspect:
 

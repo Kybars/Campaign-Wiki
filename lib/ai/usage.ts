@@ -66,25 +66,26 @@ export interface StageUsageSummary {
   stage: "candidate_extraction" | "reconciliation" | "enrichment";
   models: string[];
   apiCalls: number;
-  inputTokens: number;
-  cachedInputTokens: number;
-  cacheWriteTokens: number;
-  outputTokens: number;
-  totalTokens: number;
+  inputTokens: number | null;
+  cachedInputTokens: number | null;
+  cacheWriteTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
   estimatedCostUsd: number | null;
 }
 
 export function summarizeModelUsage(stage: StageUsageSummary["stage"], calls: ModelCallUsage[]): StageUsageSummary {
   const knownCosts = calls.map((call) => call.estimatedCostUsd);
+  const total = (select: (call: ModelCallUsage) => number | null) => calls.length === 0 ? 0 : calls.some((call) => select(call) === null) ? null : calls.reduce((sum, call) => sum + (select(call) ?? 0), 0);
   return {
     stage,
     models: [...new Set(calls.map((call) => call.model))],
     apiCalls: calls.length,
-    inputTokens: calls.reduce((sum, call) => sum + (call.inputTokens ?? 0), 0),
-    cachedInputTokens: calls.reduce((sum, call) => sum + (call.cachedInputTokens ?? 0), 0),
-    cacheWriteTokens: calls.reduce((sum, call) => sum + (call.cacheWriteTokens ?? 0), 0),
-    outputTokens: calls.reduce((sum, call) => sum + (call.outputTokens ?? 0), 0),
-    totalTokens: calls.reduce((sum, call) => sum + (call.totalTokens ?? 0), 0),
+    inputTokens: total((call) => call.inputTokens),
+    cachedInputTokens: total((call) => call.cachedInputTokens),
+    cacheWriteTokens: total((call) => call.cacheWriteTokens),
+    outputTokens: total((call) => call.outputTokens),
+    totalTokens: total((call) => call.totalTokens),
     estimatedCostUsd: knownCosts.some((cost) => cost === null)
       ? null
       : knownCosts.reduce<number>((sum, cost) => sum + (cost ?? 0), 0),

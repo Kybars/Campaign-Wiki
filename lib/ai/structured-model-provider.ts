@@ -25,6 +25,10 @@ export interface StructuredModelProvider {
   parseStructured<T>(request: StructuredModelRequest<T>): Promise<StructuredModelResult<T>>;
 }
 
+function userContent(payload: unknown): string {
+  return typeof payload === "string" ? payload : JSON.stringify(payload);
+}
+
 type OpenAIResponses = Pick<OpenAI, "responses">;
 
 export function createOpenAIStructuredModelProvider(modelId: string, client: OpenAIResponses): StructuredModelProvider {
@@ -32,7 +36,7 @@ export function createOpenAIStructuredModelProvider(modelId: string, client: Ope
     providerId: "openai",
     modelId,
     async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
-      const response = await client.responses.parse({ model: modelId, input: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(payload) }], text: { format: zodTextFormat(schema, schemaName) } });
+      const response = await client.responses.parse({ model: modelId, input: [{ role: "system", content: system }, { role: "user", content: userContent(payload) }], text: { format: zodTextFormat(schema, schemaName) } });
       if (!response.output_parsed) throw new Error(`OpenAI returned no parsed ${schemaName} result`);
       const usage = modelCallUsage(response.model, response.id, response.usage);
       return { output: response.output_parsed as T, providerId: "openai" as const, modelId: response.model, responseId: response.id ?? null, usage };
@@ -52,7 +56,7 @@ export function createLocalStructuredModelProvider(config: Extract<ResolvedAIPro
     providerId: "local",
     modelId: config.modelId,
     async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
-      const response = await fetchImpl(`${config.baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) }, body: JSON.stringify({ model: config.modelId, messages: [{ role: "system", content: `${system}\nReturn only valid JSON matching the requested ${schemaName} structure.` }, { role: "user", content: JSON.stringify(payload) }], response_format: { type: "json_object" }, temperature: 0 }) });
+      const response = await fetchImpl(`${config.baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) }, body: JSON.stringify({ model: config.modelId, messages: [{ role: "system", content: `${system}\nReturn only valid JSON matching the requested ${schemaName} structure.` }, { role: "user", content: userContent(payload) }], response_format: { type: "json_object" }, temperature: 0 }) });
       if (!response.ok) throw new Error(`Local AI request failed (${response.status} ${response.statusText})`);
       const body = await response.json() as LocalChatResponse;
       const content = body.choices?.[0]?.message?.content;

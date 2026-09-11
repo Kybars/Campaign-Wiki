@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -14,12 +14,14 @@
     "evaluate:replay": "tsx scripts/evaluate-replay-fixture.ts",
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",
     "evaluate:enrichment-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-enrichment-workload.ts",
+    "evaluate:extraction-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-workload.ts",
     "evaluate:lean": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-lean-pipeline.ts",
     "ai:preflight": "node --conditions=react-server --import tsx scripts/ai-preflight.ts",
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
     "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",
     "recover:campaign": "node --use-system-ca --conditions=react-server --import tsx scripts/recover-campaign.ts",
-    "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts"
+    "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts",
+    "smoke:local": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-local-core.ts"
   },
   "dependencies": {
     "@next/env": "^16.3.4",

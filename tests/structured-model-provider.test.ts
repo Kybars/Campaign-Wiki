@@ -17,6 +17,13 @@ describe("structured model provider selection", () => {
     expect(resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1/", LOCAL_AI_MODEL: "local-model" }, "enrichment")).toEqual({ providerId: "local", modelId: "local-model", baseUrl: "http://localhost:11434/v1", apiKey: undefined, allowPersistence: false });
   });
 
+  it("resolves stage-specific local models with a backward-compatible shared fallback", () => {
+    const env = { AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "shared", LOCAL_AI_EXTRACTION_MODEL: "extract", LOCAL_AI_RECONCILIATION_MODEL: "reconcile" };
+    expect(resolveAIProviderConfig(env, "extraction").modelId).toBe("extract");
+    expect(resolveAIProviderConfig(env, "reconciliation").modelId).toBe("reconcile");
+    expect(resolveAIProviderConfig(env, "enrichment").modelId).toBe("shared");
+  });
+
   it("fails closed for local canonical persistence unless explicitly acknowledged", () => {
     const local = resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "local-model" }, "enrichment");
     expect(() => assertAIProviderPersistenceAllowed(local)).toThrow(/LOCAL_AI_ALLOW_PERSISTENCE=true/);
@@ -38,7 +45,15 @@ describe("OpenAI structured model adapter", () => {
     const provider = createOpenAIStructuredModelProvider("openai-model", { responses: { parse } } as never);
     const result = await provider.parseStructured(request);
     expect(parse).toHaveBeenCalledOnce();
+    expect(parse).toHaveBeenCalledWith(expect.objectContaining({ input: [{ role: "system", content: request.system }, { role: "user", content: JSON.stringify(request.payload) }] }));
     expect(result).toMatchObject({ output: { answer: "yes" }, providerId: "openai", modelId: "openai-model", responseId: "response-1", usage: { inputTokens: 10, cachedInputTokens: 3, outputTokens: 2 } });
+  });
+
+  it("preserves pre-serialized stage payloads without adding JSON string quoting", async () => {
+    const parse = vi.fn().mockResolvedValue({ output_parsed: { answer: "yes" }, model: "openai-model", id: "response", usage: undefined });
+    const provider = createOpenAIStructuredModelProvider("openai-model", { responses: { parse } } as never);
+    await provider.parseStructured({ ...request, payload: "exact stage payload" });
+    expect(parse.mock.calls[0][0].input[1].content).toBe("exact stage payload");
   });
 });
 

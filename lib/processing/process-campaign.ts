@@ -19,7 +19,8 @@ import {
   saveReconciliationCacheResult,
   updateCampaign,
 } from "@/lib/db/repository";
-import { assertAIProviderPersistenceAllowed, getAIProviderConfig, getOpenAIEnv, getProcessingEnv } from "@/lib/env";
+import { assertAIProviderPersistenceAllowed, getAIProviderConfig, getProcessingEnv } from "@/lib/env";
+import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
 import { summarizeModelUsage, type ModelCallUsage } from "@/lib/ai/usage";
 import type { Json } from "@/lib/db/types";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
@@ -45,18 +46,22 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     if (!(await claimCampaignForProcessing(campaignId))) throw new Error("Campaign was claimed by another processing request");
     ownsProcessing = true;
+    const extractionProvider = getStructuredModelProvider("extraction");
+    const reconciliationProvider = getStructuredModelProvider("reconciliation");
+    assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction"));
+    assertAIProviderPersistenceAllowed(getAIProviderConfig("reconciliation"));
     const chunking = { targetCharacters: getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS, overlapPages: 1 };
     const chunks = chunkPages(pages, chunking);
     cacheRunId = await createExtractionCacheRun(
       campaignId,
       document.id,
-      getOpenAIEnv().OPENAI_EXTRACTION_MODEL,
+      extractionProvider.providerId === "local" ? `local:${extractionProvider.modelId}` : extractionProvider.modelId,
       { ...chunking, pageCount: pages.length, chunkCount: chunks.length },
     );
     await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length } });
     const extracted = await extractChunksLimited(chunks, undefined, async (result, chunk, index) => {
       await saveExtractionCacheChunk(cacheRunId!, result, index, chunk.pages.map((page) => page.pageNumber));
-    });
+    }, extractionProvider);
     await finishExtractionCacheRun(cacheRunId, "complete");
     cacheComplete = true;
     const rejectedSources = extracted.reduce((count, chunk) => count + chunk.diagnostics.length, 0);
@@ -66,6 +71,8 @@ export async function processCampaign(campaignId: string, options: { processingM
       output: {
         mode: "live",
         processingMode,
+        provider: extractionProvider.providerId,
+        model: extractionProvider.modelId,
         cacheHits: 0,
         cacheMisses: chunks.length,
         entityCandidates: aggregate.entities.length,
@@ -78,7 +85,7 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Connecting campaign information" });
     const groups = buildDeterministicGroups(aggregate);
-    const reconciliation = await reconcileGroupsWithAI(groups);
+    const reconciliation = await reconcileGroupsWithAI(groups, reconciliationProvider);
     await saveReconciliationCacheResult(cacheRunId, reconciliation);
     const canonicalGraph = buildCanonicalGraph(aggregate, reconciliation.decision);
     const reconciliationUsage = summarizeModelUsage("reconciliation", reconciliation.usage ? [reconciliation.usage] : []);
@@ -87,6 +94,8 @@ export async function processCampaign(campaignId: string, options: { processingM
       output: {
         canonicalEntities: canonicalGraph.entities.length,
         processingMode,
+        provider: reconciliationProvider.providerId,
+        model: reconciliationProvider.modelId,
         ...canonicalGraph.factAggregationDiagnostics,
         resolvedRelationships: canonicalGraph.relationships.length,
         discardedRelationships: canonicalGraph.discardedRelationships.length,

@@ -1,10 +1,9 @@
-import { zodTextFormat } from "openai/helpers/zod";
-import { getOpenAIClient } from "@/lib/ai/client";
 import { buildExtractionInput, EXTRACTION_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { chunkExtractionSchema, type ChunkExtraction } from "@/lib/ai/schemas";
 import { validateChunkExtraction, type ValidationDiagnostic } from "@/lib/ai/source-validation";
-import { modelCallUsage, type ModelCallUsage } from "@/lib/ai/usage";
-import { getOpenAIEnv } from "@/lib/env";
+import type { ModelCallUsage } from "@/lib/ai/usage";
+import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
+import { getProcessingEnv } from "@/lib/env";
 import type { PageChunk } from "@/lib/pdf/types";
 
 export interface ExtractedChunk {
@@ -15,42 +14,37 @@ export interface ExtractedChunk {
   usage: ModelCallUsage;
 }
 
-export async function extractChunk(chunk: PageChunk): Promise<ExtractedChunk> {
-  const env = getOpenAIEnv();
-  const response = await getOpenAIClient().responses.parse({
-    model: env.OPENAI_EXTRACTION_MODEL,
-    input: [
-      { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
-      { role: "user", content: buildExtractionInput(chunk) },
-    ],
-    text: { format: zodTextFormat(chunkExtractionSchema, "campaign_chunk_extraction") },
-  });
-  if (!response.output_parsed) throw new Error(`Model returned no parsed extraction for ${chunk.id}`);
-  const validated = validateChunkExtraction(response.output_parsed, chunk.pages);
+export async function extractChunk(chunk: PageChunk, provider?: StructuredModelProvider): Promise<ExtractedChunk> {
+  const resolvedProvider = provider ?? (await import("@/lib/ai/structured-model-provider-runtime")).getStructuredModelProvider("extraction");
+  const response = await resolvedProvider.parseStructured({ system: EXTRACTION_SYSTEM_PROMPT, payload: buildExtractionInput(chunk), schema: chunkExtractionSchema, schemaName: "campaign_chunk_extraction" });
+  const validated = validateChunkExtraction(response.output, chunk.pages);
   return {
     chunkId: chunk.id,
-    rawExtraction: response.output_parsed,
+    rawExtraction: response.output,
     ...validated,
-    usage: modelCallUsage(response.model, response.id, response.usage),
+    usage: response.usage,
   };
 }
 
 export async function extractChunksLimited(
   chunks: PageChunk[],
-  concurrency = getOpenAIEnv().AI_EXTRACTION_CONCURRENCY,
+  concurrency?: number,
   onExtracted?: (result: ExtractedChunk, chunk: PageChunk, index: number) => Promise<void>,
+  provider?: StructuredModelProvider,
 ) {
+  const resolvedProvider = provider ?? (await import("@/lib/ai/structured-model-provider-runtime")).getStructuredModelProvider("extraction");
+  const configuredConcurrency = concurrency ?? (resolvedProvider.providerId === "local" ? getProcessingEnv().LOCAL_AI_EXTRACTION_CONCURRENCY : getProcessingEnv().AI_EXTRACTION_CONCURRENCY);
   const results = new Array<ExtractedChunk>(chunks.length);
   let cursor = 0;
   async function worker() {
     while (cursor < chunks.length) {
       const index = cursor;
       cursor += 1;
-      const result = await extractChunk(chunks[index]);
+      const result = await extractChunk(chunks[index], resolvedProvider);
       if (onExtracted) await onExtracted(result, chunks[index], index);
       results[index] = result;
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, chunks.length) }, () => worker()));
+  await Promise.all(Array.from({ length: Math.min(configuredConcurrency, chunks.length) }, () => worker()));
   return results;
 }
