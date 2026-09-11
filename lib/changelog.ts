@@ -12,11 +12,11 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
-    date: "2026-09-10",
-    title: "Local AI development provider",
+    date: "2026-09-11",
+    title: "Local AI persistence safety",
     changes: [
-      "Added a provider-independent structured AI boundary with local model support.",
-      "Added provider preflight and provider-aware recovery diagnostics.",
+      "Requires explicit acknowledgement before local enrichment can replace canonical campaign data.",
+      "Makes local preflight distinguish confirmed model availability from endpoints that do not report models.",
     ],
   },
   {

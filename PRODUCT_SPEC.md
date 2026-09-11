@@ -1,168 +1,186 @@
-# Campaign Wiki — Product Specification v0
+# Campaign Wiki — Product Specification
 
 ## 1. Product Summary
 
-Campaign Wiki converts an existing tabletop RPG campaign PDF into an automatically generated, interconnected wiki.
+Campaign Wiki converts tabletop RPG campaign source material into an automatically generated, interconnected campaign wiki.
 
-The user uploads a PDF containing campaign notes, session summaries, setting information, NPC descriptions, adventure material, or similar campaign content.
+The user provides campaign material such as adventure PDFs, campaign notes, setting information, session summaries, NPC descriptions, quests, and similar sources.
 
 The system:
 
-1. Extracts the text from the PDF.
-2. Identifies important campaign entities.
-3. Identifies relationships between those entities.
-4. Deduplicates repeated references to the same entity.
-5. Stores the entities and relationships in a structured form.
-6. Generates wiki-style pages for every entity.
-7. Automatically cross-links related entities.
-8. Shows the original PDF page(s) supporting extracted information.
+1. Extracts source text while preserving source boundaries.
+2. Identifies meaningful campaign entities.
+3. Extracts source-backed facts about those entities.
+4. Identifies meaningful relationships between entities.
+5. Reconciles duplicate references into canonical entities.
+6. Stores the resulting campaign knowledge in a structured form.
+7. Generates readable wiki-style pages.
+8. Cross-links related entities.
+9. Preserves source evidence for every extracted claim.
+10. Supports different knowledge visibility for Game Masters and players.
 
 The core value proposition is:
 
 > **Upload your campaign. Get an interconnected campaign wiki automatically.**
 
----
-
-# 2. Goal of v0
-
-The purpose of v0 is to test one central hypothesis:
-
-> Can AI reliably transform a messy campaign PDF into an interconnected wiki that is useful to a Game Master?
-
-v0 is a proof of concept, not a complete campaign-management platform.
-
-Success means a user can upload a real campaign PDF and browse the resulting entities and relationships without manually organizing the campaign first.
+The product should feel like a useful campaign encyclopedia, not a database viewer or raw AI extraction report.
 
 ---
 
-# 3. Core User Flow
+## 2. Product Goal
 
-## Step 1 — Upload PDF
+The central product hypothesis is:
 
-The landing page contains:
+> Can AI reliably transform messy RPG campaign material into a source-grounded wiki that is useful during preparation and play?
 
-- Campaign name field
-- PDF upload field
-- `Generate Wiki` button
+Success means a Game Master can provide existing campaign material and quickly browse a coherent knowledge base without manually organizing every NPC, location, item, faction, event, and quest first.
 
-Only one PDF is required for v0.
+The system should optimize for:
 
-Example:
+- correctness over exhaustiveness
+- source traceability
+- fast navigation during play
+- useful campaign structure
+- progressive discovery of player-safe information
+- maintainability as the campaign evolves
+
+---
+
+## 3. Enduring Product Principles
+
+### Source material is authoritative
+
+The uploaded campaign material is the campaign's canon.
+
+Do not add outside setting lore unless it exists in the supplied source material.
+
+### Do not invent campaign lore
+
+Unknown information remains unknown.
+
+Do not invent appearance, personality, chronology, motivation, ownership, relationships, or other details merely to complete an article.
+
+### Prefer false negatives over false positives
+
+Missing a minor fact is less damaging than adding a convincing but unsupported one.
+
+### Preserve uncertainty
+
+If the source is ambiguous, the data model and presentation should not pretend certainty.
+
+### Every displayed extracted fact is source-backed
+
+A user must be able to inspect the evidence supporting a generated fact.
+
+### Prefer meaningful entities
+
+Do not turn every noun, generic guard, ordinary object, or incidental concept into a canonical entity.
+
+### One canonical identity
+
+Repeated references to the same real campaign entity should reconcile globally.
+
+When uncertain whether two entities are identical, prefer keeping them separate over an incorrect merge.
+
+### One logical relationship
+
+Inverse presentation does not create duplicate stored relationships.
+
+A relationship such as `parent_of / child_of` or `located_in / contains` is one logical fact rendered from the relevant perspective.
+
+### The wiki should read like a wiki
+
+Structured data powers the product, but users should see readable articles, concise facts, natural relationships, and links rather than database terminology.
+
+### AI automates organization; the GM owns campaign decisions
+
+AI should automate transcription, extraction, linking, and tedious organization. The GM should own authorial campaign decisions such as what matters, what players know, and what changes during play. AI may suggest those decisions, but expensive full enrichment should not be mandatory for every import.
+
+A useful GM wiki should be able to exist from canonical extracted and reconciled knowledge without requiring every optional enrichment operation.
+
+---
+
+## 4. Core User Flow
+
+### 4.1 Create campaign
+
+The user provides:
+
+- campaign name
+- supported source material
+
+Initial versions may support only text-based PDFs. Broader source ingestion can be added later.
+
+### 4.2 Process campaign
+
+Conceptual pipeline:
 
 ```text
-Campaign Name
-[Demonplague]
-
-Campaign PDF
-[demonplague_notes.pdf]
-
-[ Generate Wiki ]
+Source upload
+    ↓
+Page/source-preserving text extraction
+    ↓
+Chunking
+    ↓
+Candidate entity extraction
+    ↓
+Candidate fact extraction
+    ↓
+Candidate relationship extraction
+    ↓
+Global entity reconciliation
+    ↓
+Canonical entity construction
+    ↓
+Fact aggregation and evidence preservation
+    ↓
+Relationship normalization
+    ↓
+Location hierarchy construction
+    ↓
+Campaign-level enrichment
+    ↓
+Persistence
+    ↓
+Wiki
 ```
 
----
+The pipeline should be replayable from saved intermediate data wherever practical so improvements do not require repeatedly paying for full extraction.
 
-## Step 2 — Process PDF
+### 4.3 Browse campaign wiki
 
-After upload, the application shows a processing screen.
+The campaign wiki provides:
 
-Example:
+- campaign overview
+- category browsing
+- integrated search
+- entity pages
+- recursive location navigation
+- event chronology
+- source inspection
+- DM and Player views
 
-```text
-Building your campaign wiki...
+### 4.4 Revisit campaigns
 
-✓ PDF uploaded
-✓ Text extracted
-✓ 163 pages processed
-✓ Entities identified
-✓ Relationships identified
-✓ Duplicate entities merged
-✓ Wiki generated
-```
+Existing campaigns remain directly reopenable from the campaign list.
 
-Exact progress percentages are not required for v0.
-
-A simple loading state is acceptable.
+The user should not need to know a campaign UUID or upload the source again.
 
 ---
 
-## Step 3 — Campaign Wiki Home
+## 5. Canonical Entity Ontology
 
-Once processing finishes, the user lands on the campaign home page.
-
-Example:
-
-```text
-DEMONPLAGUE
-
-143 entities discovered
-
-NPCs            51
-Locations       32
-Factions        11
-Items           18
-Events          22
-Quests           6
-Other            3
-
-[ Search campaign... ]
-```
-
-Below this, display all entities grouped by type.
-
-Each entity name links to its wiki page.
-
----
-
-## Step 4 — Entity Page
-
-Every extracted entity receives its own wiki-style page.
-
-Example:
-
-# Ralekai
-
-**Type:** NPC
-
-Ralekai is an undead scientist researching a cure for the Demonplague.
-
-## Relationships
-
-**Soul Stone**  
-Needs an empty Soul Stone to continue his research.
-
-**Xancrown**  
-Researching a cure for the plague caused by Xancrown.
-
-**Tomar's Crossing**  
-Has worked with the party in Tomar's Crossing.
-
-## Sources
-
-- Campaign Notes — page 73
-- Campaign Notes — page 91
-- Campaign Notes — page 124
-
-All related entity names must be clickable.
-
-Clicking `Soul Stone` opens the Soul Stone wiki page.
-
----
-
-# 4. Entity Types
-
-v0 should recognize the following entity types:
+Primary entity types:
 
 ### NPC
 
-Named non-player characters.
+Named non-player characters and individually significant creatures.
 
-Examples:
+### Deity
 
-- Lord Harren
-- Ralekai
-- Meriath the Quick
+Gods, divine beings, and comparable campaign entities that function as deities.
 
----
+Deities are not NPCs merely because they can speak or act like characters.
 
 ### Location
 
@@ -170,616 +188,649 @@ Physical places at any scale.
 
 Examples:
 
-- Tomar's Crossing
-- Safeharbor
-- Old Mine
-- Kingdom of Eldoria
+- world
+- country
+- province
+- city
+- village
+- building
+- dungeon
+- room
+- altar
 
----
+Locations can form an arbitrarily deep physical containment hierarchy.
 
 ### Faction
 
-Organizations, groups, governments, cults, guilds, armies, etc.
-
-Examples:
-
-- Red Hand
-- King's Guard
-- Cult of Ash
-
----
+Organizations, governments, cults, guilds, armies, noble houses, criminal groups, churches, societies, and similar organized groups.
 
 ### Item
 
-Important named objects.
-
-Includes magical and non-magical objects when narratively significant.
-
-Examples:
-
-- Soul Stone
-- Crown of the Fire Giants
-- Sword of Dawn
-
----
+Narratively meaningful named objects, including magical and non-magical items.
 
 ### Event
 
-Important past or current events.
-
-Examples:
-
-- Battle of Safeharbor
-- Fall of Blackstone
-- Edric's Disappearance
-
-Events should only become standalone entities when they appear to be narratively significant.
-
----
+Narratively significant past, current, or expected happenings.
 
 ### Quest
 
-Explicit missions, goals, investigations, or unresolved objectives.
-
-Examples:
-
-- Find the Soul Stone
-- Rescue the Frost Giant Princess
-
-Do not create a Quest entity for every casual character intention.
-
----
+Explicit missions, investigations, goals, or unresolved objectives significant enough to deserve their own reference entry.
 
 ### Other
 
-Used when an important named campaign concept does not fit another category.
-
-Examples could include:
-
-- Demonplague
-- Ancient ritual
-- Prophecy
-- Unique magical phenomenon
+Fallback for meaningful named campaign concepts that do not fit another category.
 
 Use `Other` sparingly.
 
+Manual reclassification is a later product capability.
+
 ---
 
-# 5. Entity Data Model
+## 6. Roles
 
-Each entity should contain at minimum:
+Some classifications describe how an entity functions rather than what it is.
+
+### Enemy
+
+`Enemy` is a role, not an entity type.
+
+An entity can therefore be:
+
+- NPC + Enemy
+- Deity + Enemy
+- Faction + Enemy
+
+without creating duplicate entities.
+
+Additional roles may be introduced later when justified by the product.
+
+---
+
+## 7. Universal Entity Prominence
+
+Every canonical entity can have campaign-relative prominence:
+
+- `major`
+- `supporting`
+- `minor`
+
+Prominence applies to every entity type.
+
+Prominence is assigned after reconciliation, once the system has the full available evidence for the canonical entity.
+
+Prominence reflects narrative relevance within this campaign, not raw power or social rank.
+
+Examples:
+
+- a dog may be Minor even though it is named
+- a village hunter may be Major if central to the plot
+- an artifact may be Major even if mentioned only in a pivotal late section
+
+Prominence affects browsing emphasis, not whether an entity exists or is searchable.
+
+---
+
+## 8. Source-Backed Knowledge Model
+
+Entities contain source-backed knowledge rather than only a name and one generic summary.
+
+Conceptually, each knowledge unit must be able to carry:
 
 ```text
 id
-campaign_id
-name
-type
-aliases
-summary
-created_at
+entity_id
+field/type
+value/content
+visibility
+source evidence
+ordering/context where useful
 ```
 
-Recommended conceptual structure:
+The implementation does not have to use a generic EAV schema if a cleaner typed representation fits the codebase.
 
-```json
-{
-  "name": "Ralekai",
-  "type": "npc",
-  "aliases": [],
-  "summary": "An undead scientist researching a cure for the Demonplague."
-}
-```
+The important requirements are:
 
-The AI must not invent information merely to populate fields.
-
-If information is unknown, omit it.
+- facts have stable identity where needed
+- facts can carry independent provenance
+- facts can carry independent visibility
+- one field can contain multiple supported values
+- one fact can have multiple pieces of evidence
+- structured relationships remain first-class rather than duplicated as text facts
 
 ---
 
-# 6. Relationships
+## 9. Provenance
 
-Relationships are the most important feature in v0.
+Every extracted fact and relationship must be traceable to supporting source evidence.
 
-The system should identify meaningful connections between entities.
+For document-derived evidence, preserve at minimum:
+
+```text
+document
+page/source location
+supporting excerpt
+```
+
+Evidence must be granular enough to support the specific fact.
+
+A page number alone is not sufficient when a page contains both player-safe information and GM-only secrets.
+
+### Future source origins
+
+The provenance model should be extensible to future sources such as:
+
+- document extraction
+- manual GM entry
+- session-derived information
+
+Manual authoring does not need to exist in the current implementation, but the data model should not assume every fact will forever come from a PDF page.
+
+---
+
+## 10. Knowledge Visibility
+
+Campaign Wiki uses one canonical knowledge base rather than separate duplicated DM and player wikis.
+
+Knowledge can initially have two visibility states:
+
+- `dm_only`
+- `player_visible`
+
+Visibility can exist independently at:
+
+- entity level
+- fact level
+- relationship level
+
+### Entity visibility
+
+If an entity is DM-only, Player View must not expose it through:
+
+- campaign overview
+- category pages
+- search
+- hover/focus previews
+- relationships
+- event chronology
+- location trees
+- breadcrumbs
+- counts
+- source indexes
+
+### Fact visibility
+
+A Player-visible entity can still contain DM-only facts.
+
+Example:
+
+```text
+Colinus Birthwitch — Player visible
+Hunter — Player visible
+Village Councilmember — Player visible
+Owns Brutus — Player visible
+Murdered Reson — DM only
+Blackmailed by Bjalien — DM only
+```
+
+### Relationship visibility
+
+Visibility belongs to the normalized logical relationship.
+
+Hiding one relationship must hide it from both endpoint perspectives.
+
+### Evidence visibility
+
+Player View must not expose hidden facts through source excerpts.
+
+---
+
+## 11. DM View and Player View
+
+### DM View
+
+Displays the full campaign knowledge available to the Game Master.
+
+### Player View
+
+Displays only Player-visible:
+
+- entities
+- facts
+- relationships
+- summaries
+- source evidence
+- navigation results
+
+The same filtering rules must apply consistently across the application.
+
+A Game Master should be able to preview Player View.
+
+Actual authenticated DM/player permissions and reveal controls are later campaign-state functionality.
+
+---
+
+## 12. Summaries
+
+Where summaries are generated, keep separate:
+
+### GM Summary
+
+May use all supported knowledge.
+
+### Player Summary
+
+May use only information determined to be player-safe.
+
+Do not create a Player Summary by deleting phrases from a GM Summary.
+
+Both summaries must be source-grounded and persisted rather than generated during page rendering.
+
+The same principle applies to the campaign-level overview.
+
+---
+
+## 13. Rich Entity Articles
+
+Entity types have different useful information.
+
+Unsupported sections are omitted rather than displayed as `Unknown`.
+
+### 13.1 NPC
+
+Useful information can include:
+
+- aliases / titles
+- occupation / profession
+- social role / position
+- faction membership
+- main location / residence / workplace
+- appearance / first impression
+- mannerisms
+- voice/accent when stated
+- personality / temperament
+- values / beliefs
+- flaws / fears when stated
+- goals
+- motivations
+- wants from party when stated
+- background / history
+- knowledge
+- capabilities
+- status
+- hooks
+- important relationships
+
+### 13.2 Location
+
+Useful information can include:
+
+- kind of place
+- first impression
+- appearance
+- scale / layout
+- sensory details
+- atmosphere / vibe
+- purpose / function
+- common occupants / activity
+- important features
+- parent location
+- sublocations
+- notable occupants / owners
+- status / condition
+- hooks
+- important relationships
+
+### 13.3 Deity
+
+Useful information can include:
+
+- domains / portfolio
+- appearance / manifestations
+- iconography
+- personality / temperament
+- values / teachings
+- saints
+- avatars
+- chosen / heralds / champions
+- worshippers
+- clergy
+- holy places
+- symbols
+- relics
+- rituals / festivals
+- divine relationships
+- status
+- hooks
+
+### 13.4 Faction
+
+Useful information can include:
+
+- faction type
+- purpose / mission
+- ideology / beliefs
+- goals
+- leadership
+- important members
+- membership
+- recruitment / requirements
+- structure
+- headquarters
+- territory
+- resources / capabilities
+- symbols / colors / uniforms
+- reputation
+- methods
+- allies
+- enemies / rivals
+- associated locations
+- notable assets
+- history
+- current situation
+- status
+- hooks
+- Party Awareness
+- Party Standing
+- Reason for Standing
+- Privileges / Restrictions / Obligations
+
+Party-standing information remains source-derived until later campaign-state editing exists.
+
+### 13.5 Item
+
+Useful information can include:
+
+- item type
+- appearance
+- materials / inscriptions
+- history / origin
+- creator
+- previous owners / bearers
+- current owner / holder
+- current location
+- explicit rules stats
+- special powers / benefits
+- drawbacks / curses
+- activation / usage requirements
+- lore
+- status / condition
+- connected quests / hooks
+
+Mechanical stats and narrative powers should remain distinguishable where possible.
+
+### 13.6 Quest
+
+Quest pages should emphasize:
+
+- objective
+- questgiver
+- important NPCs
+- important locations
+- important items
+- involved factions
+- stakes
+- rewards
+- source-backed status
+- likely outcome / consequences when explicitly given
+- hook / how it begins
+
+### 13.7 Event
+
+Event pages should support chronology through:
+
+- what happened
+- exact date/time if known
+- relative timing if known
+- uncertainty
+- location
+- participants
+- causes
+- consequences
+- connected quests/entities
+
+Do not invent dates merely to force events into a timeline.
+
+### 13.8 Other
+
+`Other` remains a simple fallback.
+
+---
+
+## 14. Relationships
+
+Relationships remain one of the central product features.
+
+They connect canonical entities and should:
+
+- be stored once
+- render bidirectionally
+- use natural wording
+- preserve evidence
+- preserve visibility
+- survive entity reconciliation
+- avoid semantic inverse duplication
 
 Examples:
 
 ```text
-Ralekai
-    needs
-Soul Stone
+NPC → member_of → Faction
+NPC → owns → Item
+NPC → murdered → NPC
+Location → located_in → Location
+NPC → questgiver_for → Quest
 ```
 
-```text
-Ralekai
-    researching cure for
-Demonplague
-```
+Relationship vocabulary can include both normalized known relationship families and meaningful free-form relationships.
 
-```text
-Lord Harren
-    member of
-Red Hand
-```
-
-```text
-Old Mine
-    located near
-Greymoor
-```
-
-```text
-Meriath
-    killed
-Dragon Sorcerer
-```
+The UI should not expose internal labels when natural prose already communicates the relationship.
 
 ---
 
-# 7. Relationship Data Model
+## 15. Recursive Location Hierarchy
 
-Each relationship should contain:
+Location containment is physical containment only.
 
-```text
-id
-campaign_id
-source_entity_id
-target_entity_id
-relationship_type
-description
-source_reference
-confidence
-```
-
-Example:
-
-```json
-{
-  "source": "Ralekai",
-  "target": "Soul Stone",
-  "relationship_type": "needs",
-  "description": "Ralekai needs an empty Soul Stone to continue his research.",
-  "source_page": 73,
-  "confidence": 0.94
-}
-```
-
-Relationship types do not need to come from a fixed global list in v0.
-
-Natural-language labels such as these are acceptable:
+Examples:
 
 ```text
-member of
-enemy of
-sibling of
-located in
-created by
-needs
-killed
-serves
-investigating
-allied with
-rules
-visited
-owns
+Country
+└── Village
+    └── Tavern
+        └── Basement
+            └── Altar
 ```
+
+Requirements:
+
+- unlimited practical depth
+- one canonical containment model
+- cycle protection
+- ambiguous parentage should prefer no parent over a wrong parent
+- source-backed containment
+- breadcrumbs
+- parent/child navigation
+- nested locations remain directly searchable
+
+Do not confuse containment with:
+
+- near
+- owned_by
+- controlled_by
+- visited
+- allied_with
 
 ---
 
-# 8. Bidirectional Wiki Relationships
+## 16. Events and Chronology
 
-A relationship must appear on the pages of both connected entities.
+The Events view should favor chronological presentation rather than alphabetical listing.
 
-For:
+The system may use:
 
-```text
-Ralekai → needs → Soul Stone
-```
+- exact dates
+- relative dates
+- era/grouping
+- explicit sequence
+- unknown date
 
-Ralekai's page should show:
+Possible presentation groups include:
 
-```text
-Soul Stone
-Needs an empty Soul Stone.
-```
+- Ancient History
+- Before the Campaign
+- Campaign Events
+- Unknown Date
 
-The Soul Stone page should also show:
+Chronology must preserve uncertainty and must not invent dates.
 
-```text
-Ralekai
-Needed by Ralekai for his research.
-```
-
-The application should not store these as two independent relationships.
-
-Store one relationship and render it from both directions.
-
-Whenever possible, generate a readable description appropriate to each side.
+A broader universal timeline may be added later.
 
 ---
 
-# 9. Source Traceability
+## 17. Campaign Overview
 
-Every extracted entity and relationship must retain references to the original PDF.
+The campaign homepage should provide useful campaign context, not an extraction dashboard.
 
-At minimum store:
+It should support:
+
+### GM Overview
+
+A source-backed overview containing the full premise, major conflicts, major antagonists, hidden situation, and stakes.
+
+### Player Overview
+
+A spoiler-safe, source-backed overview based on player introductions, handouts, explicitly public knowledge, or similarly strong evidence.
+
+When player safety is unclear, omit questionable information.
+
+The homepage should surface important campaign entities using prominence rather than treating every entry as equally important.
+
+---
+
+## 18. Navigation and Search
+
+The wiki should optimize for fast reference during play.
+
+Core navigation includes:
+
+- current campaign home
+- entity categories
+- Enemies role view
+- campaign-scoped search
+- global All Campaigns navigation
+- source inspection
+
+The primary campaign header should remain available while scrolling.
+
+Category pages should remain concise and prominence-aware.
+
+Search should find entities regardless of prominence.
+
+Semantic/AI search is not required unless separately introduced.
+
+---
+
+## 19. Quick Entity Previews
+
+Entity links may provide compact hover/focus previews showing useful source-backed facts.
+
+Examples:
 
 ```text
-document
-page_number
-supporting_text
-```
-
-Example:
-
-```text
-Source:
-Campaign Notes.pdf
-Page 73
-
-"Ralekai tells the party that an empty Soul Stone
-may allow him to complete the cure."
-```
-
-The full supporting quote does not have to appear prominently on the wiki page.
-
-It should be accessible through the Sources section or a source-details control.
-
-This serves two purposes:
-
-1. The user can verify AI-generated information.
-2. Extraction errors can later be diagnosed.
-
-The application must never create unsupported campaign facts intentionally.
-
----
-
-# 10. PDF Processing
-
-v0 supports:
-
-- text-based PDFs
-- PDFs containing selectable/extractable text
-
-v0 does NOT need to support:
-
-- scanned handwritten notes
-- image-only PDFs
-- OCR
-- photographs of notes
-
-If usable text cannot be extracted, display an error explaining that v0 currently supports text-based PDFs only.
-
-Page boundaries must be preserved so extracted information can refer back to its original page number.
-
----
-
-# 11. Extraction Pipeline
-
-The expected conceptual pipeline is:
-
-```text
-PDF upload
-      ↓
-Extract text per page
-      ↓
-Split into manageable chunks
-      ↓
-Extract candidate entities
-      ↓
-Extract candidate relationships
-      ↓
-Global entity reconciliation
-      ↓
-Merge duplicates / aliases
-      ↓
-Reconnect relationships to canonical entities
-      ↓
-Store entities
-      ↓
-Store relationships
-      ↓
-Generate wiki
-```
-
----
-
-# 12. Entity Extraction
-
-AI extraction should return structured data rather than free-form prose.
-
-For each detected entity return:
-
-```json
-{
-  "temporary_id": "npc_14",
-  "name": "Ralekai",
-  "type": "npc",
-  "aliases": [],
-  "summary": "An undead scientist researching a cure.",
-  "source_pages": [73, 91]
-}
-```
-
-The system should favor precision over extracting every possible noun.
-
-Do not create entities for:
-
-- unnamed villagers
-- generic guards
-- every sword
-- every tavern unless narratively relevant
-- common monsters without individual significance
-- ordinary objects
-- generic concepts
-
-A useful wiki with 100 meaningful entities is preferable to one containing 1,000 irrelevant entities.
-
----
-
-# 13. Duplicate Resolution
-
-The same entity may appear many times throughout the PDF.
-
-These references must be reconciled.
-
-Example:
-
-```text
-Ralekai
-Ralekai the Scientist
-the undead scientist
-```
-
-may all refer to the same NPC.
-
-The system should attempt to merge obvious duplicates.
-
-Aliases should be retained where useful.
-
-Example:
-
-```json
-{
-  "name": "Ralekai",
-  "aliases": [
-    "Ralekai the Scientist"
-  ]
-}
-```
-
-When uncertain whether two entities are the same, prefer keeping them separate rather than incorrectly merging them.
-
----
-
-# 14. Cross-Chunk Reconciliation
-
-Because large PDFs will require multiple AI extraction calls, entity identity cannot depend only on individual chunks.
-
-After the complete document has been processed, perform a reconciliation step across all discovered entities.
-
-The reconciliation step should:
-
-1. Find likely duplicates.
-2. Select a canonical name.
-3. Merge aliases.
-4. Merge source references.
-5. Update relationships to reference the canonical entity.
-
-This is required for v0.
-
-Without global reconciliation, the resulting wiki will become fragmented.
-
----
-
-# 15. Wiki Navigation
-
-The wiki requires three basic navigation mechanisms.
-
-## Campaign home
-
-Shows:
-
-- campaign name
-- entity counts
-- entities grouped by category
-- search
-
----
-
-## Category pages
-
-Example:
-
-```text
-NPCs
-
-Ralekai
-Meriath the Quick
-Feriae the Wise
-Lord Harren
-...
-```
-
-Each item links to its entity page.
-
----
-
-## Entity links
-
-Whenever one entity appears in another entity's Relationships section, it must be clickable.
-
----
-
-# 16. Search
-
-v0 should provide simple text search.
-
-Search against at least:
-
-- entity name
-- aliases
-
-Searching:
-
-```text
-ralek
-```
-
-should return:
-
-```text
-Ralekai — NPC
-```
-
-Semantic/AI search is explicitly NOT required for v0.
-
----
-
-# 17. Screens Required
-
-Only four primary screens are required.
-
-## Screen 1 — Upload
-
-```text
-Campaign Wiki
-
-Turn your campaign PDF into an interconnected wiki.
-
-Campaign name
-[________________]
-
-Campaign PDF
-[ Choose file ]
-
-[ Generate Wiki ]
-```
-
----
-
-## Screen 2 — Processing
-
-```text
-Creating your campaign wiki...
-
-Processing Campaign Notes.pdf
-
-[ loading indicator ]
-```
-
----
-
-## Screen 3 — Campaign Home
-
-```text
-DEMONPLAGUE
-
-143 entities
-
-Search...
-
-NPCs
-51
-
-Locations
-32
-
-Items
-18
-
-...
-
-Recently discovered / entity list
-```
-
----
-
-## Screen 4 — Entity Page
-
-```text
-RALEKAI
-
+Colinus Birthwitch
 NPC
-
-An undead scientist researching a cure for
-the Demonplague.
-
-RELATIONSHIPS
-
-Soul Stone →
-Needs an empty Soul Stone.
-
-Demonplague →
-Researching a cure.
-
-Tomar's Crossing →
-Worked with the party here.
-
-SOURCES
-
-Campaign Notes.pdf — p.73
-Campaign Notes.pdf — p.91
+Hunter · Village Councilmember
+Tomar's Crossing
+Alive
 ```
 
-Design should prioritize readability over visual complexity.
+or:
+
+```text
+Jorney's Tavern
+Location
+Tavern in Tomar's Crossing
+Busy local gathering place
+```
+
+Previews must:
+
+- respect DM/Player visibility
+- be keyboard accessible
+- have sensible touch behavior
+- avoid render-time AI calls
+- avoid one API/database request per hover when practical
 
 ---
 
-# 18. Data Model
+## 20. Source Inspection
 
-A relational database is sufficient.
+Source references should be compact in the article and easy to inspect.
 
-A dedicated graph database is not required.
-
-Minimum tables:
+Example:
 
 ```text
-campaigns
-documents
-entities
-entity_sources
-relationships
-relationship_sources
+Murdered Reson Fergone while hunting. [p.45]
 ```
 
-Conceptually:
+Opening evidence should expose:
 
-```text
-CAMPAIGN
-   │
-   ├── DOCUMENT
-   │
-   ├── ENTITY
-   │      │
-   │      └── ENTITY_SOURCE
-   │
-   └── RELATIONSHIP
-          │
-          └── RELATIONSHIP_SOURCE
-```
+- source document
+- page/source location
+- supporting excerpt
+
+Repeated page numbers can be grouped for presentation, but distinct excerpts must not be discarded.
 
 ---
 
-# 19. Suggested Technical Stack
+## 21. Campaign List
 
-The prototype should optimize for development speed and maintainability.
+Users should be able to revisit processed campaigns easily.
 
-Suggested stack:
+Campaign cards should behave as primary navigation targets rather than requiring a small explicit `Open Wiki` link.
+
+Campaign processing/failed states remain visible where relevant.
+
+---
+
+## 22. Extraction and Reconciliation Rules
+
+The system should:
+
+1. Extract structured candidate data.
+2. Preserve source evidence.
+3. Reconcile candidates globally.
+4. Prefer incorrect non-merge over incorrect merge.
+5. Preserve aliases.
+6. Remap relationships to canonical entities.
+7. Normalize inverse relationships.
+8. Construct location hierarchy.
+9. Assign campaign-level judgments such as prominence only after reconciliation.
+10. Generate richer summaries only from available evidence.
+
+Costly stages should be cacheable/replayable where practical.
+
+Paid AI work must be measurable. Optional expensive enrichment must not become silently mandatory, and validated AI work should be reusable or resumable where practical. Provider failures must fail closed rather than silently switching to a paid provider. Cost controls never justify weakening provenance or player-safety rules.
+
+---
+
+## 23. Technical Direction
+
+The product should favor a maintainable single-application architecture.
+
+Current direction:
 
 ```text
 Application:
-Next.js
-TypeScript
+Next.js / TypeScript
 
 Database:
 PostgreSQL / Supabase
 
 File storage:
-Supabase Storage or equivalent
+Supabase Storage
 
 AI extraction:
-OpenAI API using structured outputs
+OpenAI structured outputs
 
 Deployment:
 Vercel
@@ -788,307 +839,110 @@ Repository:
 GitHub
 ```
 
-These are recommendations rather than hard product requirements.
-
 Avoid unnecessary infrastructure.
 
-In particular:
+A dedicated graph database is not required.
 
-- no Neo4j
-- no vector database
-- no microservices
-- no separate frontend/backend repositories
-
-A single application is preferable for v0.
+Do not introduce vector databases, microservices, or other infrastructure without a concrete product need.
 
 ---
 
-# 20. Error Handling
+## 24. Security and Deployment Principles
 
-The application should gracefully handle at least:
+Secrets such as:
 
-### Invalid file
+- OpenAI API keys
+- Supabase service-role credentials
 
-```text
-Please upload a PDF.
-```
+must remain server-side.
 
-### PDF has no extractable text
+Public/read-only deployments must not accidentally expose campaign upload or paid AI operations when uploads are disabled.
 
-```text
-We couldn't extract readable text from this PDF.
+Database permissions, RLS, and service-role grants should be explicit and migration-backed.
 
-Campaign Wiki v0 currently supports text-based PDFs only.
-```
-
-### AI processing failure
-
-```text
-We couldn't finish processing this campaign.
-
-Please try again.
-```
-
-Detailed developer errors may be logged separately.
+Provider credentials and endpoints are server-only. Development providers must be identifiable in diagnostics and must not replace canonical campaign output without an explicit acknowledgement.
 
 ---
 
-# 21. Out of Scope for v0
+## 25. Current Product Boundaries
 
-Do NOT implement the following yet:
+The following are not assumed to exist merely because the data model may support them later:
 
-- user accounts
-- multiple users
-- DM/player roles
-- secret information
-- progressive information reveals
-- manual entity creation
-- manual relationship creation
+- manual campaign editing
+- manual fact creation
+- manual merge/split
+- per-player visibility
+- party-specific ACLs
+- full campaign-state history
+- authenticated player accounts
 - rich text editor
-- AI campaign chat
-- question answering
-- campaign timeline
+- universal timeline
 - maps
-- family trees
+- family-tree visualization
 - relationship graph visualization
-- image generation
 - character sheets
-- stat blocks
-- dice rolling
-- initiative tracking
-- encounter building
-- VTT integration
-- Discord integration
-- Google Docs integration
-- Notion integration
-- Obsidian integration
-- multiple uploaded campaign documents
-- OCR
-- handwritten-note recognition
-- automatic web research
+- dice/initiative/encounter tools
+- VTT integrations
+- external canon research
 
-If one of these becomes necessary while implementing v0, reconsider whether it is actually required before adding it.
+These can be introduced through future implementation plans when justified.
 
 ---
 
-# 22. Important AI Behaviour Rules
+## 26. Future Campaign-State Direction
 
-The extraction system should follow these principles:
+The product should leave room for a later living-campaign workflow where a GM can:
 
-### Do not invent campaign lore
+- reveal an entity to players
+- reveal/hide individual facts
+- add manual facts
+- edit extracted facts
+- provide manual-source provenance
+- merge/split entities manually
+- reclassify entities
+- change faction Party Standing
+- change quest status
+- record evolving campaign state
+- maintain an audit/history trail
 
-Only extract information supported by the uploaded document.
+These future features should build on the same canonical entities, facts, relationships, provenance, and visibility model rather than requiring duplicated player and DM databases.
 
----
+## 27. Product Roadmap Direction
 
-### Prefer meaningful entities
+The roadmap is intentionally broad here. Version-specific scope and acceptance criteria belong in the current implementation plan.
 
-Do not convert every named noun into an entity.
+- v0.4 focuses on lean, cost-efficient, reliable processing infrastructure.
+- v0.5 focuses on editing, correction, visibility, and campaign-state maintenance.
+- v0.6 focuses on a major UI and design overhaul.
+- Later work includes authenticated player sharing, multi-document and incremental sources, backup/export/restore, and broader production hardening.
 
----
-
-### Preserve uncertainty
-
-If the document is ambiguous, do not pretend certainty.
-
----
-
-### Prefer false negatives over false positives
-
-Missing a minor relationship is less damaging than inventing one.
-
----
-
-### Preserve sources
-
-Every important extracted claim should be traceable to the PDF.
+Current Player View is a preview/read mode, not secure authenticated authorization.
 
 ---
 
-### Do not apply outside canon
+## 28. Product Documentation Hierarchy
 
-The system must treat the uploaded document as the campaign's source of truth.
+`PRODUCT_SPEC.md` is the evergreen product specification.
 
-For example, if the PDF mentions:
+It defines:
+
+- product purpose
+- enduring product principles
+- conceptual information model
+- current product behavior and boundaries
+
+Version-specific implementation work belongs in the current implementation plan, for example:
 
 ```text
-Waterdeep
+IMPLEMENTATION_PLAN_V0_3.md
 ```
 
-the AI should not add Forgotten Realms lore unless that information exists in the uploaded document.
+The current implementation plan is authoritative for that sprint/version.
 
----
+Older implementation plans are historical references only and should be consulted only when:
 
-# 23. Example Input
+- the current plan explicitly requires historical context
+- current code is ambiguous
+- a regression requires understanding an older design decision
 
-PDF contains:
-
-```text
-The heroes returned to Greymoor where they met Hanna Stone,
-the owner of the Silver Stag Inn.
-
-Hanna explained that her brother Edric disappeared three
-weeks ago while investigating the abandoned Old Mine.
-
-Unknown to Hanna, Edric had discovered that the Cult of Ash
-was operating beneath the mine.
-```
-
----
-
-# 24. Expected Extraction
-
-Entities:
-
-```text
-Greymoor
-Type: Location
-
-Hanna Stone
-Type: NPC
-
-Silver Stag Inn
-Type: Location
-
-Edric Stone
-Type: NPC
-
-Old Mine
-Type: Location
-
-Cult of Ash
-Type: Faction
-```
-
-Relationships:
-
-```text
-Hanna Stone
-    lives/works in
-Greymoor
-
-Hanna Stone
-    owns
-Silver Stag Inn
-
-Hanna Stone
-    sibling of
-Edric Stone
-
-Edric Stone
-    disappeared near/in
-Old Mine
-
-Edric Stone
-    investigating
-Old Mine
-
-Cult of Ash
-    operating beneath
-Old Mine
-```
-
-Each relationship should include the source page supporting it.
-
----
-
-# 25. Acceptance Criteria
-
-v0 is considered functionally complete when the following scenario works.
-
-Given a text-based campaign PDF containing multiple NPCs, locations, items, factions and events:
-
-### Upload
-
-- User can create a campaign name.
-- User can upload one PDF.
-- Application stores the PDF.
-- Application extracts its text while preserving page numbers.
-
-### Extraction
-
-- Application extracts multiple entity types.
-- Application extracts relationships between entities.
-- Repeated mentions of the same obvious entity are merged.
-- Relationships survive the deduplication process.
-- Entities and relationships retain source-page references.
-
-### Wiki
-
-- Campaign home displays extracted entities.
-- Entities are grouped by type.
-- Clicking an entity opens its page.
-- Entity page shows its summary.
-- Entity page shows relationships.
-- Related entities are clickable.
-- Relationships appear from both connected entity pages.
-- Source page numbers are visible.
-
-### Search
-
-- User can search entities by name.
-- Search result links to the corresponding wiki page.
-
-### Quality
-
-For a manually reviewed test campaign:
-
-- major recurring NPCs should normally be detected
-- major named locations should normally be detected
-- major named items/factions should normally be detected
-- obvious explicitly stated relationships should normally be detected
-- the system should not routinely invent unsupported entities or relationships
-
-Perfect extraction is NOT required for v0.
-
-The prototype must instead demonstrate that the resulting wiki is meaningfully useful.
-
----
-
-# 26. Primary Prototype Test
-
-The first serious test should use a real campaign PDF rather than a specially prepared demo document.
-
-After processing, evaluate:
-
-```text
-1. What important entities did it miss?
-
-2. What irrelevant entities did it create?
-
-3. Which duplicates did it fail to merge?
-
-4. Which entities did it incorrectly merge?
-
-5. Which important relationships did it miss?
-
-6. Which relationships did it invent?
-
-7. Are the generated summaries accurate?
-
-8. Are the source references correct?
-
-9. Can a GM find information faster using the wiki
-   than by searching the original PDF?
-
-10. Does browsing relationships reveal useful connections
-    the GM may otherwise have forgotten?
-```
-
-These results should determine the priorities for v0.1.
-
----
-
-# 27. Definition of Success
-
-Do not judge the prototype primarily by visual polish.
-
-The prototype succeeds if the first real campaign upload produces the reaction:
-
-> **“This actually understands my campaign.”**
-
-Specifically, a GM should be able to open an NPC page, see who and what that NPC is connected to, follow those links through the campaign, and trace the information back to the original source.
-
-If that experience works, subsequent features can be built on top of the same knowledge model.
-
-If that experience does not work, adding more campaign-management features will not fix the core product.
+The current codebase is the source of truth for what is actually implemented.

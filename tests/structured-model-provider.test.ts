@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createLocalStructuredModelProvider, createOpenAIStructuredModelProvider, preflightLocalStructuredModelProvider } from "@/lib/ai/structured-model-provider";
-import { resolveAIProviderConfig } from "@/lib/env";
+import { assertAIProviderPersistenceAllowed, resolveAIProviderConfig } from "@/lib/env";
 import { enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentFixtureGraph, enrichmentFixtureOutput } from "@/fixtures/enrichment-cache";
 
@@ -14,13 +14,21 @@ describe("structured model provider selection", () => {
   });
 
   it("resolves an explicit local provider without an OpenAI key", () => {
-    expect(resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1/", LOCAL_AI_MODEL: "local-model" }, "enrichment")).toEqual({ providerId: "local", modelId: "local-model", baseUrl: "http://localhost:11434/v1", apiKey: undefined });
+    expect(resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1/", LOCAL_AI_MODEL: "local-model" }, "enrichment")).toEqual({ providerId: "local", modelId: "local-model", baseUrl: "http://localhost:11434/v1", apiKey: undefined, allowPersistence: false });
+  });
+
+  it("fails closed for local canonical persistence unless explicitly acknowledged", () => {
+    const local = resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "local-model" }, "enrichment");
+    expect(() => assertAIProviderPersistenceAllowed(local)).toThrow(/LOCAL_AI_ALLOW_PERSISTENCE=true/);
+    const acknowledged = resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "local-model", LOCAL_AI_ALLOW_PERSISTENCE: "true" }, "enrichment");
+    expect(() => assertAIProviderPersistenceAllowed(acknowledged)).not.toThrow();
   });
 
   it("rejects unsupported and incomplete local configuration", () => {
     expect(() => resolveAIProviderConfig({ AI_PROVIDER: "other" }, "enrichment")).toThrow(/Unsupported AI_PROVIDER/);
     expect(() => resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_MODEL: "model" }, "enrichment")).toThrow(/LOCAL_AI_BASE_URL/);
     expect(() => resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http:\/\/localhost:11434\/v1" }, "enrichment")).toThrow(/LOCAL_AI_MODEL/);
+    expect(() => resolveAIProviderConfig({ AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http:\/\/localhost:11434\/v1", LOCAL_AI_MODEL: "model", VERCEL: "1" }, "enrichment")).toThrow(/not allowed on Vercel/);
   });
 });
 
@@ -35,7 +43,7 @@ describe("OpenAI structured model adapter", () => {
 });
 
 describe("local structured model adapter", () => {
-  const config = { providerId: "local" as const, modelId: "local-model", baseUrl: "http://localhost:11434/v1" };
+  const config = { providerId: "local" as const, modelId: "local-model", baseUrl: "http://localhost:11434/v1", allowPersistence: false };
   const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, statusText: status === 200 ? "OK" : "Failure", headers: { "content-type": "application/json" } });
 
   it("parses JSON and validates it with the application Zod schema", async () => {
@@ -61,8 +69,13 @@ describe("local structured model adapter", () => {
 
   it("preflights a local model without making a generation call", async () => {
     const fetchMock = vi.fn().mockResolvedValue(response({ data: [{ id: "local-model" }] }));
-    expect(await preflightLocalStructuredModelProvider(config, fetchMock)).toMatchObject({ providerId: "local", reachable: true, paidOpenAICalls: 0 });
+    expect(await preflightLocalStructuredModelProvider(config, fetchMock)).toMatchObject({ providerId: "local", reachable: true, modelAvailability: "confirmed", paidOpenAICalls: 0 });
     expect(fetchMock).toHaveBeenCalledWith("http://localhost:11434/v1/models", expect.any(Object));
+  });
+
+  it("reports when a compatible endpoint does not report model availability", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response({}));
+    await expect(preflightLocalStructuredModelProvider(config, fetchMock)).resolves.toMatchObject({ modelAvailability: "not-reported", paidOpenAICalls: 0 });
   });
 });
 
@@ -88,7 +101,7 @@ describe("provider-independent enrichment", () => {
       const name = body.messages[0].content.match(/requested ([^ ]+) structure/)?.[1];
       return new Response(JSON.stringify({ model: "local-model", choices: [{ message: { content: JSON.stringify(outputFor(name!, JSON.parse(body.messages[1].content))) } }] }), { status: 200 });
     });
-    const localProvider = createLocalStructuredModelProvider({ providerId: "local", modelId: "local-model", baseUrl: "http://localhost:11434/v1" }, localFetch);
+    const localProvider = createLocalStructuredModelProvider({ providerId: "local", modelId: "local-model", baseUrl: "http://localhost:11434/v1", allowPersistence: false }, localFetch);
     const [openAI, local] = await Promise.all([enrichCanonicalGraphWithAI(graph, { provider: openAIProvider }), enrichCanonicalGraphWithAI(graph, { provider: localProvider })]);
     expect(local.graph).toEqual(openAI.graph);
     expect(openAIParse).toHaveBeenCalled();

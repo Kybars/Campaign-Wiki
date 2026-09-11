@@ -34,7 +34,7 @@ export type ProcessingEnv = z.infer<typeof processingEnvSchema>;
 export type AIStage = "extraction" | "reconciliation" | "enrichment";
 export type ResolvedAIProviderConfig =
   | { providerId: "openai"; modelId: string }
-  | { providerId: "local"; modelId: string; baseUrl: string; apiKey?: string };
+  | { providerId: "local"; modelId: string; baseUrl: string; apiKey?: string; allowPersistence: boolean };
 
 export function resolveAIProviderConfig(env: Record<string, string | undefined>, stage: AIStage): ResolvedAIProviderConfig {
   const provider = env.AI_PROVIDER ?? "openai";
@@ -46,9 +46,15 @@ export function resolveAIProviderConfig(env: Record<string, string | undefined>,
   }
   if (provider !== "local") throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
   if (env.VERCEL === "1") throw new Error("AI_PROVIDER=local is not allowed on Vercel");
-  const parsed = z.object({ LOCAL_AI_BASE_URL: z.string().url(), LOCAL_AI_MODEL: z.string().min(1), LOCAL_AI_API_KEY: z.string().min(1).optional() }).safeParse({ ...env, LOCAL_AI_API_KEY: env.LOCAL_AI_API_KEY || undefined });
+  const parsed = z.object({ LOCAL_AI_BASE_URL: z.string().url(), LOCAL_AI_MODEL: z.string().min(1), LOCAL_AI_API_KEY: z.string().min(1).optional(), LOCAL_AI_ALLOW_PERSISTENCE: z.enum(["true", "false"]).optional().default("false") }).safeParse({ ...env, LOCAL_AI_API_KEY: env.LOCAL_AI_API_KEY || undefined });
   if (!parsed.success) throw new Error(`Invalid local AI configuration. Check: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
-  return { providerId: "local", modelId: parsed.data.LOCAL_AI_MODEL, baseUrl: parsed.data.LOCAL_AI_BASE_URL.replace(/\/$/, ""), apiKey: parsed.data.LOCAL_AI_API_KEY };
+  return { providerId: "local", modelId: parsed.data.LOCAL_AI_MODEL, baseUrl: parsed.data.LOCAL_AI_BASE_URL.replace(/\/$/, ""), apiKey: parsed.data.LOCAL_AI_API_KEY, allowPersistence: parsed.data.LOCAL_AI_ALLOW_PERSISTENCE === "true" };
+}
+
+export function assertAIProviderPersistenceAllowed(config: ResolvedAIProviderConfig) {
+  if (config.providerId === "local" && !config.allowPersistence) {
+    throw new Error("AI_PROVIDER=local cannot persist canonical campaign data without LOCAL_AI_ALLOW_PERSISTENCE=true");
+  }
 }
 
 function parseEnv<T>(schema: z.ZodType<T>, label: string): T {

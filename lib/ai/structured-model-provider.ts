@@ -73,5 +73,5 @@ export async function preflightLocalStructuredModelProvider(config: Extract<Reso
   const body = await response.json() as { data?: Array<{ id?: string }> };
   const models = body.data?.flatMap((model) => model.id ? [model.id] : []) ?? [];
   if (models.length && !models.includes(config.modelId)) throw new Error(`Local AI model ${config.modelId} is not available at the configured endpoint`);
-  return { providerId: config.providerId, modelId: config.modelId, baseUrl: config.baseUrl, reachable: true, paidOpenAICalls: 0 };
+  return { providerId: config.providerId, modelId: config.modelId, baseUrl: config.baseUrl, reachable: true, modelAvailability: models.length ? "confirmed" : "not-reported", paidOpenAICalls: 0 };
 }

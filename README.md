@@ -87,6 +87,8 @@ Run `npm run ai:preflight` to validate the configured enrichment provider withou
 
 In v0.4.0, enrichment uses the provider-independent boundary. Extraction and reconciliation retain their existing OpenAI adapters and stage-specific model settings; they are intentionally not executed by local enrichment recovery and can migrate mechanically to the same boundary in a later milestone.
 
+`AI_PROVIDER=local` is safe for preflight and recovery dry-runs. A live local enrichment run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
+
 `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only secrets. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or expose them in browser code. The anon key is included for conventional Supabase project configuration, although v0 database access is server-only.
 
 ### Campaign upload access
