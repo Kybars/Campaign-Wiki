@@ -138,11 +138,11 @@ Relationship normalization
     ↓
 Location hierarchy construction
     ↓
-Campaign-level enrichment
+Canonical graph persistence
     ↓
-Persistence
+Wiki ready
     ↓
-Wiki
+Optional campaign-level enrichment and persisted updates
 ```
 
 The pipeline should be replayable from saved intermediate data wherever practical so improvements do not require repeatedly paying for full extraction.
@@ -256,7 +256,7 @@ Every canonical entity can have campaign-relative prominence:
 
 Prominence applies to every entity type.
 
-Prominence is assigned after reconciliation, once the system has the full available evidence for the canonical entity.
+When prominence is assigned or suggested, it happens after reconciliation, once the system has the full available evidence for the canonical entity.
 
 Prominence reflects narrative relevance within this campaign, not raw power or social rank.
 

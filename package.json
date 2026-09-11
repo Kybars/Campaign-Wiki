@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -13,6 +13,7 @@
     "evaluate": "tsx scripts/evaluate-extraction.ts",
     "evaluate:replay": "tsx scripts/evaluate-replay-fixture.ts",
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",
+    "evaluate:enrichment-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-enrichment-workload.ts",
     "ai:preflight": "node --conditions=react-server --import tsx scripts/ai-preflight.ts",
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
     "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",

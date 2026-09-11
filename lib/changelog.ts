@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-11",
+    title: "Lean processing decision",
+    changes: [
+      "Evaluated enrichment value and cost and defined the lean processing target for v0.4.",
+      "Added a zero-model-call Test 3 workload measurement command.",
+    ],
+  },
+  {
+    version: "0.4.1",
+    date: "2026-09-11",
     title: "Local AI persistence safety",
     changes: [
       "Requires explicit acknowledgement before local enrichment can replace canonical campaign data.",
