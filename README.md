@@ -103,6 +103,8 @@ Extraction, reconciliation, and enrichment all use the provider-independent boun
 
 `AI_PROVIDER=local` is safe for preflight, non-persisting fixture smoke, and recovery dry-runs. A live local run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
 
+`OPENAI_MAX_CALLS_PER_RUN` is a server-only application-level ceiling (default `40`). It counts OpenAI operations and controlled semantic retries before dispatch, but excludes local calls and checkpoint reuse. Recovery dry-runs report whether the planned operations plus retry ceiling are allowed; provider-internal SDK retries are not observable and are not represented as exact HTTP-request counts.
+
 `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only secrets. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or expose them in browser code. The anon key is included for conventional Supabase project configuration, although v0 database access is server-only.
 
 ### Campaign upload access
@@ -205,6 +207,8 @@ Run `npm run evaluate:lean` for a read-only Test 3 cache dry-run. It reuses extr
 Run `npm run evaluate:extraction-workload` for read-only size/count instrumentation over the preserved Test 3 extraction cache. It performs no generation and no writes. Developers with an already-running local server can use `npm run smoke:local` to process only the small fixture into an in-memory lean graph.
 
 Run `npm run evaluate:checkpoints` for a deterministic checkpoint planner evaluation. It demonstrates `REUSE`, `RUN`, and `INVALIDATED` decisions with zero model calls and zero dry-run writes. Full cached-recovery dry-runs include the provider/model-aware operation plan; exact dependency-resolved reuse is also recorded during execution.
+
+Run `npm run evaluate:failure-resume` for a deterministic M5 guard report. It uses mocked representative failure/resume scenarios only and makes zero model calls or writes.
 
 Run `npm run evaluate:enrichment` for the deterministic post-reconciliation prominence, visibility, summary, overview, and consistency fixture. It makes zero OpenAI and Supabase calls. See [`docs/V0_3_CANONICAL_ENRICHMENT.md`](./docs/V0_3_CANONICAL_ENRICHMENT.md).
 

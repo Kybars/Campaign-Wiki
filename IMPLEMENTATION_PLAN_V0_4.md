@@ -731,6 +731,10 @@ Kill enrichment after several validated batches and rerun. Previously validated 
 
 # 15. Milestone 5 — Resumability, Failure Injection, and Paid-Call Guards
 
+## Status
+
+Completed as v0.4.6. Deterministic failure/resume coverage now proves corrupt checkpoints rerun rather than reuse, provider failures do not fall back, and application-level OpenAI dispatches are bounded by a server-side ceiling that includes controlled semantic retries.
+
 ## Goal
 
 Prove the processing architecture behaves correctly under realistic failure.

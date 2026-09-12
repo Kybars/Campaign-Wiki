@@ -93,6 +93,7 @@ Old implementation plans are historical unless the active plan references them. 
 - Do not make paid model calls without explicit authorization.
 - Dry-run and preflight perform no generation.
 - Reused checkpoints are not new model calls.
+- A server-side OpenAI attempt ceiling must preflight planned work and guard actual application-level dispatches; semantic retries consume it, while local calls and reuse do not.
 - Unknown local token usage is `null`, never zero.
 - Never apply OpenAI pricing to local usage.
 - Keep costly optional enrichment explicit.

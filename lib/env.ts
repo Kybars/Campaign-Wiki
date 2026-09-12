@@ -27,6 +27,7 @@ const processingEnvSchema = z.object({
   PDF_CHUNK_TARGET_CHARACTERS: z.coerce.number().int().min(5000).max(100000).default(45000),
   AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(3),
   LOCAL_AI_EXTRACTION_CONCURRENCY: z.coerce.number().int().min(1).max(6).default(1),
+  OPENAI_MAX_CALLS_PER_RUN: z.coerce.number().int().min(0).max(1000).default(40),
 });
 
 export type OpenAIEnv = z.infer<typeof openAIEnvSchema>;

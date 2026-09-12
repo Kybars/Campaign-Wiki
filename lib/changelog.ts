@@ -12,6 +12,15 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-12",
+    title: "Failure and paid-call guards",
+    changes: [
+      "Added deterministic corrupt-checkpoint recovery and OpenAI application-attempt budget coverage.",
+      "Added server-side recovery planning and runtime enforcement for configurable OpenAI call ceilings.",
+    ],
+  },
+  {
+    version: "0.4.5",
     date: "2026-09-11",
     title: "Durable AI operation checkpoints",
     changes: [

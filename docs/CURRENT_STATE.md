@@ -4,9 +4,9 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.5`
-- Snapshot HEAD: `4d24e5cc95e1e604293af3ea3e46eaa09fd82edb` (`feat: add durable AI operation checkpoints`)
-- Latest completed milestone: M4 — Durable Per-Operation Enrichment Checkpoints
+- Package version: `0.4.6` (M5 worktree pending commit)
+- Snapshot HEAD: `2c2bc38078ebc778d5331bbb8083df02c39a9bbf` (`docs: consolidate project context`)
+- Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - Working tree after this documentation task: not clean (context documentation pending commit)
 
@@ -50,6 +50,8 @@ M4 adds private `ai_operation_checkpoints` for validated, reusable operation out
 
 Checkpoint identity includes campaign/document scope, provider, exact model, mode where semantic, operation type/key, semantic input hash, upstream fingerprint, behavior version, and schema version. Output is revalidated before reuse. Failed output is never successful. Historical cache records remain readable but are not assigned checkpoint metadata they never stored.
 
+M5 treats a stored checkpoint that no longer passes schema or semantic validation as failed, then reruns it; it is never reused. `OPENAI_MAX_CALLS_PER_RUN` defaults to `40` and guards application-level OpenAI dispatches at runtime. Checkpoint reuse and local calls do not consume it; controlled semantic retries do. Recovery dry-runs report `REUSE`/`RUN`/`INVALIDATED`, planned OpenAI/local calls, retry ceiling, maximum allowed attempts, and `ALLOW`/`BLOCK`. Provider-internal SDK retry counts remain unobservable.
+
 ## Data and product behavior
 
 - Lean persistence defaults entities, facts, and relationships to `dm_only`; prominence is unclassified/null.
@@ -79,31 +81,28 @@ Checkpoint identity includes campaign/document scope, provider, exact model, mod
 
 ## Verification snapshot
 
-- Latest deterministic suite: 30 test files, 258 tests passed.
-- Successfully run for M4: `npm run lint`, `npm run typecheck`, `npm test`.
+- Latest deterministic suite: 31 test files, 262 tests passed.
+- Successfully run for M5: lint, typecheck, test, build, all listed deterministic evaluations, and preflight.
 - Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, and `npm run evaluate:checkpoints`.
 - `npm run ai:preflight` performs no generation; `npm run smoke:local` needs an already running local model.
 
 ## Deferred work
 
-1. M5 broad failure/chaos matrix and paid-call guards.
-2. Local Test 3 rehearsal.
-3. Extraction schema/output economy optimization.
-4. Final v0.4 economics/quality benchmark.
-5. v0.5 editing and campaign maintenance.
-6. v0.6 UX redesign.
-7. Later multi-source/incremental ingestion.
-8. Later authentication and secure player sharing.
+1. M6 local Test 3 rehearsal.
+2. Extraction schema/output economy optimization.
+3. Final v0.4 economics/quality benchmark.
+4. v0.5 editing and campaign maintenance.
+5. v0.6 UX redesign.
+6. Later multi-source/incremental ingestion.
+7. Later authentication and secure player sharing.
 
 ## Next milestone
 
-`M5 — Resumability, Failure Injection, and Paid-Call Guards`
+`M6 — Local Test-3-Scale Rehearsal`
 
-- Expand deterministic interruption, malformed-output, provider, and invalidation coverage.
-- Prove validated checkpoints reuse while failed operations rerun only after dependencies are satisfied.
-- Add paid-call planning, retry ceilings, safety caps, and explicit developer authorization for recovery/benchmark execution.
-- Ensure local-provider unavailability cannot trigger an OpenAI spend.
-- Exercise a Test-3-scale synthetic interruption/resume workload with no duplicate validated operations.
+- Exercise full and lean orchestration locally without OpenAI cost or official Test 3 mutation.
+- Force interruption and checkpoint resume in an isolated rehearsal namespace or disposable campaign.
+- Record local model, latency, schema/semantic failure rate, retries, and resume correctness.
 
 ## Future workflow contract
 

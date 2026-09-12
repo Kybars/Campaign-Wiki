@@ -80,11 +80,15 @@ async function checkpointedExactBatch<T extends { [key: string]: unknown }>(args
   if (identity) {
     const checkpoint = await args.store!.load<T>(identity);
     if (checkpoint) {
-      const output = args.schema.parse(checkpoint.output);
-      validateExactKeys(args.select(output), args.field, args.expected, args.label, args.batchNumber);
-      args.validate?.(output);
-      args.report.push({ operationType: args.operationType, operationKey: args.operationKey, status: "REUSE", reason: "exact validated identity" });
-      return output;
+      try {
+        const output = args.schema.parse(checkpoint.output);
+        validateExactKeys(args.select(output), args.field, args.expected, args.label, args.batchNumber);
+        args.validate?.(output);
+        args.report.push({ operationType: args.operationType, operationKey: args.operationKey, status: "REUSE", reason: "exact validated identity" });
+        return output;
+      } catch (error) {
+        await args.store!.saveFailed(identity, checkpoint.usage, `Stored enrichment checkpoint invalid: ${error instanceof Error ? error.message : "unknown validation failure"}`, checkpoint.attemptCount);
+      }
     }
   }
   const usageStart = args.usage.length;
@@ -106,10 +110,14 @@ async function checkpointedSingle<T>(args: { parse: EnrichmentParse; usage: Mode
   if (identity) {
     const checkpoint = await args.store!.load<T>(identity);
     if (checkpoint) {
-      const output = args.schema.parse(checkpoint.output);
-      args.validate(output);
-      args.report.push({ operationType: args.operationType, operationKey: "global", status: "REUSE", reason: "exact validated identity" });
-      return output;
+      try {
+        const output = args.schema.parse(checkpoint.output);
+        args.validate(output);
+        args.report.push({ operationType: args.operationType, operationKey: "global", status: "REUSE", reason: "exact validated identity" });
+        return output;
+      } catch (error) {
+        await args.store!.saveFailed(identity, checkpoint.usage, `Stored enrichment checkpoint invalid: ${error instanceof Error ? error.message : "unknown validation failure"}`, checkpoint.attemptCount);
+      }
     }
   }
   const usageStart = args.usage.length;

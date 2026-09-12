@@ -54,9 +54,13 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[], provid
   if (identity) {
     const cached = await checkpoint!.store.load<ReconciliationDecision>(identity);
     if (cached) {
-      const decision = reconciliationDecisionSchema.parse(cached.output);
-      validateReconciliationCoverage(decision, groups);
-      return { decision, usage: undefined, checkpointStatus: "REUSE" };
+      try {
+        const decision = reconciliationDecisionSchema.parse(cached.output);
+        validateReconciliationCoverage(decision, groups);
+        return { decision, usage: undefined, checkpointStatus: "REUSE" };
+      } catch (error) {
+        await checkpoint!.store.saveFailed(identity, cached.usage, `Stored reconciliation checkpoint invalid: ${error instanceof Error ? error.message : "unknown validation failure"}`, cached.attemptCount);
+      }
     }
   }
   const response = await resolvedProvider.parseStructured({ system: RECONCILIATION_SYSTEM_PROMPT, payload: modelPayload, schema: reconciliationDecisionSchema, schemaName: "campaign_entity_reconciliation" }).catch(async (error) => {

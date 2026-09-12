@@ -32,6 +32,7 @@ import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
+import { OpenAICallBudget, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
 
 export async function processCampaign(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
@@ -48,8 +49,9 @@ export async function processCampaign(campaignId: string, options: { processingM
     if (!(await claimCampaignForProcessing(campaignId))) throw new Error("Campaign was claimed by another processing request");
     ownsProcessing = true;
     const checkpointStore = databaseCheckpointStore();
-    const extractionProvider = getStructuredModelProvider("extraction");
-    const reconciliationProvider = getStructuredModelProvider("reconciliation");
+    const openAIBudget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
+    const extractionProvider = withOpenAICallBudget(getStructuredModelProvider("extraction"), openAIBudget);
+    const reconciliationProvider = withOpenAICallBudget(getStructuredModelProvider("reconciliation"), openAIBudget);
     assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction"));
     assertAIProviderPersistenceAllowed(getAIProviderConfig("reconciliation"));
     const chunking = { targetCharacters: getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS, overlapPages: 1 };
@@ -129,7 +131,7 @@ export async function processCampaign(campaignId: string, options: { processingM
       await updateCampaign(campaignId, { processing_stage: "Classifying campaign knowledge" });
       const enrichmentProvider = getAIProviderConfig("enrichment");
       assertAIProviderPersistenceAllowed(enrichmentProvider);
-      const enrichmentStructuredProvider = getStructuredModelProvider("enrichment");
+      const enrichmentStructuredProvider = withOpenAICallBudget(getStructuredModelProvider("enrichment"), openAIBudget);
       const enrichmentModel = enrichmentProvider.providerId === "openai" ? enrichmentProvider.modelId : `local:${enrichmentProvider.modelId}`;
       const cachedEnrichment = await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint, enrichmentModel);
       let enrichmentMode: "live" | "replay" = "replay";

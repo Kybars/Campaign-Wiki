@@ -36,9 +36,13 @@ export async function extractChunk(chunk: PageChunk, provider?: StructuredModelP
   if (identity) {
     const cached = await checkpoint!.store.load<{ rawExtraction: ChunkExtraction; extraction: ChunkExtraction; diagnostics: ValidationDiagnostic[] }>(identity);
     if (cached) {
-      const rawExtraction = chunkExtractionSchema.parse(cached.output.rawExtraction);
-      const validated = validateChunkExtraction(rawExtraction, chunk.pages);
-      return { chunkId: chunk.id, rawExtraction, ...validated, usage: cached.usage[0] ?? { model: resolvedProvider.modelId, responseId: null, inputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, totalTokens: null, estimatedCostUsd: null }, checkpointStatus: "REUSE" };
+      try {
+        const rawExtraction = chunkExtractionSchema.parse(cached.output.rawExtraction);
+        const validated = validateChunkExtraction(rawExtraction, chunk.pages);
+        return { chunkId: chunk.id, rawExtraction, ...validated, usage: cached.usage[0] ?? { model: resolvedProvider.modelId, responseId: null, inputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, totalTokens: null, estimatedCostUsd: null }, checkpointStatus: "REUSE" };
+      } catch (error) {
+        await checkpoint!.store.saveFailed(identity, cached.usage, `Stored extraction checkpoint invalid: ${error instanceof Error ? error.message : "unknown validation failure"}`, cached.attemptCount);
+      }
     }
   }
   const response = await resolvedProvider.parseStructured({ system: EXTRACTION_SYSTEM_PROMPT, payload, schema: chunkExtractionSchema, schemaName: "campaign_chunk_extraction" }).catch(async (error) => {
