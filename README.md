@@ -54,6 +54,8 @@ All three model stages use one provider-independent structured-output boundary. 
 - `fixtures/` — six-page evaluation campaign in JSON and PDF form
 - `scripts/` — fixture generation and optional live extraction evaluation
 - `tests/` — deterministic pipeline and PDF tests
+- `AGENTS.md` — durable engineering and product guardrails for milestone work
+- `docs/CURRENT_STATE.md` — current implementation, benchmark, and verification snapshot
 
 ## Prerequisites
 

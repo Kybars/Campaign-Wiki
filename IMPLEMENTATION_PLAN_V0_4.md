@@ -666,7 +666,7 @@ using local provider(s), while the normal OpenAI path remains intact.
 
 ## Status
 
-Completed as v0.4.5. A private provider-aware operation checkpoint store now makes validated extraction chunks, reconciliation decisions, and full-enrichment operations durable before later work or graph persistence. Exact semantic hashing, explicit behavior/schema versions, read-only resume planning, and deterministic interruption/invalidation tests preserve lean mode's zero-enrichment-call default and all historical caches.
+Completed as v0.4.5. A private provider-aware operation checkpoint store now makes validated extraction chunks, reconciliation decisions, and full-enrichment operations durable before later work or graph persistence. Exact semantic hashing, explicit behavior/schema versions, read-only resume planning, and deterministic interruption/invalidation tests preserve lean mode's zero-enrichment-call default and all historical caches. Post-M4 milestone context is consolidated in `AGENTS.md` and `docs/CURRENT_STATE.md`.
 
 ## Goal
 
