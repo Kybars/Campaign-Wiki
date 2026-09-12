@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -22,6 +22,7 @@
     "fixture:pdf": "tsx scripts/create-fixture-pdf.ts",
     "replay": "node --conditions=react-server --import tsx scripts/replay-campaign.ts",
     "recover:campaign": "node --use-system-ca --conditions=react-server --import tsx scripts/recover-campaign.ts",
+    "recover:derived": "node --use-system-ca --conditions=react-server --import tsx scripts/recover-cached-campaign-into-new.ts",
     "smoke:replay": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-replay.ts",
     "smoke:local": "node --use-system-ca --conditions=react-server --import tsx scripts/smoke-local-core.ts"
   },

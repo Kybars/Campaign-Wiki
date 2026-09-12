@@ -4,8 +4,8 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.6` (M5 worktree pending commit)
-- Snapshot HEAD: `2c2bc38078ebc778d5331bbb8083df02c39a9bbf` (`docs: consolidate project context`)
+- Package version: `0.4.7` (derived-recovery worktree pending commit)
+- Snapshot HEAD: `bd39d94928167d8d819f2621bea089e610e5228a` (`feat: add failure and paid-call guards`)
 - Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - Working tree after this documentation task: not clean (context documentation pending commit)
@@ -70,6 +70,14 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Test 2 is unchanged.
 - Test 3 historical failed and recovery runs are preserved.
 - No new official benchmark run has occurred since this snapshot.
+
+## Test 3 derived lean recovery
+
+- Usable recovery campaign: `Demonplague - Test 3 Recovery` (`1151fb31-876b-4277-9718-76313c1c8d98`), status `complete`.
+- Derived from original Test 3 `d14f9875-5ebf-46c6-b07e-d65a3e65c5f4` and extraction cache `1ad99ac3-6cf5-4731-bf1e-4736109f0de8`.
+- Reconstructed `112 / 502 / 145` with fingerprint `3784abc868d51b2df1ff7b212a391b09424f918fe33814b4485c56e4293bc5d6`.
+- Lean defaults are all `dm_only`; Player summaries and campaign overviews are absent; recovery used 0 extraction, reconciliation, enrichment, OpenAI, and local model calls.
+- The original failed Test 3 remains reserved for later controlled enrichment testing. The recovery script creates no enrichment cache or AI-operation checkpoint.
 
 ## Cost and economics snapshot
 

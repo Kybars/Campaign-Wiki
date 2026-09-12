@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-12",
+    title: "Derived lean recovery",
+    changes: [
+      "Added an explicit, server-only command for creating a new lean campaign from validated cached extraction and reconciliation.",
+      "Preserved source-campaign history while copying source provenance and recording zero-call recovery lineage.",
+    ],
+  },
+  {
+    version: "0.4.6",
+    date: "2026-09-12",
     title: "Failure and paid-call guards",
     changes: [
       "Added deterministic corrupt-checkpoint recovery and OpenAI application-attempt budget coverage.",

@@ -256,6 +256,8 @@ npm run replay -- CAMPAIGN_UUID --refresh-reconciliation
 
 For a failed rich-cache import, preview a zero-write lean recovery with `npm run recover:campaign -- CAMPAIGN_UUID --dry-run`. Execute only against an intentionally selected campaign with `--execute`; use `--mode=full` only for the explicit full enrichment/reference path. Lean recovery creates no dummy enrichment cache record.
 
+To preserve a failed source campaign while creating a new self-contained lean wiki, use `npm run recover:derived -- SOURCE_CAMPAIGN_ID NEW_NAME --dry-run EXPECTED_CACHE_ID EXPECTED_FINGERPRINT`, inspect the zero-call report, then replace `--dry-run` with `--execute`. The script copies the source PDF and page metadata into the new campaign, reconstructs only the validated cached extraction/reconciliation graph, and persists current lean defaults. It never runs a model or creates enrichment caches/checkpoints.
+
 The refresh form requires `OPENAI_API_KEY`; the default replay only requires Supabase configuration. Graph replacement remains transactional. Validation or model failures before replacement leave the previously persisted graph and campaign status intact.
 
 Campaigns imported before the Milestone 0 cache migration have page text and a canonical graph, but not the raw candidate payloads needed for this replay. In particular, the existing `Test 2` baseline cannot be fully replayed without another extraction and must not be regenerated merely to create a cache.
