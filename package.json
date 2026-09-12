@@ -15,6 +15,7 @@
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",
     "evaluate:enrichment-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-enrichment-workload.ts",
     "evaluate:extraction-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-workload.ts",
+    "evaluate:extraction-ab": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-ab.ts",
     "evaluate:recall": "node --conditions=react-server --import tsx scripts/evaluate-recall.ts",
     "evaluate:checkpoints": "node --conditions=react-server --import tsx scripts/evaluate-checkpoint-resume.ts",
     "evaluate:failure-resume": "tsx scripts/evaluate-failure-resume.ts",

@@ -1,0 +1,3011 @@
+{
+  "schema_version": 1,
+  "frozen_at_commit": "53aee4208b4bcc6d6f1459745c328b46b10ec774",
+  "package_version": "0.4.8",
+  "source_campaign_id": "d14f9875-5ebf-46c6-b07e-d65a3e65c5f4",
+  "extraction_cache_id": "1ad99ac3-6cf5-4731-bf1e-4736109f0de8",
+  "selection_method": "descending known historical miss count, then category diversity, then historical validated output size",
+  "selected_chunk_order": [
+    3,
+    5,
+    4
+  ],
+  "model_output_may_modify_reference": false,
+  "chunks": [
+    {
+      "chunk_number": 3,
+      "chunk_id": "chunk-3",
+      "page_range": [
+        38,
+        53
+      ],
+      "page_numbers": [
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ],
+      "normalized_source_text_sha256": "f169ec9cb51907a354c4d9475089bc164265df0d9b0aa23c4a9d21918e25f2dd",
+      "source_characters": 44231,
+      "historical_test3": {
+        "entities": 26,
+        "facts": 92,
+        "relationships": 20
+      },
+      "known_historical_misses": 20,
+      "historical_misses_by_type": {
+        "event": 1,
+        "faction": 1,
+        "item": 6,
+        "location": 5,
+        "npc": 4,
+        "quest": 3
+      },
+      "expected_identities": [
+        {
+          "name": "Salu",
+          "reference_type": "deity",
+          "acceptable_aliases": [
+            "Salu"
+          ],
+          "evidence": [
+            {
+              "page_number": 50,
+              "supporting_text": "“Isperil is a priestess of Salu, goddess of life, birth, medicine, and the sun.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Baryl Harb goblins' food-wagon ambush",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Baryl Harb goblins' food-wagon ambush"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“merchants from Safeharbor were carrying many wagons of food before the Baryl Harb goblins set upon them, took their goods, and captured some of the people.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kadra Tourmaline’s Murder",
+          "reference_type": "event",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 40,
+              "supporting_text": "The next morning Kadra is found in her house dead and drained of all her blood."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Tomar’s Crossing Market Murders",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Market Murders"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“the mutilated corpses of Kylar Birthwitch, Vibnor Prefect, and Dreena Capple.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“Bazil the Bizarre... murdered Kylar.”"
+            },
+            {
+              "page_number": 46,
+              "supporting_text": "“The mad wizard murdered him and now keeps Vibnor’s corpse in his secret basement.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Order of the Last Bastion Knights",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Order of the Last Bastion Knights",
+            "the knights",
+            "Order of the Last Bastion",
+            "the Order",
+            "Order of the Last Bastion Knight",
+            "the Order of the Last Bastion Knights"
+          ],
+          "evidence": [
+            {
+              "page_number": 47,
+              "supporting_text": "“If the characters bring Olduce to Brenarfom, the halfling refuses to serve the Order of the Last Bastion Knights. Brenarfom keeps him locked up in the camp.”"
+            },
+            {
+              "page_number": 48,
+              "supporting_text": "“If the characters fight or intimidate Parla, they have made enemies of the Order of the Last Bastion.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Village Council",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Village Council"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "“make sure he does not get reelected to the Village Council”"
+            },
+            {
+              "page_number": 41,
+              "supporting_text": "“she thinks it will help her candidacy for the Village Council.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Birthwitch family signet ring",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Birthwitch family signet ring"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“the Birthwitch family signet ring (that belonged to Kylar Birthwitch)”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bjalien’s crescent-shaped locket",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Bjalien's locket",
+            "Crescent-shaped locket",
+            "Bjalien Viadas' locket",
+            "the locket",
+            "Missing Locket",
+            "Neveta’s locket"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "“Missing Locket... Paumine’s tactic is to deny having ever seen the thing in Bjalien Viadas’ house.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Gem of brightness",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Gem of brightness"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“Kadra will reward them with a gem of brightness that has 39 charges remaining.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Gold-dolphin ring",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Gold-dolphin ring",
+            "ring made of tiny gold dolphins"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“a ring made of tiny gold dolphins (that belonged to Dreena Capple)”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Hat of disguise",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Hat of disguise",
+            "Ellie's hair ribbon",
+            "hair ribbon"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“Thanks to a hat of disguise (a hair ribbon), Merriath is unrecognizable as Ellie.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Phelm's hidden gold stash",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Phelm's hidden gold stash",
+            "Phelm's hidden gold bars"
+          ],
+          "evidence": [
+            {
+              "page_number": 52,
+              "supporting_text": "“another burlap bag... contains ten one-pound bars of gold worth 50 gp each.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "“the gold bars he has hidden beneath the floor.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"secret bags of gold buried under heavy flagstones in his home\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"the gold bars he has hidden beneath the floor\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Shark-tooth necklace",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Shark-tooth necklace",
+            "necklace of shark teeth"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“a necklace of shark teeth (that belonged to Vibnor Prefect)”"
+            },
+            {
+              "page_number": 46,
+              "supporting_text": "“he always wore a special necklace made of shark teeth, left to him by his parents.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bazil’s Potions",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Bazil's Potions",
+            "Bazil's home",
+            "Bazil's yurt",
+            "Bazil’s home"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“Bazil’s small yurt serves as both his home and his shop now, since his shop was on the lower part of the hill and destroyed when the comet struck.”"
+            },
+            {
+              "page_number": 43,
+              "supporting_text": "“Under Bazil’s bed there’s an unlocked trapdoor... [characters] find... the mutilated corpses of Kylar Birthwitch, Vibnor Prefect, and Dreena Capple.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Brinner's Brews",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Brinner's Brews"
+          ],
+          "evidence": [
+            {
+              "page_number": 45,
+              "supporting_text": "“Brinner’s Brews is the best, and only, option in the Luna Valley.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“The other is where Hranza Brinner fills and stores kegs.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Councilmember Kadra Tourmaline's Home",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Councilmember Kadra Tourmaline's Home",
+            "Kadra's home"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "“[A4] Councilmember Kadra Tourmaline’s Home”"
+            },
+            {
+              "page_number": 39,
+              "supporting_text": "“Kadra has noticed the shy girl following almost everywhere she goes and recently she could swear she spotted Ellie lurking around her house.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Feraduce Traders",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Feraduce Traders"
+          ],
+          "evidence": [
+            {
+              "page_number": 48,
+              "supporting_text": "“The characters can buy any mundane adventuring gear or tools for their normal value, but rations cost four times... because food is so scarce in Tomar’s Crossing.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Fire and Grind",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Fire and Grind: Miller and Bakery",
+            "Fire and Grind",
+            "Barristar mill and bakery"
+          ],
+          "evidence": [
+            {
+              "page_number": 52,
+              "supporting_text": "“The mill is three stories and currently shut down due to the lack of grain in Tomar’s Crossing. Likewise, the bakery has been out of commission since the week after the comet struck.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Jorney’s Tavern",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Jorney's Tavern"
+          ],
+          "evidence": [
+            {
+              "page_number": 42,
+              "supporting_text": "“Jorney’s Tavern was once a permanent building, but an earthquake knocked it down. After the rubble was cleared away, Jorney set up a large tent...”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Safeharbor"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“merchants from Safeharbor were carrying many wagons of food”"
+            },
+            {
+              "page_number": 50,
+              "supporting_text": "“Once a worthless servant in Safeharbor, Isperil was forced to flee when wrongly accused of murder.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor Refugee Camp",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Safeharbor Refugee Camp"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“If they look into the situation at the Safeharbor refugee camp... no one seems to know much about the girl.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Stronghammer's",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Stronghammer's"
+          ],
+          "evidence": [
+            {
+              "page_number": 44,
+              "supporting_text": "“Orich Stronghammer is the only smithy in Tomar’s Crossing.”"
+            },
+            {
+              "page_number": 44,
+              "supporting_text": "“Orich lives in this place with his wife and four children.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Temple of Long Life",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Temple of Long Life",
+            "Isperil’s church"
+          ],
+          "evidence": [
+            {
+              "page_number": 50,
+              "supporting_text": "“The characters might come to the Temple of Long Life seeking the healing services of the temple.”"
+            },
+            {
+              "page_number": 50,
+              "supporting_text": "“If the characters are hurt, Isperil Lightwind can heal them in exchange for a modest donation to the temple.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "The Weary Traveler",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "The Weary Traveler"
+          ],
+          "evidence": [
+            {
+              "page_number": 40,
+              "supporting_text": "“The Weary Traveler is the only inn in Tomar’s Crossing. Unfortunately, so many refugees are crammed into the place, this business has become a charity operation.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Tomar’s Crossing",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Tomar's Crossing",
+            "the Crossing",
+            "The Crossing"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“The stores are depleted and the people could tear themselves apart at any moment.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“someone or something is abducting people from the market district of Tomar’s Crossing.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bazil the Bizarre",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Bazil the Bizarre",
+            "Bazil"
+          ],
+          "evidence": [
+            {
+              "page_number": 44,
+              "supporting_text": "“when the comet struck, he tried using his magic to divine the being behind the comet. In that moment, his mind touched Xancrown’s and the wizard went insane.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Beatrice Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Beatrice Sharp",
+            "Beatrice"
+          ],
+          "evidence": [
+            {
+              "page_number": 51,
+              "supporting_text": "“Malcolm Sharp, murdered his wife, Beatrice... after he discovered she was having an affair with Cadicca.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bjalien Viadas",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Bjalien Viadas",
+            "Villagemaster Bjalien Viadas",
+            "Bjalien",
+            "the Villagemaster",
+            "Villagemaster Bjalien"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“Bjalien Viadas discovered Kadra’s secret and threatened to expose her publicly unless she votes with him on every council issue.”"
+            },
+            {
+              "page_number": 49,
+              "supporting_text": "“Melette found out his wife Neveta was having an affair with Bjalien Viadas.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Cadicca LeBlorne",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Cadicca LeBlorne",
+            "Cadicca",
+            "Cadicca LeBorne"
+          ],
+          "evidence": [
+            {
+              "page_number": 51,
+              "supporting_text": "“If Cadicca LeBlorne... comes to power in Tomar’s Crossing by vote or by force... He recognizes Isperil as a servant from Safeharbor wanted for the murder of two nobles five years ago.”"
+            },
+            {
+              "page_number": 51,
+              "supporting_text": "“She knows of Cadicca’s affair with Beatrice and the murder-suicide.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Colinus Birthwitch",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Colinus Birthwitch",
+            "Councilmember Colinus Birthwitch",
+            "Colinus"
+          ],
+          "evidence": [
+            {
+              "page_number": 45,
+              "supporting_text": "“Kylar Birthwitch... [is] the nephew of Councilmember Colinus Birthwitch.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“the relationship between Colinus and Kylar was a rocky one. Colinus wanted Kylar to do more chores.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Dame Parla Caendinx",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Dame Parla Caendinx",
+            "Parla"
+          ],
+          "evidence": [
+            {
+              "page_number": 48,
+              "supporting_text": "“Dame Parla Caendinx, a knight... approaches and asks the halfling to come with her.”"
+            },
+            {
+              "page_number": 48,
+              "supporting_text": "“She then carries him back to the Order of the Last Bastion camp.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Dreena Capple",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Dreena Capple"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“a ring made of tiny gold dolphins (that belonged to Dreena Capple)”"
+            },
+            {
+              "page_number": 43,
+              "supporting_text": "“the mutilated corpses of Kylar Birthwitch, Vibnor Prefect, and Dreena Capple.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Hranza Brinner",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Hranza Brinner"
+          ],
+          "evidence": [
+            {
+              "page_number": 46,
+              "supporting_text": "“Hranza is also looking to replace her apprentice, Vibnor Prefect, who mysteriously left some time ago.”"
+            },
+            {
+              "page_number": 46,
+              "supporting_text": "“Hranza is an alcoholic.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Isperil Lightwind",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Isperil Lightwind",
+            "Isperil"
+          ],
+          "evidence": [
+            {
+              "page_number": 50,
+              "supporting_text": "“Once a worthless servant in Safeharbor, Isperil was forced to flee when wrongly accused of murder. She fears Cadicca LeBlorne... will recognize her and try to bring her to justice.”"
+            },
+            {
+              "page_number": 50,
+              "supporting_text": "“Isperil is a priestess of Salu, goddess of life, birth, medicine, and the sun.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Jorney Yovurn",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Jorney Yovurn",
+            "Jorney"
+          ],
+          "evidence": [
+            {
+              "page_number": 42,
+              "supporting_text": "“Jorney has decided to run for Village Council.”"
+            },
+            {
+              "page_number": 42,
+              "supporting_text": "“Jorney offers them 100 gp each to stop campaigning for refugee voting rights.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kadra Tourmaline",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Kadra Tourmaline",
+            "Mara Silver",
+            "Councilmember Kadra Tourmaline",
+            "Kadra"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "Kadra Tourmaline is secretly Mara Silver, a draconic sorcerer, fleeing from her deranged master, Merriath the Quick."
+            },
+            {
+              "page_number": 38,
+              "supporting_text": "“Kadra Tourmaline is secretly Mara Silver, a draconic sorcerer, fleeing from her deranged master, Merriath the Quick.”"
+            },
+            {
+              "page_number": 39,
+              "supporting_text": "“Kadra would love to see her former mentor brought to justice or Bjalien voted out of office so she can be free to help the needy people of Tomar’s Crossing and vote her mind.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kylar Birthwitch",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Kylar Birthwitch"
+          ],
+          "evidence": [
+            {
+              "page_number": 45,
+              "supporting_text": "“Kylar, a Safeharbor refugee, is 19... and wears... a Birthwitch family signet ring.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“Bazil the Bizarre... murdered Kylar.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Malaga Taerwain",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Malaga Taerwain"
+          ],
+          "evidence": [
+            {
+              "page_number": 41,
+              "supporting_text": "“She’s taken in as many refugees as possible because she thinks it will help her candidacy for the Village Council.”"
+            },
+            {
+              "page_number": 41,
+              "supporting_text": "“Malaga is desperate for more room at her inn.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Malcolm Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Malcolm Sharp",
+            "Malcolm"
+          ],
+          "evidence": [
+            {
+              "page_number": 51,
+              "supporting_text": "“Isperil’s master, Malcolm Sharp, murdered his wife, Beatrice, and then killed himself after he discovered she was having an affair with Cadicca.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Melette Feraduce",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Melette Feraduce"
+          ],
+          "evidence": [
+            {
+              "page_number": 48,
+              "supporting_text": "“Melette knows his wife is having an affair with Bjalien Viadas... Driven by greed, Melette is using his knowledge to extort Bjalien.”"
+            },
+            {
+              "page_number": 49,
+              "supporting_text": "“Melette extorts the villagemaster for 10 gp a day.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Merriath the Quick",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Merriath the Quick",
+            "Ellie Mircar",
+            "Merriath"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "Kadra Tourmaline is secretly Mara Silver, a draconic sorcerer, fleeing from her deranged master, Merriath the Quick."
+            },
+            {
+              "page_number": 39,
+              "supporting_text": "“Merriath, once kind, studied dragons. One of her dragon subjects broke the older sorcerer’s mind.”"
+            },
+            {
+              "page_number": 40,
+              "supporting_text": "“Plot: Kill all her former apprentices and drink their blood to become a dragon.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Mort",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Mort"
+          ],
+          "evidence": [
+            {
+              "page_number": 43,
+              "supporting_text": "“Bazil uses ventriloquism to make his grey fox, Mort, seem to speak for him.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Neveta Feraduce",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Neveta Feraduce",
+            "Neveta",
+            "N."
+          ],
+          "evidence": [
+            {
+              "page_number": 49,
+              "supporting_text": "“Neveta lost love for her husband years ago, but she continues to stay with him for their children. She has fallen in love with Bjalien Viadas and continues to keep the villagemaster as a lover...”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Olduce Merrygood",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Olduce Merrygood",
+            "Olduce",
+            "the moonshiner"
+          ],
+          "evidence": [
+            {
+              "page_number": 47,
+              "supporting_text": "“He used to snitch for the former leader of the Order of the Last Bastion Knights years ago when he lived in Safeharbor.”"
+            },
+            {
+              "page_number": 47,
+              "supporting_text": "“If the characters bring Olduce to Brenarfom, the halfling refuses to serve the Order of the Last Bastion Knights.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Orich Stronghammer",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Orich Stronghammer",
+            "Orich"
+          ],
+          "evidence": [
+            {
+              "page_number": 44,
+              "supporting_text": "“Orich has a terminal genetic disease he hides from his family.”"
+            },
+            {
+              "page_number": 45,
+              "supporting_text": "“Orich is concerned no one has seen Kylar Birthwitch, his friend...”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Paumine Sandalwood",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Paumine Sandalwood",
+            "Councilmember Paumine Sandalwood",
+            "Paumine"
+          ],
+          "evidence": [
+            {
+              "page_number": 38,
+              "supporting_text": "“Paumine is very curious about the zombie rats... She offers to give the characters a magic scroll... if they bring her one to research.”"
+            },
+            {
+              "page_number": 38,
+              "supporting_text": "“Paumine’s tactic is to deny having ever seen the thing in Bjalien Viadas’ house.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Phelm Barristar",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Phelm Barristar",
+            "Phelm"
+          ],
+          "evidence": [
+            {
+              "page_number": 53,
+              "supporting_text": "“Phelm was caught in a strong cloud of comet dust immediately after the impact. The comet dust was so pure it drove Phelm mad.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "“he wants to protect the gold bars he has hidden beneath the floor.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"NPC: Phelm Barristar, Miller\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"the miller has secret bags of gold buried under heavy flagstones in his home\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Sir Brenarfom Steelcrest",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Sir Brenarfom Steelcrest",
+            "Brenarfom"
+          ],
+          "evidence": [
+            {
+              "page_number": 47,
+              "supporting_text": "“If the characters bring Olduce to Brenarfom... Brenarfom keeps him locked up in the camp.”"
+            },
+            {
+              "page_number": 48,
+              "supporting_text": "“if the knights take over Tomar’s Crossing, Brenarfom orders the characters hunted down and arrested.”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Vibnor Prefect",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Vibnor Prefect"
+          ],
+          "evidence": [
+            {
+              "page_number": 46,
+              "supporting_text": "“Vibnor Prefect, a 15-year-old orphan who slept in the brewery... never returned.”"
+            },
+            {
+              "page_number": 46,
+              "supporting_text": "“Vibnor went to Bazil’s... hoping the wizard could put him in touch with his deceased parents. The mad wizard murdered him...”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Feed the Hungry",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Feed the Hungry"
+          ],
+          "evidence": [
+            {
+              "page_number": 39,
+              "supporting_text": "“If the characters can recover this food from the goblins and bring it to her to distribute to the poor, Kadra will reward them...”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Guard the Gold",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Guard the Gold"
+          ],
+          "evidence": [
+            {
+              "page_number": 53,
+              "supporting_text": "\"Guard the Gold. Phelm is seeking out adventurers to act as guards.\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"Phelm tells the characters they are welcome to stay in the now defunct bakery for free, if they agree to guard his house.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Housing for Refugees",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Housing for Refugees"
+          ],
+          "evidence": [
+            {
+              "page_number": 41,
+              "supporting_text": "“large tents were part of a merchant shipment captured by a group of bandits with skull brands on their necks led by a half-ogre.”"
+            },
+            {
+              "page_number": 41,
+              "supporting_text": "“If they bring her the tents from Gardong Marhold... she gives the characters one riding horse each from her stables.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Meat for Tomar's Citizens",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Meat for Tomar's Citizens"
+          ],
+          "evidence": [
+            {
+              "page_number": 42,
+              "supporting_text": "“He asks the characters to bring back any edible meat they find in the wilderness.”"
+            },
+            {
+              "page_number": 42,
+              "supporting_text": "“Jorney plans to give this meat away for free to Tomar’s hungry citizens and get himself a few votes for the Village Council.”"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Voting Rights",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Refugee Voting Rights",
+            "Voting Rights",
+            "refugee citizenship campaign"
+          ],
+          "evidence": [
+            {
+              "page_number": 41,
+              "supporting_text": "“Malaga’s only chance of getting elected is to get the refugees of the Luna Valley citizenship in Tomar’s Crossing.”"
+            },
+            {
+              "page_number": 42,
+              "supporting_text": "“If Jorney hears the characters are campaigning for the citizenship rights of refugees...”"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        }
+      ]
+    },
+    {
+      "chunk_number": 5,
+      "chunk_id": "chunk-5",
+      "page_range": [
+        67,
+        84
+      ],
+      "page_numbers": [
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84
+      ],
+      "normalized_source_text_sha256": "e12a4e059fb984a1c3bbb51a33ae84ebd2a9a8fc6190f25c9827ce01f79b1155",
+      "source_characters": 44571,
+      "historical_test3": {
+        "entities": 20,
+        "facts": 48,
+        "relationships": 20
+      },
+      "known_historical_misses": 13,
+      "historical_misses_by_type": {
+        "event": 4,
+        "faction": 1,
+        "item": 1,
+        "npc": 7
+      },
+      "expected_identities": [
+        {
+          "name": "Food Riot",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Food Riot"
+          ],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "Food Riot."
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "the refugees set fire to the mill"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Holy War",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Holy War"
+          ],
+          "evidence": [
+            {
+              "page_number": 70,
+              "supporting_text": "Holy War."
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "Absen gets militant and allies with the Order"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Huberg Greyborn's Assault on Frostfell",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Huberg Greyborn's Assault on Frostfell"
+          ],
+          "evidence": [
+            {
+              "page_number": 79,
+              "supporting_text": "Huberg Greyborn led a charge on Frostfell weeks ago"
+            },
+            {
+              "page_number": 79,
+              "supporting_text": "The goblins prevailed"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Noble Revolution",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Noble Revolution"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Noble Revolution. Cadicca's desire for power has driven him to violence.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "\"These nobles and guards overpower and arrest the councilmembers ... and takes control.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "he thinks his best bet is to seize control of the town"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "Cadicca carries out his plan outlined in area A19"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Nobles vs. Commoners",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Nobles vs. Commoners"
+          ],
+          "evidence": [
+            {
+              "page_number": 70,
+              "supporting_text": "Nobles vs. Commoners."
+            },
+            {
+              "page_number": 70,
+              "supporting_text": "This encounter is the trigger point for active conflict"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Reson’s Body",
+          "reference_type": "event",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "The melt uncovered the body of former councilmember Reson Fergone"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "When Paumine talks to the characters they have 24 hours before Reson’s body is burned."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Tomar’s Crossing Election",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Tomar's Crossing Election",
+            "Election",
+            "the election event"
+          ],
+          "evidence": [
+            {
+              "page_number": 72,
+              "supporting_text": "After the characters come back from the barrows, the election takes place."
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "The four candidates with the highest scores win."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Baryl Harb",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Baryl Harb tribe",
+            "Baryl Harb goblins",
+            "Baryl Harb goblinoids",
+            "Baryl Harb clan",
+            "Baryl Harb goblinoid bandits",
+            "the Baryl Harb tribe"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "Dourkeg, the hobgoblin leader of the Baryl Harb tribe"
+            },
+            {
+              "page_number": 82,
+              "supporting_text": "Ralekai is fine with the Baryl Harb tribe eating some of the prisoners"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Order of the Last Bastion Knights",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Order of the Last Bastion Knights",
+            "the knights",
+            "Order of the Last Bastion",
+            "the Order",
+            "Order of the Last Bastion Knight",
+            "the Order of the Last Bastion Knights"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"The Order of the Last Bastion Knights keep their barracks regimented.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "The Order of the Last Bastion Knights keep their barracks regimented."
+            },
+            {
+              "page_number": 69,
+              "supporting_text": "the Order of the Last Bastion the new leaders of the city"
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "When the first Order of the Last Bastion Knight built Fort Frostfell, they buried their fallen comrades beneath the fort."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Village Council",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Village Council"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "arrest the councilmembers"
+            },
+            {
+              "page_number": 69,
+              "supporting_text": "blackmail the Village Council"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Black Arrowheads",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Black Arrowheads",
+            "broken tips of black arrowheads"
+          ],
+          "evidence": [
+            {
+              "page_number": 72,
+              "supporting_text": "broken tips of black arrowheads in the wounds"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "Colinus makes his own arrows out of black steel."
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Fort Frostfell",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Fort Frostfell",
+            "Frostfell"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "This stone outpost was built by the first Order"
+            },
+            {
+              "page_number": 77,
+              "supporting_text": "currently a staging ground for Ralekai Gravemore"
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "When the first Order of the Last Bastion Knight built Fort Frostfell, they buried their fallen comrades beneath the fort."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Frostfell Crypts",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "the crypts"
+          ],
+          "evidence": [
+            {
+              "page_number": 84,
+              "supporting_text": "The Crypts"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Gardong Marhold",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Gardong Marhold",
+            "the ziggurat",
+            "the stone temple"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "the ziggurat, Gardong Marhold"
+            },
+            {
+              "page_number": 81,
+              "supporting_text": "a clear path connecting the fort to the ziggurat"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Luna Valley",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Luna Valley",
+            "the Valley"
+          ],
+          "evidence": [
+            {
+              "page_number": 68,
+              "supporting_text": "clear the valley of greenskin scum and other dangers"
+            },
+            {
+              "page_number": 77,
+              "supporting_text": "kidnapping and enslavement of the Luna Valley’s citizens"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Safeharbor"
+          ],
+          "evidence": [
+            {
+              "page_number": 69,
+              "supporting_text": "when he lived in Safeharbor"
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "a servant from Safeharbor"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Temple of Long Life",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Temple of Long Life",
+            "Isperil’s church"
+          ],
+          "evidence": [
+            {
+              "page_number": 70,
+              "supporting_text": "the Temple of Long Life"
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "the land and temple are legally hers"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Tomar’s Crossing",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Tomar's Crossing",
+            "the Crossing",
+            "The Crossing"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "The characters arrive in Tomar’s Crossing"
+            },
+            {
+              "page_number": 69,
+              "supporting_text": "Brenarfom wants to rule Tomar’s Crossing"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Absen Cooper",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Absen Cooper",
+            "Absen"
+          ],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "Absen Cooper, the high priest from Safeharbor"
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "Absen claims he has the largest surviving following"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bazig",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Bazig",
+            "Bazig the half-ogre",
+            "the half-ogre"
+          ],
+          "evidence": [
+            {
+              "page_number": 83,
+              "supporting_text": "partner of the half-ogre Bazig, who lives in Gardong Marhold"
+            },
+            {
+              "page_number": 83,
+              "supporting_text": "Bazig asked the wyrmling to work as a messenger"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Beatrice Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Beatrice Sharp",
+            "Beatrice"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Malcolm stabbed Beatrice to death five years ago after he discovered she was having an affair with Cadicca.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "noblewoman Beatrice Sharp"
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "Malcolm stabbed Beatrice to death"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bjalien Viadas",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Bjalien Viadas",
+            "Villagemaster Bjalien Viadas",
+            "Bjalien",
+            "the Villagemaster",
+            "Villagemaster Bjalien"
+          ],
+          "evidence": [
+            {
+              "page_number": 69,
+              "supporting_text": "information about Bjalien’s affair"
+            },
+            {
+              "page_number": 73,
+              "supporting_text": "Bjalien will try to bribe the character"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Cadicca LeBlorne",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Cadicca LeBlorne",
+            "Cadicca",
+            "Cadicca LeBorne"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "Cadicca’s desire for power has driven him to violence."
+            },
+            {
+              "page_number": 76,
+              "supporting_text": "Cadicca LeBlorne*"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Chillwyrm",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Chillwyrm",
+            "the dragon"
+          ],
+          "evidence": [
+            {
+              "page_number": 81,
+              "supporting_text": "Chillwyrm... delivers messages between the ziggurat and fort."
+            },
+            {
+              "page_number": 83,
+              "supporting_text": "Chillwyrm, roosts here."
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "Chillwyrm will take to the air and attack if anyone but Dourkeg enters its lair."
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "The dragon often hunts during the day and travels weekly to Gardong Marhold."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Colinus Birthwitch",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Colinus Birthwitch",
+            "Councilmember Colinus Birthwitch",
+            "Colinus"
+          ],
+          "evidence": [
+            {
+              "page_number": 69,
+              "supporting_text": "Colinus’ crimes"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "Colinus makes his own arrows out of black steel."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Dourkeg",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Dourkeg"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "Dourkeg, the hobgoblin leader"
+            },
+            {
+              "page_number": 81,
+              "supporting_text": "Dourkeg is a coward."
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "Chillwyrm will take to the air and attack if anyone but Dourkeg enters its lair."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Gothmog Plaguereaper",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Gothmog Plaguereaper",
+            "Gothmog",
+            "the wight",
+            "the villain’s lieutenant"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "Gothmog Plaguereaper, Ralekai’s wight lieutenant"
+            },
+            {
+              "page_number": 77,
+              "supporting_text": "oversees the operations in Frostfell"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Huberg Greyborn",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Huberg Greyborn",
+            "Huberg"
+          ],
+          "evidence": [
+            {
+              "page_number": 76,
+              "supporting_text": "Huberg Greyborn*"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Isperil Lightwind",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Isperil Lightwind",
+            "Isperil"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"He recognizes the priestess Isperil Lightwind ... as a servant from Safeharbor wanted for the murders\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "\"Isperil, a lady's maid at the time, discovered the bodies of the Sharps.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "the priestess Isperil Lightwind"
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "Isperil Lightwind, the priest of Tomar’s Crossing"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kadra Tourmaline",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Kadra Tourmaline",
+            "Mara Silver",
+            "Councilmember Kadra Tourmaline",
+            "Kadra"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "Kadra Tourmaline’s house"
+            },
+            {
+              "page_number": 69,
+              "supporting_text": "Kadra’s secret sorcery"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kraps",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Kraps"
+          ],
+          "evidence": [
+            {
+              "page_number": 70,
+              "supporting_text": "The big man is Kraps"
+            },
+            {
+              "page_number": 70,
+              "supporting_text": "starving refugee trying to save his wife and daughter"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Lord Laird Sealas",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Lord Laird Sealas",
+            "Sealas"
+          ],
+          "evidence": [
+            {
+              "page_number": 70,
+              "supporting_text": "The small man is Lord Laird Sealas"
+            },
+            {
+              "page_number": 70,
+              "supporting_text": "is served and fed by three servants"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Malcolm Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Malcolm Sharp",
+            "Malcolm"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Malcolm stabbed Beatrice to death ... Malcolm could not live with his own actions so he stabbed himself as well.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "her husband Malcolm"
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "he stabbed himself as well"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Muiri Tender",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Muiri Tender",
+            "Muiri"
+          ],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "Muiri Tender, an acolyte from Fort Icewind"
+            },
+            {
+              "page_number": 71,
+              "supporting_text": "Muiri claims he has served the gods the longest"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Neveta Feraduce",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Neveta Feraduce",
+            "Neveta",
+            "N."
+          ],
+          "evidence": [
+            {
+              "page_number": 73,
+              "supporting_text": "uncover his affair with Neveta"
+            },
+            {
+              "page_number": 74,
+              "supporting_text": "Bjalien and Neveta’s Affair Exposed"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Olduce Merrygood",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Olduce Merrygood",
+            "Olduce",
+            "the moonshiner"
+          ],
+          "evidence": [
+            {
+              "page_number": 68,
+              "supporting_text": "Olduce Merrygood the moonshiner"
+            },
+            {
+              "page_number": 69,
+              "supporting_text": "The halfling started doing it for the money"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Paumine Sandalwood",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Paumine Sandalwood",
+            "Councilmember Paumine Sandalwood",
+            "Paumine"
+          ],
+          "evidence": [
+            {
+              "page_number": 72,
+              "supporting_text": "Paumine Sandalwood, a friend of the deceased"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "she believes Reson’s body could have the evidence"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Phelm Barristar",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Phelm Barristar",
+            "Phelm"
+          ],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "Phelm is out of food"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Ralekai Gravemore",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Ralekai Gravemore",
+            "Ralekai",
+            "the necromancer",
+            "Master Ralekai",
+            "the wizard"
+          ],
+          "evidence": [
+            {
+              "page_number": 77,
+              "supporting_text": "Ralekai Gravemore, whose goblin minions raid villages"
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "he animated corpses of the knights"
+            },
+            {
+              "page_number": 84,
+              "supporting_text": "After Ralekai discovered the crypts, he animated corpses of the knights as part of his ongoing experiments."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Reson Fergone",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Reson Fergone",
+            "Reson",
+            "Former Councilmember Reson Fergone"
+          ],
+          "evidence": [
+            {
+              "page_number": 71,
+              "supporting_text": "body of former councilmember Reson Fergone"
+            },
+            {
+              "page_number": 72,
+              "supporting_text": "The corpse bears a few wounds in the chest and abdomen."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Sir Brenarfom Steelcrest",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Sir Brenarfom Steelcrest",
+            "Brenarfom"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"They may meet their leader, Sir Brenarfom Steelcrest\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "their leader, Sir Brenarfom Steelcrest"
+            },
+            {
+              "page_number": 68,
+              "supporting_text": "Captain of the Order of the Last Bastion Knights"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Sir Farragut Eastward",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Sir Farragut Eastward"
+          ],
+          "evidence": [
+            {
+              "page_number": 69,
+              "supporting_text": "Brenarfom’s predecessor, Sir Farragut Eastward, died"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        }
+      ]
+    },
+    {
+      "chunk_number": 4,
+      "chunk_id": "chunk-4",
+      "page_range": [
+        53,
+        67
+      ],
+      "page_numbers": [
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67
+      ],
+      "normalized_source_text_sha256": "5069e943412f9855eb4448b222d247343d7514d915d58776ff90b386551ba095",
+      "source_characters": 43251,
+      "historical_test3": {
+        "entities": 29,
+        "facts": 86,
+        "relationships": 22
+      },
+      "known_historical_misses": 12,
+      "historical_misses_by_type": {
+        "faction": 2,
+        "item": 2,
+        "location": 2,
+        "npc": 5,
+        "other": 1
+      },
+      "expected_identities": [
+        {
+          "name": "Death of Lila Clocker",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Hemlet Slayer murders",
+            "Hemlet Slayer"
+          ],
+          "evidence": [
+            {
+              "page_number": 61,
+              "supporting_text": "\"a murderer who targeted young human men plagued Hemlet. This killer would cut their hearts out\""
+            },
+            {
+              "page_number": 61,
+              "supporting_text": "\"the day the characters arrived in town when the killer struck again in the refugee camp.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Fall of Fort Icewind",
+          "reference_type": "event",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 65,
+              "supporting_text": "they caught Fort Icewind unaware... They captured many of his people... after burning Fort Icewind to the ground."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Noble Revolution",
+          "reference_type": "event",
+          "acceptable_aliases": [
+            "Noble Revolution"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Noble Revolution. Cadicca's desire for power has driven him to violence.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "\"These nobles and guards overpower and arrest the councilmembers ... and takes control.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "he thinks his best bet is to seize control of the town"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Baryl Harb",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Baryl Harb tribe",
+            "Baryl Harb goblins",
+            "Baryl Harb goblinoids",
+            "Baryl Harb clan",
+            "Baryl Harb goblinoid bandits",
+            "the Baryl Harb tribe"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"the Baryl Harb goblins are holed up in Frostfell with prisoners taken from the road\""
+            },
+            {
+              "page_number": 65,
+              "supporting_text": "\"The goblins retreated to Frostfell after burning Fort Icewind to the ground.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Hemlet Refugees",
+          "reference_type": "faction",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 59,
+              "supporting_text": "Nibhin Blondbeard, the leader of Hemlet’s refugees"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Order of the Last Bastion Knights",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Order of the Last Bastion Knights",
+            "the knights",
+            "Order of the Last Bastion",
+            "the Order",
+            "Order of the Last Bastion Knight",
+            "the Order of the Last Bastion Knights"
+          ],
+          "evidence": [
+            {
+              "page_number": 65,
+              "supporting_text": "\"The three sections of the camp are divided into commoners, nobles, and the Order of the Last Bastion Knights.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "\"The Order of the Last Bastion Knights keep their barracks regimented.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "The Order of the Last Bastion Knights keep their barracks regimented."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor Nobles",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Safeharbor nobles",
+            "the nobles",
+            "Safeharbor's nobles",
+            "the Nobles"
+          ],
+          "evidence": [
+            {
+              "page_number": 65,
+              "supporting_text": "\"The noble camp is led by Cadicca LeBorne.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor Watch",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Safeharbor Watch"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"The two were part of the Safeharbor Watch.\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Sweetwater Refugees",
+          "reference_type": "faction",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 60,
+              "supporting_text": "NPC: Jeanas Clocker, Leader of the Sweetwater Refugees"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Village Council",
+          "reference_type": "faction",
+          "acceptable_aliases": [
+            "Village Council"
+          ],
+          "evidence": [
+            {
+              "page_number": 60,
+              "supporting_text": "\"Doing so requires the Village Council's approval.\""
+            },
+            {
+              "page_number": 61,
+              "supporting_text": "\"get the Village Council to vote favorably on the matter\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "arrest the councilmembers"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Phelm's hidden gold stash",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Phelm's hidden gold stash",
+            "Phelm's hidden gold bars"
+          ],
+          "evidence": [
+            {
+              "page_number": 53,
+              "supporting_text": "“the gold bars he has hidden beneath the floor.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"secret bags of gold buried under heavy flagstones in his home\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"the gold bars he has hidden beneath the floor\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Someth's weapons cache",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Someth's weapons cache"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"Weapons Cache. Someth keeps a hidden crawl space beneath his raised house.\""
+            },
+            {
+              "page_number": 55,
+              "supporting_text": "\"Someth keeps a suit of plate armor, three longbows, a greatsword, five handaxes, and 100 arrows.\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Yugtug Ritual Tablet",
+          "reference_type": "item",
+          "acceptable_aliases": [
+            "Yugtug ritual tablet"
+          ],
+          "evidence": [
+            {
+              "page_number": 63,
+              "supporting_text": "\"a ritual written in Goblin carved into a stone tablet that claims to raise the dead\""
+            },
+            {
+              "page_number": 63,
+              "supporting_text": "\"The ritual does not actually work. It is the mad ramblings of the Cult of Chaos that existed during the Yugtug civilization.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "All That Glitters",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "All That Glitters"
+          ],
+          "evidence": [
+            {
+              "page_number": 56,
+              "supporting_text": "\"[A15] All That Glitters\""
+            },
+            {
+              "page_number": 57,
+              "supporting_text": "\"Elred's shop was destroyed in the first earthquakes caused by the comet's impact. Luckily for him, his sturdy basement and forge survived.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Duladarin Star Elf Barrows",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Duladarin Star Elf Barrows",
+            "star elf barrows",
+            "Star Elf Barrows",
+            "Duladarin barrows",
+            "the barrows",
+            "The Star Elf Barrows",
+            "Star elf barrows"
+          ],
+          "evidence": [
+            {
+              "page_number": 58,
+              "supporting_text": "\"did manage to find the star elf barrows, but has never told anyone\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Fort Frostfell",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Fort Frostfell",
+            "Frostfell"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"the Baryl Harb goblins are holed up in Frostfell\""
+            },
+            {
+              "page_number": 56,
+              "supporting_text": "\"He asks the adventurers to search for his friend in Frostfell.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Fort Icewind",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Fort Icewind"
+          ],
+          "evidence": [
+            {
+              "page_number": 64,
+              "supporting_text": "\"Even before the melt, Huberg was the leader of Fort Icewind.\""
+            },
+            {
+              "page_number": 65,
+              "supporting_text": "\"The goblins retreated to Frostfell after burning Fort Icewind to the ground.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Hemlet and Sweetwater Refugee Camps",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Hemlet and Sweetwater Refugee Camps"
+          ],
+          "evidence": [
+            {
+              "page_number": 59,
+              "supporting_text": "\"[A17] Hemlet and Sweetwater Refugee Camps\""
+            },
+            {
+              "page_number": 59,
+              "supporting_text": "\"The refugees from Hemlet and Sweetwater have set up camp on the southwest side of the hill on which Tomar's Crossing sits.\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Safeharbor"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "a servant from Safeharbor"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Safeharbor Refugee Camp",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Safeharbor Refugee Camp"
+          ],
+          "evidence": [
+            {
+              "page_number": 65,
+              "supporting_text": "\"[A19] Safeharbor Refugee Camp\""
+            },
+            {
+              "page_number": 65,
+              "supporting_text": "\"The three sections of the camp are divided into commoners, nobles, and the Order of the Last Bastion Knights.\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "The Elegant Saw",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "The Elegant Saw"
+          ],
+          "evidence": [
+            {
+              "page_number": 54,
+              "supporting_text": "\"[A14] The Elegant Saw\""
+            },
+            {
+              "page_number": 55,
+              "supporting_text": "\"A small, open woodshop sits next to a well-built log cabin.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Tomar’s Crossing",
+          "reference_type": "location",
+          "acceptable_aliases": [
+            "Tomar's Crossing",
+            "the Crossing",
+            "The Crossing"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "The characters arrive in Tomar’s Crossing"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Bazil the Bizarre",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Bazil the Bizarre",
+            "Bazil"
+          ],
+          "evidence": [
+            {
+              "page_number": 58,
+              "supporting_text": "\"Bazil the Bizarre ... knocked her out and murdered her as part of a ritual sacrifice in his basement.\""
+            },
+            {
+              "page_number": 58,
+              "supporting_text": "\"The poor wizard did so in a fit of madness and doesn't even remember that the event happened.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Beatrice Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Beatrice Sharp",
+            "Beatrice"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Malcolm stabbed Beatrice to death five years ago after he discovered she was having an affair with Cadicca.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "noblewoman Beatrice Sharp"
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "Malcolm stabbed Beatrice to death"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Cadicca LeBlorne",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Cadicca LeBlorne",
+            "Cadicca",
+            "Cadicca LeBorne"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "Cadicca’s desire for power has driven him to violence."
+            },
+            {
+              "page_number": 66,
+              "supporting_text": "\"NPC: Cadicca LeBlorne, Leader of Safeharbor's Nobles\""
+            },
+            {
+              "page_number": 66,
+              "supporting_text": "\"Cadicca wants to rule Tomar's Crossing and the entire valley.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Dreena Capple",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Dreena Capple"
+          ],
+          "evidence": [
+            {
+              "page_number": 57,
+              "supporting_text": "\"Elred's half-elf apprentice, Dreena Capple, went missing\""
+            },
+            {
+              "page_number": 58,
+              "supporting_text": "\"Dreena was abducted as she walked alone at night. Bazil the Bizarre ... murdered her as part of a ritual sacrifice\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Elred Olfusal",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Elred Olfusal",
+            "Elred Ofusal"
+          ],
+          "evidence": [
+            {
+              "page_number": 57,
+              "supporting_text": "\"NPC: Elred Olfusal, Goldsmith\""
+            },
+            {
+              "page_number": 57,
+              "supporting_text": "\"Elred's half-elf apprentice, Dreena Capple, went missing\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Harlyot Crushade",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Harlyot Crushade",
+            "Harlyot"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"The two were part of the Safeharbor Watch. Harlyot saved Someth's life some time ago.\""
+            },
+            {
+              "page_number": 56,
+              "supporting_text": "\"The truth is Harlyot is actually working with Ralekai Gravemore and the goblinoids\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Henna Coldwater",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Henna Coldwater"
+          ],
+          "evidence": [
+            {
+              "page_number": 63,
+              "supporting_text": "\"Henna became obsessed with the idea of bringing Larkin back to life at any cost.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Huberg Greyborn",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Huberg Greyborn",
+            "Huberg"
+          ],
+          "evidence": [
+            {
+              "page_number": 64,
+              "supporting_text": "\"NPC: Huberg Greyborn, Fort Icewind Refugee Leader\""
+            },
+            {
+              "page_number": 64,
+              "supporting_text": "\"Now he wants vengeance and a new home for his people.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Isperil Lightwind",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Isperil Lightwind",
+            "Isperil"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"He recognizes the priestess Isperil Lightwind ... as a servant from Safeharbor wanted for the murders\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "\"Isperil, a lady's maid at the time, discovered the bodies of the Sharps.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "the priestess Isperil Lightwind"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Jeanas Clocker",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Jeanas Clocker"
+          ],
+          "evidence": [
+            {
+              "page_number": 59,
+              "supporting_text": "\"Jeanas Clocker, the leader of Sweetwater's refugees\""
+            },
+            {
+              "page_number": 60,
+              "supporting_text": "\"Jeanas is in the same boat as Nibhin when it comes to saving his people and securing them rights as citizens.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Jelinghi the Wise",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Jelinghi the Wise"
+          ],
+          "evidence": [
+            {
+              "page_number": 58,
+              "supporting_text": "\"NPC: Jelinghi the Wise\""
+            },
+            {
+              "page_number": 58,
+              "supporting_text": "\"He came here in search of Tomar's Legend, and did manage to find the star elf barrows\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Jesper Clocker",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Jesper Clocker"
+          ],
+          "evidence": [
+            {
+              "page_number": 61,
+              "supporting_text": "\"Jeanas' son Jesper isn't speaking to his father because he blames him for the death of Lila\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Kadra Tourmaline",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Kadra Tourmaline",
+            "Mara Silver",
+            "Councilmember Kadra Tourmaline",
+            "Kadra"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "Kadra Tourmaline’s house"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Larkin",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Larkin"
+          ],
+          "evidence": [
+            {
+              "page_number": 63,
+              "supporting_text": "\"Henna and her now deceased brother, Larkin\""
+            },
+            {
+              "page_number": 63,
+              "supporting_text": "\"Henna accidentally caused a cave-in that killed Larkin.\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Lila",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Lila"
+          ],
+          "evidence": [
+            {
+              "page_number": 61,
+              "supporting_text": "\"Lila, Jeanas' wife and Jesper's mother\""
+            },
+            {
+              "page_number": 61,
+              "supporting_text": "\"Lila fell into a deadly mud pit on the road to Tomar's Crossing\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Malcolm Sharp",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Malcolm Sharp",
+            "Malcolm"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"Malcolm stabbed Beatrice to death ... Malcolm could not live with his own actions so he stabbed himself as well.\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "her husband Malcolm"
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "he stabbed himself as well"
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Messa Barristar",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Messa Barristar"
+          ],
+          "evidence": [
+            {
+              "page_number": 54,
+              "supporting_text": "\"NPC: Messa Barristar, Baker\""
+            },
+            {
+              "page_number": 54,
+              "supporting_text": "\"Messa plans to commit suicide in the near future.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Nibhin Blondbeard",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Nibhin Blondbeard"
+          ],
+          "evidence": [
+            {
+              "page_number": 59,
+              "supporting_text": "\"Nibhin Blondbeard, the leader of Hemlet's refugees\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Phelm Barristar",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Phelm Barristar",
+            "Phelm"
+          ],
+          "evidence": [
+            {
+              "page_number": 53,
+              "supporting_text": "“Phelm was caught in a strong cloud of comet dust immediately after the impact. The comet dust was so pure it drove Phelm mad.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "“he wants to protect the gold bars he has hidden beneath the floor.”"
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"NPC: Phelm Barristar, Miller\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"the miller has secret bags of gold buried under heavy flagstones in his home\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Ralekai Gravemore",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Ralekai Gravemore",
+            "Ralekai",
+            "the necromancer",
+            "Master Ralekai",
+            "the wizard"
+          ],
+          "evidence": [
+            {
+              "page_number": 56,
+              "supporting_text": "\"Harlyot is actually working with Ralekai Gravemore and the goblinoids\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Sir Brenarfom Steelcrest",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Sir Brenarfom Steelcrest",
+            "Brenarfom"
+          ],
+          "evidence": [
+            {
+              "page_number": 67,
+              "supporting_text": "\"They may meet their leader, Sir Brenarfom Steelcrest\""
+            },
+            {
+              "page_number": 67,
+              "supporting_text": "their leader, Sir Brenarfom Steelcrest"
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Someth Skullcleaver",
+          "reference_type": "npc",
+          "acceptable_aliases": [
+            "Someth Skullcleaver"
+          ],
+          "evidence": [
+            {
+              "page_number": 55,
+              "supporting_text": "\"NPC: Someth Skullcleaver, Carpenter\""
+            },
+            {
+              "page_number": 55,
+              "supporting_text": "\"Someth wants to be elected to the Village Council. He's also looking for his friend, Harlyot Crushade\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Tomar's Legend",
+          "reference_type": "other",
+          "acceptable_aliases": [
+            "Tomar's Legend"
+          ],
+          "evidence": [
+            {
+              "page_number": 58,
+              "supporting_text": "\"He came here in search of Tomar's Legend\""
+            }
+          ],
+          "historically_missed": true,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Baryl Harb Revenge",
+          "reference_type": "quest",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 64,
+              "supporting_text": "Baryl Harb Revenge."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Guard the Gold",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Guard the Gold"
+          ],
+          "evidence": [
+            {
+              "page_number": 53,
+              "supporting_text": "\"Guard the Gold. Phelm is seeking out adventurers to act as guards.\""
+            },
+            {
+              "page_number": 53,
+              "supporting_text": "\"Phelm tells the characters they are welcome to stay in the now defunct bakery for free, if they agree to guard his house.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        },
+        {
+          "name": "Market Murders",
+          "reference_type": "quest",
+          "acceptable_aliases": [],
+          "evidence": [
+            {
+              "page_number": 57,
+              "supporting_text": "Market Murders."
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 3-only valid identity"
+        },
+        {
+          "name": "Voting Rights",
+          "reference_type": "quest",
+          "acceptable_aliases": [
+            "Refugee Voting Rights",
+            "Voting Rights",
+            "refugee citizenship campaign"
+          ],
+          "evidence": [
+            {
+              "page_number": 60,
+              "supporting_text": "\"The pair explain their desire to establish the refugees in their charge as voting citizens of Tomar's Crossing.\""
+            },
+            {
+              "page_number": 61,
+              "supporting_text": "\"After 10 political victories ... [the] Village Council [votes] favorably on the matter.\""
+            }
+          ],
+          "historically_missed": false,
+          "reference_origin": "audited Test 2 crosswalk"
+        }
+      ]
+    }
+  ]
+}

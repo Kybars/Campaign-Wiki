@@ -4,12 +4,12 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.8` (recall-audit worktree pending commit)
-- Snapshot HEAD: `0dd436ba233f8961c314370277d1f5aadb5fd26d` (`feat: add derived lean recovery command`)
+- Package version: `0.4.8`
+- Snapshot HEAD at experiment start: `53aee4208b4bcc6d6f1459745c328b46b10ec774` (recall audit/fix committed and pushed)
 - Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: Test 2/Test 3 recall audit and extraction prompt guard
-- Working tree: not clean (recall audit and fix pending commit)
+- Latest targeted work: controlled Luna-versus-Terra extraction A/B and frozen benchmark harness/report
+- Working tree: experiment harness, frozen reference, report, and this snapshot are pending commit
 
 ## Current processing flow
 
@@ -81,8 +81,20 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Test 3-only: 13 new valid identities and 1 duplicate/noise identity.
 - Primary cause: extraction prompt/schema/output pressure. Luna may be a contributor, but Test 2's exact model is not persisted, so model capability cannot be isolated.
 - Remediation: a narrow extraction prompt guard preserves clearly named, source-backed minor entities and requires a final category/endpoint completeness check. Schema, model routing, chunks, reconciliation, and paid-call policy are unchanged.
-- A future Luna-versus-Terra A/B test is recommended before any production model change; it was not run and still requires explicit authorization.
+- The authorized Luna-versus-Terra A/B is complete; see the next section. No production model setting changed.
 - Audit artifacts: `docs/audits/test2_test3_recall_audit.md` and `docs/audits/test2_test3_entity_crosswalk.json`.
+
+## Luna versus Terra extraction A/B
+
+- Controlled sample: chunks 3, 5, and 4; 145 frozen reference occurrences, including 45 historical misses.
+- Six successful generation calls: 3 Luna and 3 Terra, with SDK retries disabled; no reconciliation, enrichment, campaign, official cache, or official checkpoint writes.
+- Occurrence-weighted Luna: 69/145 recall (`47.6%`), frozen-reference precision `87.3%`, F1 `61.6%`, and 10/45 historical misses recovered (`22.2%`).
+- Occurrence-weighted Terra: 99/145 recall (`68.3%`), frozen-reference precision `81.8%`, F1 `74.4%`, and 25/45 historical misses recovered (`55.6%`).
+- Manual grounding review found every reference-bounded false positive source-supported; the lower frozen-reference precision reflects valid identities outside the frozen, non-exhaustive reference as well as one type disagreement per model.
+- Terra produced 309 valid facts and 71 relationships versus Luna's 208 and 42, while using 40.3% more output tokens and taking 59.4% longer.
+- Terra recorded cost: `$0.5635378` for three chunks; Luna cost is unavailable because repository pricing does not know that model ID. Nine-chunk Terra extraction extrapolates to `$1.6906134` for this sample.
+- Decision: `REDESIGN_EXTRACTION_PIPELINE`. Terra is materially stronger, but both models remain below 90% recall and both retain systematic category failures; Terra recalled zero of nine quest occurrences.
+- Production extraction remains `gpt-5.6-luna`. Report: `docs/audits/luna_terra_extraction_ab.md`.
 
 ## Test 3 derived lean recovery
 
@@ -99,31 +111,35 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Historical reconciliation: 1 call / 28,928 tokens / `$0.1457915`.
 - Cumulative recorded enrichment recovery cost: `$3.3255693`, excluding extraction and unmeasured work.
 - Extraction remains the main candidate for later economy optimization.
+- The A/B added a known Terra estimate of `$0.5635378`; the combined experiment total is unavailable because Luna pricing is absent rather than guessed.
 
 ## Verification snapshot
 
 - Latest deterministic suite: 31 test files, 262 tests passed.
 - Successfully run for the recall fix: lint, typecheck, test, build, replay, lean, extraction-workload, checkpoint, and recall evaluations.
+- The A/B verification passed lint, typecheck, 31 test files/262 tests, production build, recall evaluation, extraction-workload evaluation, and read-only A/B evaluation. Protected campaign timestamps/counts and the cached graph fingerprint remained unchanged.
 - Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, and `npm run evaluate:recall`.
 - `npm run ai:preflight` performs no generation; `npm run smoke:local` needs an already running local model.
 
 ## Deferred work
 
-1. M6 local Test 3 rehearsal.
-2. Extraction schema/output economy optimization.
-3. Final v0.4 economics/quality benchmark.
-4. v0.5 editing and campaign maintenance.
-5. v0.6 UX redesign.
-6. Later multi-source/incremental ingestion.
-7. Later authentication and secure player sharing.
+1. Two-pass extraction pipeline redesign and frozen-benchmark rerun.
+2. M6 local Test 3 rehearsal.
+3. Extraction schema/output economy optimization.
+4. Final v0.4 economics/quality benchmark.
+5. v0.5 editing and campaign maintenance.
+6. v0.6 UX redesign.
+7. Later multi-source/incremental ingestion.
+8. Later authentication and secure player sharing.
 
 ## Next milestone
 
-`M6 — Local Test-3-Scale Rehearsal`
+`Extraction redesign — Inventory Pass then Rich Fact/Relationship Pass`
 
-- Exercise full and lean orchestration locally without OpenAI cost or official Test 3 mutation.
-- Force interruption and checkpoint resume in an isolated rehearsal namespace or disposable campaign.
-- Record local model, latency, schema/semantic failure rate, retries, and resume correctness.
+- Produce a compact, explicit entity inventory with category coverage before rich extraction.
+- Run rich facts and relationships against the retained inventory so breadth does not compete with record depth in one output.
+- Re-run the frozen three-chunk benchmark before choosing a permanent production extraction model.
+- Resume M6 after the extraction boundary is stable.
 
 ## Future workflow contract
 
