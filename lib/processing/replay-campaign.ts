@@ -25,6 +25,7 @@ import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-ver
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { assertAIProviderPersistenceAllowed, getAIProviderConfig } from "@/lib/env";
 import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
+import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 
 function mergeDiagnostics(current: Json, replay: Json): Json {
   if (current !== null && !Array.isArray(current) && typeof current === "object") return { ...current, replay };
@@ -55,7 +56,7 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
     if (options.refreshReconciliation) {
       const providerConfig = getAIProviderConfig("reconciliation");
       assertAIProviderPersistenceAllowed(providerConfig);
-      const refreshed = await reconcileGroupsWithAI(groups, getStructuredModelProvider("reconciliation"));
+      const refreshed = await reconcileGroupsWithAI(groups, getStructuredModelProvider("reconciliation"), { campaignId, documentId: document.id, sourceExtractionCacheId: cache.run.id, store: databaseCheckpointStore() });
       await saveReconciliationCacheResult(cache.run.id, refreshed);
       decision = refreshed.decision;
       reconciliationApiCalls = refreshed.usage ? 1 : 0;

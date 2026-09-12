@@ -893,6 +893,69 @@ Commit separately.
 
 ---
 
+# Milestone 4.5 — Versioning and Changelog
+
+## Goal
+
+Turn the existing version number shown in the top-right of Campaign Wiki into a useful, site-wide changelog entry point.
+
+The current version number should:
+
+1. remain visible in the existing top-right position
+2. be clickable
+3. link to `/changelog`
+4. show a compact summary of the current version's changes when hovered
+5. show the same information on keyboard focus for accessibility
+
+The dedicated Changelog page should list versions and their changes in reverse chronological order.
+
+This milestone is application/UI infrastructure only.
+
+It must not:
+
+- modify campaign extraction
+- call OpenAI
+- require Supabase
+- rerun the Demonplague campaign
+- alter campaign data
+
+---
+
+## Single Source of Truth
+
+Do not hardcode the application version independently in multiple components.
+
+Inspect how the existing top-right version number is currently implemented.
+
+Refactor toward one authoritative changelog/version definition.
+
+A suitable structure would be something conceptually similar to:
+
+```ts
+export interface ChangelogEntry {
+  version: string;
+  date?: string;
+  title?: string;
+  changes: string[];
+}
+
+export const changelog: ChangelogEntry[] = [
+  {
+    version: "0.x.x",
+    date: "YYYY-MM-DD",
+    title: "...",
+    changes: [
+      "...",
+      "...",
+    ],
+  },
+];
+
+export const currentVersion = changelog[0].version;
+export const currentChangelog = changelog[0];
+
+---
+
 # Milestone 5 — Compact Wiki Entity UX
 
 ## Goal

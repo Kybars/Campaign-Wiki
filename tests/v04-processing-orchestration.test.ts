@@ -91,7 +91,7 @@ describe("v0.4 processing orchestration", () => {
     const result = await processCampaign("campaign", { processingMode: "full" });
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("enrichment");
     expect(mocks.assertAIProviderPersistenceAllowed).toHaveBeenCalled();
-    expect(mocks.enrichCanonicalGraphWithAI).toHaveBeenCalledWith(canonicalGraph);
+    expect(mocks.enrichCanonicalGraphWithAI).toHaveBeenCalledWith(canonicalGraph, expect.objectContaining({ checkpointStore: expect.any(Object), checkpointContext: expect.objectContaining({ campaignId: "campaign", graphFingerprint: "fixture-fingerprint" }) }));
     expect(mocks.createEnrichmentCacheRun).toHaveBeenCalled();
     expect(result).toMatchObject({ processingMode: "full", enrichmentRequired: true, enrichmentCalls: 1, openAIGenerationCallsAfterReconciliation: 1 });
   });

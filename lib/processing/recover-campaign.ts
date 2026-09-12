@@ -1,6 +1,6 @@
 import "server-only";
 
-import { EnrichmentFailure, enrichCanonicalGraphWithAI, expectedEnrichmentCallBreakdown } from "@/lib/ai/enrich";
+import { EnrichmentFailure, enrichCanonicalGraphWithAI, expectedEnrichmentCallBreakdown, planEnrichmentResume } from "@/lib/ai/enrich";
 import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
 import { assertAIProviderPersistenceAllowed, getAIProviderConfig } from "@/lib/env";
 import { buildCanonicalGraph } from "@/lib/graph/build";
@@ -13,6 +13,8 @@ import { createEnrichmentCacheRun, finishEnrichmentCacheRun, loadCampaignAndDocu
 import { summarizeModelUsage } from "@/lib/ai/usage";
 import type { Json } from "@/lib/db/types";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
+import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
+import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
 
 export const TEST_THREE_CAMPAIGN_ID = "d14f9875-5ebf-46c6-b07e-d65a3e65c5f4";
 const TEST_TWO_CAMPAIGN_ID = "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3";
@@ -40,15 +42,20 @@ export async function preflightCachedRecovery(campaignId: string, options: { pro
     : { entityClassification: 0, factClassification: 0, relationshipClassification: 0, gmSummaries: 0, playerSummaries: 0, overviews: 0, retries: 0 };
   const expectedEnrichmentCalls = Object.values(callBreakdown).reduce((sum, count) => sum + count, 0);
   if (expectedEnrichmentCalls > 40) throw new Error(`Expected enrichment call count ${expectedEnrichmentCalls} exceeds the safety cap`);
-  return { campaign, document, cache, aggregate, graph, graphFingerprint: enrichmentGraphFingerprint(graph), callBreakdown, expectedEnrichmentCalls, processingMode };
+  const graphFingerprint = enrichmentGraphFingerprint(graph);
+  const provider = processingMode === "full" ? getAIProviderConfig("enrichment") : undefined;
+  const checkpointPlan = provider ? await planEnrichmentResume(graph, databaseCheckpointStore(), { campaignId, documentId: document.id, sourceExtractionCacheId: cache.run.id, processingMode: "full", providerId: provider.providerId, modelId: provider.modelId, graphFingerprint }) : [];
+  return { campaign, document, cache, aggregate, graph, graphFingerprint, callBreakdown, expectedEnrichmentCalls, processingMode, checkpointPlan };
 }
 
 export async function recoverCampaignFromCachedExtraction(campaignId: string, options: { execute?: boolean; processingMode?: ProcessingMode } = {}) {
   const preflight = await preflightCachedRecovery(campaignId, options);
   const provider = preflight.processingMode === "full" ? getAIProviderConfig("enrichment") : undefined;
-  const report = { campaign: preflight.campaign.name, campaignId, processingMode: preflight.processingMode, extractionCacheId: preflight.cache.run.id, extraction: "REUSE" as const, reconciliation: "REUSE" as const, extractionApiCalls: 0, reconciliationApiCalls: 0, canonicalEntities: preflight.graph.entities.length, canonicalFacts: preflight.graph.facts.length, canonicalRelationships: preflight.graph.relationships.length, graphFingerprint: preflight.graphFingerprint, enrichmentRequired: preflight.processingMode === "full", enrichmentProvider: provider?.providerId ?? null, enrichmentModel: provider?.modelId ?? null, expectedEnrichmentCallBreakdown: preflight.callBreakdown, expectedEnrichmentCalls: preflight.expectedEnrichmentCalls, plannedEnrichmentCalls: preflight.expectedEnrichmentCalls, plannedOpenAICalls: provider?.providerId === "openai" ? preflight.expectedEnrichmentCalls : 0, plannedLocalCalls: provider?.providerId === "local" ? preflight.expectedEnrichmentCalls : 0, persistence: options.execute ? (preflight.processingMode === "lean" ? "will persist canonical graph with lean defaults" : "will run after successful enrichment") : "dry-run; no writes or model calls" };
+  const plannedEnrichmentCalls = preflight.checkpointPlan.length ? preflight.checkpointPlan.filter((item) => item.status !== "REUSE").length : preflight.expectedEnrichmentCalls;
+  const report = { campaign: preflight.campaign.name, campaignId, processingMode: preflight.processingMode, extractionCacheId: preflight.cache.run.id, extraction: "REUSE" as const, reconciliation: "REUSE" as const, extractionApiCalls: 0, reconciliationApiCalls: 0, canonicalEntities: preflight.graph.entities.length, canonicalFacts: preflight.graph.facts.length, canonicalRelationships: preflight.graph.relationships.length, graphFingerprint: preflight.graphFingerprint, enrichmentRequired: preflight.processingMode === "full", enrichmentProvider: provider?.providerId ?? null, enrichmentModel: provider?.modelId ?? null, expectedEnrichmentCallBreakdown: preflight.callBreakdown, expectedEnrichmentCalls: preflight.expectedEnrichmentCalls, checkpointPlan: preflight.checkpointPlan, plannedEnrichmentCalls, plannedOpenAICalls: provider?.providerId === "openai" ? plannedEnrichmentCalls : 0, plannedLocalCalls: provider?.providerId === "local" ? plannedEnrichmentCalls : 0, persistence: options.execute ? (preflight.processingMode === "lean" ? "will persist canonical graph with lean defaults" : "will run after successful enrichment") : "dry-run; no writes or model calls" };
   if (!options.execute) return report;
   if (provider) assertAIProviderPersistenceAllowed(provider);
+  const checkpointStore = databaseCheckpointStore();
   await recordProcessingRun(campaignId, "cached_recovery", "started", { input: { processingMode: preflight.processingMode, extractionCacheId: preflight.cache.run.id, extractionApiCalls: 0, reconciliationApiCalls: 0 } });
   await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Reusing cached campaign knowledge", error_message: null });
   let cacheId: string | undefined;
@@ -64,15 +71,16 @@ export async function recoverCampaignFromCachedExtraction(campaignId: string, op
       await recordProcessingRun(campaignId, "recovery_enrichment", "complete", { output: { ...modeDiagnostics, mode: "skipped_by_processing_mode", modelUsage: usage } as unknown as Json });
     } else {
       const fullProvider = provider!;
+      const structuredProvider = getStructuredModelProvider("enrichment");
       const cacheModelId = fullProvider.providerId === "openai" ? fullProvider.modelId : `local:${fullProvider.modelId}`;
       cacheId = await createEnrichmentCacheRun(campaignId, preflight.document.id, preflight.cache.run.id, cacheModelId, preflight.graphFingerprint);
       await updateCampaign(campaignId, { processing_stage: "Classifying cached campaign knowledge" });
-      const enriched = await enrichCanonicalGraphWithAI(preflight.graph);
+      const enriched = await enrichCanonicalGraphWithAI(preflight.graph, { provider: structuredProvider, checkpointStore, checkpointContext: { campaignId, documentId: preflight.document.id, sourceExtractionCacheId: preflight.cache.run.id, processingMode: "full", providerId: structuredProvider.providerId, modelId: structuredProvider.modelId, graphFingerprint: preflight.graphFingerprint } });
       graph = enriched.graph;
       usage = summarizeModelUsage("enrichment", enriched.usage);
       await finishEnrichmentCacheRun(cacheId, "complete", enriched.output, usage as unknown as Json);
       modeDiagnostics = buildEnrichmentDiagnostics(graph);
-      await recordProcessingRun(campaignId, "recovery_enrichment", "complete", { output: { processingMode: "full", enrichmentRequired: true, enrichmentCalls: enriched.usage.length, modelUsage: usage, ...modeDiagnostics } as unknown as Json });
+      await recordProcessingRun(campaignId, "recovery_enrichment", "complete", { output: { processingMode: "full", enrichmentRequired: true, enrichmentCalls: enriched.usage.length, reusedOperations: enriched.checkpointReport.filter((item) => item.status === "REUSE").length, checkpointReport: enriched.checkpointReport, modelUsage: usage, ...modeDiagnostics } as unknown as Json });
     }
     await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki from cached campaign knowledge" });
     await persistCanonicalGraph(campaignId, preflight.document.id, graph);

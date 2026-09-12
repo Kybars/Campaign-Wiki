@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-11",
+    title: "Durable AI operation checkpoints",
+    changes: [
+      "Persisted validated extraction, reconciliation, and full-enrichment operations before dependent work continues.",
+      "Added exact provider/input/version identity, interruption-safe reuse, and zero-call resume planning.",
+    ],
+  },
+  {
+    version: "0.4.4",
+    date: "2026-09-11",
     title: "Local core processing providers",
     changes: [
       "Extended the structured-model provider to extraction and reconciliation without weakening validation.",

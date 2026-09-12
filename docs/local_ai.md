@@ -27,4 +27,6 @@ LOCAL_AI_ALLOW_PERSISTENCE=true
 
 Do not enable that acknowledgement for a benchmark or production campaign. Extraction cache model identity and processing diagnostics distinguish local stage results from OpenAI results. Historical caches remain readable and are not rewritten. Local results are development/rehearsal results, not official OpenAI quality benchmarks.
 
+M4 checkpoints include the provider and exact model identity, so local output is never reused by OpenAI or vice versa. Compatible validated local operations can resume a deliberately acknowledged local rehearsal. Reused operations make no new call; missing local token counts remain `null` and are never priced as OpenAI usage. Lean mode still schedules no enrichment operations and creates no empty enrichment checkpoints.
+
 On Windows, install and start Ollama or LM Studio separately, load a suitable instruct model, update `.env.local`, run the deterministic test suite, and then run the preflight. Model installation is deliberately not automated by this repository.

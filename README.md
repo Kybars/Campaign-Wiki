@@ -37,6 +37,7 @@ Important design properties:
 - Graph replacement is one PostgreSQL function call, so a partial canonical graph is not exposed.
 - `processing_runs` and reconciliation metadata preserve candidate IDs, merge reasons, counts, and discarded-item diagnostics.
 - Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
+- Every newly validated model operation is also stored as a private provider/model/input/version-aware checkpoint before dependent work continues. Interrupted extraction, reconciliation, and explicit full enrichment can reuse compatible operations without counting them as new calls.
 
 All three model stages use one provider-independent structured-output boundary. The OpenAI adapter follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`); the local adapter uses an OpenAI-compatible Chat Completions endpoint and applies the same schemas and domain validation. Stage-specific OpenAI models fall back to `OPENAI_MODEL`, while stage-specific local models fall back to `LOCAL_AI_MODEL`. See [`docs/local_ai.md`](./docs/local_ai.md).
 
@@ -145,6 +146,7 @@ The migrations create:
 - `extraction_cache_runs` and `extraction_cache_chunks`
 - `reconciliation_cache_results`
 - `enrichment_cache_runs`
+- `ai_operation_checkpoints` (private validated-operation resume state)
 - the private `campaign-pdfs` Storage bucket
 - `replace_campaign_graph(...)` for transactional/idempotent graph persistence
 - DM/player visibility, nullable universal prominence, and separate GM/player summaries and overviews
@@ -199,6 +201,8 @@ The replay evaluation also exercises the v0.3 rich-fact fixture. Rich extraction
 Run `npm run evaluate:lean` for a read-only Test 3 cache dry-run. It reuses extraction and reconciliation, projects the lean defaults, verifies the preserved 112/502/145 graph and fingerprint, and reports zero writes and zero post-reconciliation model calls.
 
 Run `npm run evaluate:extraction-workload` for read-only size/count instrumentation over the preserved Test 3 extraction cache. It performs no generation and no writes. Developers with an already-running local server can use `npm run smoke:local` to process only the small fixture into an in-memory lean graph.
+
+Run `npm run evaluate:checkpoints` for a deterministic checkpoint planner evaluation. It demonstrates `REUSE`, `RUN`, and `INVALIDATED` decisions with zero model calls and zero dry-run writes. Full cached-recovery dry-runs include the provider/model-aware operation plan; exact dependency-resolved reuse is also recorded during execution.
 
 Run `npm run evaluate:enrichment` for the deterministic post-reconciliation prominence, visibility, summary, overview, and consistency fixture. It makes zero OpenAI and Supabase calls. See [`docs/V0_3_CANONICAL_ENRICHMENT.md`](./docs/V0_3_CANONICAL_ENRICHMENT.md).
 

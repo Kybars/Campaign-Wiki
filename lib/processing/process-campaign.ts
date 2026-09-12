@@ -31,6 +31,7 @@ import type { CanonicalGraph } from "@/lib/graph/types";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
+import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 
 export async function processCampaign(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
@@ -46,6 +47,7 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     if (!(await claimCampaignForProcessing(campaignId))) throw new Error("Campaign was claimed by another processing request");
     ownsProcessing = true;
+    const checkpointStore = databaseCheckpointStore();
     const extractionProvider = getStructuredModelProvider("extraction");
     const reconciliationProvider = getStructuredModelProvider("reconciliation");
     assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction"));
@@ -61,20 +63,21 @@ export async function processCampaign(campaignId: string, options: { processingM
     await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length } });
     const extracted = await extractChunksLimited(chunks, undefined, async (result, chunk, index) => {
       await saveExtractionCacheChunk(cacheRunId!, result, index, chunk.pages.map((page) => page.pageNumber));
-    }, extractionProvider);
+    }, extractionProvider, { campaignId, documentId: document.id, processingMode, store: checkpointStore });
     await finishExtractionCacheRun(cacheRunId, "complete");
     cacheComplete = true;
     const rejectedSources = extracted.reduce((count, chunk) => count + chunk.diagnostics.length, 0);
     const aggregate = aggregateCandidates(extracted.map((chunk) => ({ chunkId: chunk.chunkId, ...chunk.extraction })));
-    const extractionUsage = summarizeModelUsage("candidate_extraction", extracted.map((chunk) => chunk.usage));
+    const extractionCalls = extracted.filter((chunk) => chunk.checkpointStatus !== "REUSE").map((chunk) => chunk.usage);
+    const extractionUsage = summarizeModelUsage("candidate_extraction", extractionCalls);
     await recordProcessingRun(campaignId, "candidate_extraction", "complete", {
       output: {
         mode: "live",
         processingMode,
         provider: extractionProvider.providerId,
         model: extractionProvider.modelId,
-        cacheHits: 0,
-        cacheMisses: chunks.length,
+        cacheHits: extracted.filter((chunk) => chunk.checkpointStatus === "REUSE").length,
+        cacheMisses: extractionCalls.length,
         entityCandidates: aggregate.entities.length,
         factCandidates: aggregate.entities.reduce((count, entity) => count + (entity.facts?.length ?? 0), 0),
         relationshipCandidates: aggregate.relationships.length,
@@ -85,7 +88,7 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Connecting campaign information" });
     const groups = buildDeterministicGroups(aggregate);
-    const reconciliation = await reconcileGroupsWithAI(groups, reconciliationProvider);
+    const reconciliation = await reconcileGroupsWithAI(groups, reconciliationProvider, { campaignId, documentId: document.id, sourceExtractionCacheId: cacheRunId, store: checkpointStore });
     await saveReconciliationCacheResult(cacheRunId, reconciliation);
     const canonicalGraph = buildCanonicalGraph(aggregate, reconciliation.decision);
     const reconciliationUsage = summarizeModelUsage("reconciliation", reconciliation.usage ? [reconciliation.usage] : []);
@@ -107,6 +110,7 @@ export async function processCampaign(campaignId: string, options: { processingM
     const graphFingerprint = enrichmentGraphFingerprint(canonicalGraph);
     let graph: CanonicalGraph;
     let enrichmentCalls: ModelCallUsage[] = [];
+    let enrichmentCheckpointReport: Array<{ status: "REUSE" | "RUN" }> = [];
     let openAIGenerationCallsAfterReconciliation = 0;
     let enrichmentDiagnostics: ReturnType<typeof buildEnrichmentDiagnostics> | ReturnType<typeof buildLeanDiagnostics>;
     if (processingMode === "lean") {
@@ -125,6 +129,7 @@ export async function processCampaign(campaignId: string, options: { processingM
       await updateCampaign(campaignId, { processing_stage: "Classifying campaign knowledge" });
       const enrichmentProvider = getAIProviderConfig("enrichment");
       assertAIProviderPersistenceAllowed(enrichmentProvider);
+      const enrichmentStructuredProvider = getStructuredModelProvider("enrichment");
       const enrichmentModel = enrichmentProvider.providerId === "openai" ? enrichmentProvider.modelId : `local:${enrichmentProvider.modelId}`;
       const cachedEnrichment = await loadCompleteEnrichmentCache(campaignId, document.id, graphFingerprint, enrichmentModel);
       let enrichmentMode: "live" | "replay" = "replay";
@@ -134,9 +139,10 @@ export async function processCampaign(campaignId: string, options: { processingM
         enrichmentMode = "live";
         const enrichmentCacheId = await createEnrichmentCacheRun(campaignId, document.id, cacheRunId, enrichmentModel, graphFingerprint);
         try {
-          const enriched = await enrichCanonicalGraphWithAI(canonicalGraph);
+          const enriched = await enrichCanonicalGraphWithAI(canonicalGraph, { provider: enrichmentStructuredProvider, checkpointStore, checkpointContext: { campaignId, documentId: document.id, sourceExtractionCacheId: cacheRunId, processingMode: "full", providerId: enrichmentStructuredProvider.providerId, modelId: enrichmentStructuredProvider.modelId, graphFingerprint } });
           graph = enriched.graph;
           enrichmentCalls = enriched.usage;
+          enrichmentCheckpointReport = enriched.checkpointReport ?? [];
           const usage = summarizeModelUsage("enrichment", enrichmentCalls);
           await finishEnrichmentCacheRun(enrichmentCacheId, "complete", enriched.output, usage as unknown as Json);
         } catch (error) {
@@ -155,12 +161,13 @@ export async function processCampaign(campaignId: string, options: { processingM
         enrichmentCalls: enrichmentCalls.length,
         openAIGenerationCallsAfterReconciliation,
         mode: enrichmentMode,
-        cacheHits: enrichmentMode === "replay" ? 1 : 0,
+        cacheHits: enrichmentMode === "replay" ? 1 : enrichmentCheckpointReport.filter((item) => item.status === "REUSE").length,
         cacheMisses: enrichmentMode === "live" ? enrichmentCalls.length : 0,
         modelUsage: enrichmentUsage,
         provider: enrichmentProvider.providerId,
         model: enrichmentProvider.modelId,
         ...enrichmentDiagnostics,
+        checkpointReport: enrichmentCheckpointReport,
       } as unknown as Json });
     }
     const enrichmentUsage = summarizeModelUsage("enrichment", enrichmentCalls);

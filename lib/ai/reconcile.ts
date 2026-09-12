@@ -4,11 +4,15 @@ import type { ModelCallUsage } from "@/lib/ai/usage";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { buildCrossTypeReconciliationCandidates } from "@/lib/graph/reconcile";
 import type { DeterministicGroup } from "@/lib/graph/types";
+import { RECONCILIATION_BEHAVIOR_VERSION, RECONCILIATION_CONTRACT_VERSION, modelInputHash, semanticInputHash, type AIOperationCheckpointStore, type AIOperationIdentity } from "@/lib/ai/operation-checkpoint";
 
 export interface ReconciliationResult {
   decision: ReconciliationDecision | undefined;
   usage: ModelCallUsage | undefined;
+  checkpointStatus?: "REUSE" | "RUN";
 }
+
+export interface ReconciliationCheckpointContext { campaignId: string; documentId: string; sourceExtractionCacheId: string | null; store: AIOperationCheckpointStore }
 
 export function validateReconciliationCoverage(decision: ReconciliationDecision, groups: DeterministicGroup[]) {
   const expected = groups.map((group) => group.id);
@@ -19,7 +23,7 @@ export function validateReconciliationCoverage(decision: ReconciliationDecision,
   if (missing.length || duplicate.length || unexpected.length) throw new Error(`Reconciliation group coverage failed (missing: ${missing.join(",") || "none"}; duplicate: ${duplicate.join(",") || "none"}; unexpected: ${[...new Set(unexpected)].join(",") || "none"})`);
 }
 
-export async function reconcileGroupsWithAI(groups: DeterministicGroup[], provider?: StructuredModelProvider): Promise<ReconciliationResult> {
+export async function reconcileGroupsWithAI(groups: DeterministicGroup[], provider?: StructuredModelProvider, checkpoint?: ReconciliationCheckpointContext): Promise<ReconciliationResult> {
   if (groups.length <= 1) return { decision: undefined, usage: undefined };
 
   const crossTypeCandidates = buildCrossTypeReconciliationCandidates(groups);
@@ -40,10 +44,34 @@ export async function reconcileGroupsWithAI(groups: DeterministicGroup[], provid
     })),
   }));
   const resolvedProvider = provider ?? (await import("@/lib/ai/structured-model-provider-runtime")).getStructuredModelProvider("reconciliation");
-  const response = await resolvedProvider.parseStructured({ system: RECONCILIATION_SYSTEM_PROMPT, payload: `Reconcile every candidate group in this JSON data:\n${JSON.stringify(payload)}`, schema: reconciliationDecisionSchema, schemaName: "campaign_entity_reconciliation" });
-  validateReconciliationCoverage(response.output, groups);
+  const modelPayload = `Reconcile every candidate group in this JSON data:\n${JSON.stringify(payload)}`;
+  const identity: AIOperationIdentity | undefined = checkpoint ? {
+    campaignId: checkpoint.campaignId, documentId: checkpoint.documentId, sourceExtractionCacheId: checkpoint.sourceExtractionCacheId,
+    providerId: resolvedProvider.providerId, modelId: resolvedProvider.modelId, processingMode: "core", stage: "reconciliation",
+    operationType: "global", operationKey: "global", inputHash: modelInputHash(RECONCILIATION_SYSTEM_PROMPT, modelPayload),
+    upstreamFingerprint: semanticInputHash(payload), behaviorVersion: RECONCILIATION_BEHAVIOR_VERSION, schemaVersion: RECONCILIATION_CONTRACT_VERSION,
+  } : undefined;
+  if (identity) {
+    const cached = await checkpoint!.store.load<ReconciliationDecision>(identity);
+    if (cached) {
+      const decision = reconciliationDecisionSchema.parse(cached.output);
+      validateReconciliationCoverage(decision, groups);
+      return { decision, usage: undefined, checkpointStatus: "REUSE" };
+    }
+  }
+  const response = await resolvedProvider.parseStructured({ system: RECONCILIATION_SYSTEM_PROMPT, payload: modelPayload, schema: reconciliationDecisionSchema, schemaName: "campaign_entity_reconciliation" }).catch(async (error) => {
+    if (identity) await checkpoint!.store.saveFailed(identity, [], error instanceof Error ? error.message : "Reconciliation provider failure", 1);
+    throw error;
+  });
+  try { validateReconciliationCoverage(response.output, groups); }
+  catch (error) {
+    if (identity) await checkpoint!.store.saveFailed(identity, [response.usage], error instanceof Error ? error.message : "Invalid reconciliation output", 1);
+    throw error;
+  }
+  if (identity) await checkpoint!.store.saveValidated({ identity, output: response.output, usage: [response.usage], attemptCount: 1 });
   return {
     decision: response.output,
     usage: response.usage,
+    checkpointStatus: "RUN",
   };
 }

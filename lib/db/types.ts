@@ -91,6 +91,10 @@ export interface Database {
         { id: string; campaign_id: string; document_id: string; extraction_cache_run_id: string | null; status: string; enrichment_model: string; cache_schema_version: number; prompt_version: string; graph_fingerprint: string; output: Json | null; usage_diagnostics: Json; error_message: string | null; created_at: string; completed_at: string | null },
         { id?: string; campaign_id: string; document_id: string; extraction_cache_run_id?: string | null; status: string; enrichment_model: string; cache_schema_version: number; prompt_version: string; graph_fingerprint: string; output?: Json | null; usage_diagnostics?: Json; error_message?: string | null; completed_at?: string | null }
       >;
+      ai_operation_checkpoints: Table<
+        { id: string; campaign_id: string; document_id: string; source_extraction_cache_id: string | null; provider_id: string; model_id: string; processing_mode: string; stage: string; operation_type: string; operation_key: string; input_hash: string; upstream_fingerprint: string; behavior_version: string; schema_version: number; status: string; validated_output: Json | null; usage_diagnostics: Json; error_message: string | null; attempt_count: number; created_at: string; updated_at: string; completed_at: string | null },
+        { id?: string; campaign_id: string; document_id: string; source_extraction_cache_id?: string | null; provider_id: string; model_id: string; processing_mode: string; stage: string; operation_type: string; operation_key: string; input_hash: string; upstream_fingerprint: string; behavior_version: string; schema_version: number; status: string; validated_output?: Json | null; usage_diagnostics?: Json; error_message?: string | null; attempt_count?: number; completed_at?: string | null }
+      >;
     };
     Views: Record<string, never>;
     Functions: {

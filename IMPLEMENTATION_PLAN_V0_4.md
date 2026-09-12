@@ -664,6 +664,10 @@ using local provider(s), while the normal OpenAI path remains intact.
 
 # 14. Milestone 4 — Durable Per-Operation Enrichment Checkpoints
 
+## Status
+
+Completed as v0.4.5. A private provider-aware operation checkpoint store now makes validated extraction chunks, reconciliation decisions, and full-enrichment operations durable before later work or graph persistence. Exact semantic hashing, explicit behavior/schema versions, read-only resume planning, and deterministic interruption/invalidation tests preserve lean mode's zero-enrichment-call default and all historical caches.
+
 ## Goal
 
 Never lose already validated enrichment work because a later operation fails.
