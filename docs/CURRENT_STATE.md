@@ -4,11 +4,12 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.7` (derived-recovery worktree pending commit)
-- Snapshot HEAD: `bd39d94928167d8d819f2621bea089e610e5228a` (`feat: add failure and paid-call guards`)
+- Package version: `0.4.8` (recall-audit worktree pending commit)
+- Snapshot HEAD: `0dd436ba233f8961c314370277d1f5aadb5fd26d` (`feat: add derived lean recovery command`)
 - Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Working tree after this documentation task: not clean (context documentation pending commit)
+- Latest targeted work: Test 2/Test 3 recall audit and extraction prompt guard
+- Working tree: not clean (recall audit and fix pending commit)
 
 ## Current processing flow
 
@@ -58,6 +59,7 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Source-backed canonical summaries and rich facts remain available without enrichment.
 - Optional full enrichment can add prominence, visibility, audience summaries, and overviews.
 - Relationships remain normalized and bidirectional in rendering; location containment remains authoritative and cycle-safe.
+- Extraction's false-negative preference does not justify omitting clearly named, source-backed minor entities or entities with few facts.
 - Player View fails closed: no hidden data leaks through content, navigation, search, sources, counts, hierarchy, timelines, or fallback text.
 - Current view selection is a DM/Player preview, not authentication.
 
@@ -70,6 +72,17 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Test 2 is unchanged.
 - Test 3 historical failed and recovery runs are preserved.
 - No new official benchmark run has occurred since this snapshot.
+
+## Test 2 vs Test 3 recall audit
+
+- Source comparability: `EQUIVALENT_CONTENT_WITH_FORMATTING_DIFFERENCES`; all 160 extracted page rows, text lengths, and ordered raw/normalized hashes match, while stored PDF objects are empty and cannot prove original binary identity.
+- Test 2 authoritative campaign: `a13d54b5-74e6-45e3-9f7f-9dcad214d7d3`, unchanged at 156 entities and 262 relationships.
+- Crosswalk: 98 distinct recalled Test 2 identities, 6 correctly removed Test 2 duplicate rows, 52 source-backed extraction false negatives, 0 reconciliation losses, and 0 unresolved rows.
+- Test 3-only: 13 new valid identities and 1 duplicate/noise identity.
+- Primary cause: extraction prompt/schema/output pressure. Luna may be a contributor, but Test 2's exact model is not persisted, so model capability cannot be isolated.
+- Remediation: a narrow extraction prompt guard preserves clearly named, source-backed minor entities and requires a final category/endpoint completeness check. Schema, model routing, chunks, reconciliation, and paid-call policy are unchanged.
+- A future Luna-versus-Terra A/B test is recommended before any production model change; it was not run and still requires explicit authorization.
+- Audit artifacts: `docs/audits/test2_test3_recall_audit.md` and `docs/audits/test2_test3_entity_crosswalk.json`.
 
 ## Test 3 derived lean recovery
 
@@ -90,8 +103,8 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 ## Verification snapshot
 
 - Latest deterministic suite: 31 test files, 262 tests passed.
-- Successfully run for M5: lint, typecheck, test, build, all listed deterministic evaluations, and preflight.
-- Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, and `npm run evaluate:checkpoints`.
+- Successfully run for the recall fix: lint, typecheck, test, build, replay, lean, extraction-workload, checkpoint, and recall evaluations.
+- Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, and `npm run evaluate:recall`.
 - `npm run ai:preflight` performs no generation; `npm run smoke:local` needs an already running local model.
 
 ## Deferred work

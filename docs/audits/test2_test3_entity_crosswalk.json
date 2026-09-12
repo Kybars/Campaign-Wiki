@@ -1,0 +1,3530 @@
+{
+  "schema_version": 1,
+  "generated_from": {
+    "test2_campaign_id": "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3",
+    "test3_recovery_campaign_id": "1151fb31-876b-4277-9718-76313c1c8d98",
+    "test3_extraction_cache_id": "1ad99ac3-6cf5-4731-bf1e-4736109f0de8",
+    "method": "deterministic normalized-name/alias mapping plus the enumerated semanticMatches map",
+    "model_calls": 0,
+    "database_writes": 0
+  },
+  "source_comparison": {
+    "classification": "EQUIVALENT_CONTENT_WITH_FORMATTING_DIFFERENCES",
+    "documents": [
+      {
+        "id": "0830dc1e-5d20-44d9-b67e-ee718a111f39",
+        "campaign_id": "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3",
+        "filename": "The Demonplague Part I 2018-1014.pdf",
+        "page_count": 160
+      },
+      {
+        "id": "cb543f62-232f-42ba-8678-f0aa0ba35aef",
+        "campaign_id": "d14f9875-5ebf-46c6-b07e-d65a3e65c5f4",
+        "filename": "The Demonplague Part I 2018-1014.pdf",
+        "page_count": 160
+      }
+    ],
+    "page_rows": 160,
+    "text_characters": 349129,
+    "normalized_characters": 344905,
+    "ordered_raw_text_sha256": "e19edeebb9511c277bf24bbca930767191d911d70d0704aeb1d50c3c7cd00a3a",
+    "ordered_normalized_text_sha256": "4c6cdfd6a67e709d8310ac3673da3bc34920e81971cb54d47137bb2de239fe32",
+    "equal_page_hashes": 160,
+    "original_pdf_byte_identity": "UNKNOWN_ZERO_BYTE_STORAGE_OBJECTS"
+  },
+  "summary": {
+    "test2_entities": 156,
+    "test3_entities": 112,
+    "test3_validated_candidates": 202,
+    "test3_deterministic_groups": 118,
+    "test3_canonical_entities": 112,
+    "test2_classifications": {
+      "MATCHED_SAME_IDENTITY": 81,
+      "MATCHED_RETYPED": 2,
+      "MATCHED_RENAMED_OR_ALIAS": 15,
+      "TEST2_DUPLICATE_CORRECTLY_REMOVED": 6,
+      "TEST2_NOISE_OR_UNSUPPORTED": 0,
+      "MISSING_FROM_TEST3_EXTRACTION": 52,
+      "PRESENT_IN_TEST3_CANDIDATES_BUT_LOST_IN_RECONCILIATION": 0,
+      "AMBIGUOUS_REQUIRES_REVIEW": 0
+    },
+    "test2_by_type": {
+      "event": {
+        "baseline": 14,
+        "recalled": 8,
+        "recall_rate": 0.5714,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 6,
+          "MATCHED_SAME_IDENTITY": 2,
+          "MISSING_FROM_TEST3_EXTRACTION": 6
+        }
+      },
+      "faction": {
+        "baseline": 15,
+        "recalled": 10,
+        "recall_rate": 0.6667,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 3,
+          "MATCHED_SAME_IDENTITY": 7,
+          "MISSING_FROM_TEST3_EXTRACTION": 5
+        }
+      },
+      "item": {
+        "baseline": 18,
+        "recalled": 6,
+        "recall_rate": 0.3333,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 1,
+          "MATCHED_SAME_IDENTITY": 5,
+          "MISSING_FROM_TEST3_EXTRACTION": 12
+        }
+      },
+      "location": {
+        "baseline": 29,
+        "recalled": 20,
+        "recall_rate": 0.6897,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 3,
+          "MATCHED_SAME_IDENTITY": 17,
+          "MISSING_FROM_TEST3_EXTRACTION": 8,
+          "TEST2_DUPLICATE_CORRECTLY_REMOVED": 1
+        }
+      },
+      "npc": {
+        "baseline": 67,
+        "recalled": 50,
+        "recall_rate": 0.7463,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 1,
+          "MATCHED_RETYPED": 1,
+          "MATCHED_SAME_IDENTITY": 48,
+          "MISSING_FROM_TEST3_EXTRACTION": 16,
+          "TEST2_DUPLICATE_CORRECTLY_REMOVED": 1
+        }
+      },
+      "other": {
+        "baseline": 6,
+        "recalled": 1,
+        "recall_rate": 0.1667,
+        "classifications": {
+          "MATCHED_RETYPED": 1,
+          "MISSING_FROM_TEST3_EXTRACTION": 2,
+          "TEST2_DUPLICATE_CORRECTLY_REMOVED": 3
+        }
+      },
+      "quest": {
+        "baseline": 7,
+        "recalled": 3,
+        "recall_rate": 0.4286,
+        "classifications": {
+          "MATCHED_RENAMED_OR_ALIAS": 1,
+          "MATCHED_SAME_IDENTITY": 2,
+          "MISSING_FROM_TEST3_EXTRACTION": 3,
+          "TEST2_DUPLICATE_CORRECTLY_REMOVED": 1
+        }
+      }
+    },
+    "test3_only_classifications": {
+      "NEW_VALID_RECALL": 13,
+      "RETYPE_OR_RENAME_OF_TEST2": 0,
+      "TEST3_DUPLICATE_OR_NOISE": 1,
+      "AMBIGUOUS": 0
+    }
+  },
+  "test2_crosswalk": [
+    {
+      "test2": {
+        "id": "d5e394ad-8b81-46dc-a191-459db03d9e5c",
+        "type": "npc",
+        "name": "Absen Cooper",
+        "normalized_name": "absen cooper",
+        "aliases": [
+          "Absen"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "843c92b4-d6c6-433b-9670-4a1d0f8bfee9",
+        "type": "npc",
+        "name": "Allia Thernius",
+        "normalized_name": "allia thernius",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "62db9dc7-33b2-426c-8dc5-811db327d609",
+        "type": "npc",
+        "name": "Allia Thernius",
+        "normalized_name": "allia thernius",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:npc_allia"
+      ]
+    },
+    {
+      "test2": {
+        "id": "fb89bd9a-1ce2-4fae-ac31-cb2af2596ded",
+        "type": "npc",
+        "name": "Bazig",
+        "normalized_name": "bazig",
+        "aliases": [
+          "Bazig the half-ogre"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "6b8de75d-3971-431f-9120-84bd36280946",
+        "type": "npc",
+        "name": "Bazig",
+        "normalized_name": "bazig",
+        "aliases": [
+          "the half-ogre"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_bazig",
+        "chunk-5:npc_bazig",
+        "chunk-6:npc_bazig",
+        "chunk-7:npc_bazig",
+        "chunk-8:npc_bazig",
+        "chunk-9:npc_bazig"
+      ]
+    },
+    {
+      "test2": {
+        "id": "20d55982-859c-4089-84ea-98609d3fffbe",
+        "type": "npc",
+        "name": "Bazil the Bizarre",
+        "normalized_name": "bazil the bizarre",
+        "aliases": [
+          "Bazil"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "36903c8b-87b0-4e99-8277-a8361f806d7b",
+        "type": "npc",
+        "name": "Bazil the Bizarre",
+        "normalized_name": "bazil the bizarre",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_bazil",
+        "chunk-4:npc_bazil_bizarre",
+        "chunk-8:npc_bazil",
+        "chunk-9:npc_bazil_bizarre"
+      ]
+    },
+    {
+      "test2": {
+        "id": "23885a57-0652-41e8-846e-a9e09db4aa7f",
+        "type": "npc",
+        "name": "Beatrice Sharp",
+        "normalized_name": "beatrice sharp",
+        "aliases": [
+          "Beatrice"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "e71cb77a-9935-447a-9f58-070dd96c7fbd",
+        "type": "npc",
+        "name": "Bella Thron",
+        "normalized_name": "bella thron",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "6b3ccc2c-dc98-4067-b6ad-228b7457bb7a",
+        "type": "npc",
+        "name": "Bella Thron",
+        "normalized_name": "bella thron",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_bella"
+      ]
+    },
+    {
+      "test2": {
+        "id": "21c8fa69-7546-47a8-b222-227246faacc1",
+        "type": "npc",
+        "name": "Bjalien Viadas",
+        "normalized_name": "bjalien viadas",
+        "aliases": [
+          "Villagemaster Bjalien Viadas",
+          "Bjalien",
+          "the Villagemaster"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "752c8edf-484f-4404-8963-61c72024bf9f",
+        "type": "npc",
+        "name": "Bjalien Viadas",
+        "normalized_name": "bjalien viadas",
+        "aliases": [
+          "Villagemaster Bjalien"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_bjalien",
+        "chunk-3:npc_bjalien",
+        "chunk-6:npc_bjalien",
+        "chunk-7:npc_bjalien",
+        "chunk-9:npc_bjalien_viadas"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f9f46431-6d12-4d3e-bb6e-5b9d25a590c2",
+        "type": "npc",
+        "name": "Brutus",
+        "normalized_name": "brutus",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "9706b5fe-0298-4ae3-9285-f5e312d81b5b",
+        "type": "npc",
+        "name": "Cadicca LeBlorne",
+        "normalized_name": "cadicca leblorne",
+        "aliases": [
+          "Cadicca",
+          "Cadicca LeBorne"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "0e48348d-7770-4f51-b453-32303a1a2849",
+        "type": "npc",
+        "name": "Cadicca LeBlorne",
+        "normalized_name": "cadicca leblorne",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:npc_cadicca_leblorne"
+      ]
+    },
+    {
+      "test2": {
+        "id": "7b87bf3e-e0fb-424c-80e0-106fdb099695",
+        "type": "npc",
+        "name": "Cay Naja",
+        "normalized_name": "cay naja",
+        "aliases": [
+          "the ancient dwarf god Cay Naja"
+        ]
+      },
+      "classification": "MATCHED_RETYPED",
+      "test3": {
+        "id": "b4d567eb-90ff-4176-b040-dd51599567a5",
+        "type": "deity",
+        "name": "Cay Naja",
+        "normalized_name": "cay naja",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:deity_cay_naja",
+        "chunk-7:deity_cay_naja",
+        "chunk-8:deity_cay_naja"
+      ]
+    },
+    {
+      "test2": {
+        "id": "a8623615-5894-496b-963e-c870c934e3ce",
+        "type": "npc",
+        "name": "Chillwyrm",
+        "normalized_name": "chillwyrm",
+        "aliases": [
+          "the dragon"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "15eb0884-267a-4110-92d3-4e9e4a2831b3",
+        "type": "npc",
+        "name": "Chillwyrm",
+        "normalized_name": "chillwyrm",
+        "aliases": [
+          "the dragon"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:npc_chillwyrm",
+        "chunk-6:npc_chillwyrm"
+      ]
+    },
+    {
+      "test2": {
+        "id": "df23cdaf-6509-442a-8a30-9b5b10bf57e5",
+        "type": "npc",
+        "name": "Colinus Birthwitch",
+        "normalized_name": "colinus birthwitch",
+        "aliases": [
+          "Councilmember Colinus Birthwitch",
+          "Colinus"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2a4ee634-e11c-45b9-89bf-573b099c4706",
+        "type": "npc",
+        "name": "Colinus Birthwitch",
+        "normalized_name": "colinus birthwitch",
+        "aliases": [
+          "Councilmember Colinus Birthwitch"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_colinus",
+        "chunk-5:npc_colinus_birthwitch",
+        "chunk-9:npc_colinus_birthwitch"
+      ]
+    },
+    {
+      "test2": {
+        "id": "1d08f8d4-c404-49a9-9acc-5e39c1bc29c8",
+        "type": "npc",
+        "name": "Count Mikael Gravdah",
+        "normalized_name": "count mikael gravdah",
+        "aliases": [
+          "Mikael",
+          "Count Mikael"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "0e2c2f31-c699-428e-aa95-494a10345116",
+        "type": "npc",
+        "name": "Count Mikael Gravdah",
+        "normalized_name": "count mikael gravdah",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_mikael"
+      ]
+    },
+    {
+      "test2": {
+        "id": "810e15ee-0002-4450-95ed-e9cee62c864d",
+        "type": "npc",
+        "name": "Dame Parla Caendinx",
+        "normalized_name": "dame parla caendinx",
+        "aliases": [
+          "Parla"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "32403069-3267-45cc-ab4d-25f5d41c52ae",
+        "type": "npc",
+        "name": "Dourkeg",
+        "normalized_name": "dourkeg",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "bff4b360-c1d0-4476-a9d5-7913cf717fd0",
+        "type": "npc",
+        "name": "Dourkeg",
+        "normalized_name": "dourkeg",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_dourkeg",
+        "chunk-2:npc_dourkeg",
+        "chunk-5:npc_dourkeg",
+        "chunk-8:npc_dourkeg"
+      ]
+    },
+    {
+      "test2": {
+        "id": "93d35a22-d8ba-48e0-b3fe-bb68b28886d5",
+        "type": "npc",
+        "name": "Dreena Capple",
+        "normalized_name": "dreena capple",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "71d31c98-3c68-40b9-8a2d-7fe71061e2c4",
+        "type": "npc",
+        "name": "Dreena Capple",
+        "normalized_name": "dreena capple",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_dreena_capple"
+      ]
+    },
+    {
+      "test2": {
+        "id": "e3ceecbd-9345-4954-9983-fb91dfb231b4",
+        "type": "npc",
+        "name": "Elred Olfusal",
+        "normalized_name": "elred olfusal",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "a7d99c92-b46f-4208-9a69-0da7cd86289b",
+        "type": "npc",
+        "name": "Elred Olfusal",
+        "normalized_name": "elred olfusal",
+        "aliases": [
+          "Elred Ofusal"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_elred_olfusal"
+      ]
+    },
+    {
+      "test2": {
+        "id": "cf94ee4a-0e48-4799-aff5-12c38fec0da5",
+        "type": "npc",
+        "name": "Fel'dryzonna",
+        "normalized_name": "fel dryzonna",
+        "aliases": [
+          "a comet demon"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "28dcfa8b-2303-429e-983a-212cdfccf896",
+        "type": "npc",
+        "name": "Fel’dryzonna",
+        "normalized_name": "fel dryzonna",
+        "aliases": [
+          "the comet demon"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_feldryzonna"
+      ]
+    },
+    {
+      "test2": {
+        "id": "a8a993c0-cd00-4ee9-bf7c-d6bf0af14af6",
+        "type": "npc",
+        "name": "Feriae the Wise",
+        "normalized_name": "feriae the wise",
+        "aliases": [
+          "Feriae",
+          "the druid",
+          "the ghostly druid Feriae"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "097c8baf-08f4-4fbc-b17d-d9c4767fa299",
+        "type": "npc",
+        "name": "Feriae the Wise",
+        "normalized_name": "feriae the wise",
+        "aliases": [
+          "Feriae"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_feriae",
+        "chunk-6:npc_feriae",
+        "chunk-8:npc_feriae"
+      ]
+    },
+    {
+      "test2": {
+        "id": "391b43e0-db77-435a-870a-ded0f3b5ca59",
+        "type": "npc",
+        "name": "Friar Ulius Semper",
+        "normalized_name": "friar ulius semper",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "5d292b29-7929-450b-b5c2-d6d5ad86c00d",
+        "type": "npc",
+        "name": "Friar Ulius Semper",
+        "normalized_name": "friar ulius semper",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:npc_friar_ulius"
+      ]
+    },
+    {
+      "test2": {
+        "id": "ea6887d5-1981-4534-a264-c0c60e42d62f",
+        "type": "npc",
+        "name": "Gardong Marhold",
+        "normalized_name": "gardong marhold",
+        "aliases": []
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": {
+        "id": "c892c20f-d67c-46aa-a6f8-20739090c4f8",
+        "type": "location",
+        "name": "Gardong Marhold",
+        "normalized_name": "gardong marhold",
+        "aliases": [
+          "the ziggurat",
+          "the stone temple"
+        ]
+      },
+      "match_basis": "duplicate identity of Test 2 entity Gardong Marhold",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "22ccaefe-c540-4dc1-978a-50cf6b32164d",
+        "type": "npc",
+        "name": "Gothmog Plaguereaper",
+        "normalized_name": "gothmog plaguereaper",
+        "aliases": [
+          "Gothmog",
+          "the wight"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "38be6cdf-6099-4fe2-9be1-cb3eac49e5b6",
+        "type": "npc",
+        "name": "Gothmog Plaguereaper",
+        "normalized_name": "gothmog plaguereaper",
+        "aliases": [
+          "the wight",
+          "the villain’s lieutenant"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:npc_gothmog_plaguereaper",
+        "chunk-6:npc_gothmog_plaguereaper",
+        "chunk-9:npc_gothmog_plaguereaper"
+      ]
+    },
+    {
+      "test2": {
+        "id": "6f107942-7c01-48b4-8319-38a747de5868",
+        "type": "npc",
+        "name": "Harlyot Crushade",
+        "normalized_name": "harlyot crushade",
+        "aliases": [
+          "Harlyot"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "36325991-1666-4def-abde-acda820bea65",
+        "type": "npc",
+        "name": "Harlyot Crushade",
+        "normalized_name": "harlyot crushade",
+        "aliases": [
+          "Harlyot"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_harlyot_crushade",
+        "chunk-6:npc_harlyot_crushade",
+        "chunk-9:npc_harlyot_crushade"
+      ]
+    },
+    {
+      "test2": {
+        "id": "e4750115-734b-4f44-a629-fc4742133a1b",
+        "type": "npc",
+        "name": "Henna Coldwater",
+        "normalized_name": "henna coldwater",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "eb99146d-dc53-42cf-8a12-237c2130cda4",
+        "type": "npc",
+        "name": "Henna Coldwater",
+        "normalized_name": "henna coldwater",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_henna_coldwater"
+      ]
+    },
+    {
+      "test2": {
+        "id": "d1d45468-3d3f-4085-b63a-e2f31f3904de",
+        "type": "npc",
+        "name": "Hiddlehigh Swallow",
+        "normalized_name": "hiddlehigh swallow",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "4947fee9-13a9-47f4-807d-10b8ad57a07d",
+        "type": "npc",
+        "name": "Hiddlehigh Swallow",
+        "normalized_name": "hiddlehigh swallow",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_hiddlehigh"
+      ]
+    },
+    {
+      "test2": {
+        "id": "236bad71-0ce9-47f9-961e-5a91945f3828",
+        "type": "npc",
+        "name": "Horlen Barrypot",
+        "normalized_name": "horlen barrypot",
+        "aliases": [
+          "Horlen",
+          "the gnome"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "817d729d-5555-4786-8975-3c22323c4f8b",
+        "type": "npc",
+        "name": "Horlen Barrypot",
+        "normalized_name": "horlen barrypot",
+        "aliases": [
+          "Horlen"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:npc_horlen_barrypot",
+        "chunk-9:npc_horlen_barrypot"
+      ]
+    },
+    {
+      "test2": {
+        "id": "cfec8ae3-c03d-4c2a-b663-ba9b40ede30e",
+        "type": "npc",
+        "name": "Hranza Brinner",
+        "normalized_name": "hranza brinner",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "07c941a4-b3a5-4a46-9c2c-4351196f6013",
+        "type": "npc",
+        "name": "Hranza Brinner",
+        "normalized_name": "hranza brinner",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_hranza"
+      ]
+    },
+    {
+      "test2": {
+        "id": "ca38ab08-cdae-4304-90ed-2563bb61f0f0",
+        "type": "npc",
+        "name": "Huberg Greyborn",
+        "normalized_name": "huberg greyborn",
+        "aliases": [
+          "Huberg"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "94dd02ef-da51-43a4-a771-680aeb6a8a54",
+        "type": "npc",
+        "name": "Huberg Greyborn",
+        "normalized_name": "huberg greyborn",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_huberg_greyborn"
+      ]
+    },
+    {
+      "test2": {
+        "id": "9db4066f-76a1-4466-8def-73af127b22c4",
+        "type": "npc",
+        "name": "Isperil Lightwind",
+        "normalized_name": "isperil lightwind",
+        "aliases": [
+          "Isperil"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "f0497c23-3b71-4d20-a81e-bc1fea5cba65",
+        "type": "npc",
+        "name": "Isperil Lightwind",
+        "normalized_name": "isperil lightwind",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_isperil",
+        "chunk-5:npc_isperil_lightwind"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b970c5c1-d955-434e-b07b-3fe20ab7505c",
+        "type": "npc",
+        "name": "Jeanas Clocker",
+        "normalized_name": "jeanas clocker",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "b02a6729-4b1a-48bb-8fbb-dc8fc579b5ca",
+        "type": "npc",
+        "name": "Jeanas Clocker",
+        "normalized_name": "jeanas clocker",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_jeanas_clocker"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f9b04762-da12-4f06-a298-cadac3d22ff6",
+        "type": "npc",
+        "name": "Jelinghi the Wise",
+        "normalized_name": "jelinghi the wise",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "760c5b85-e693-4945-bb82-22e055fb502b",
+        "type": "npc",
+        "name": "Jelinghi the Wise",
+        "normalized_name": "jelinghi the wise",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_jelinghi"
+      ]
+    },
+    {
+      "test2": {
+        "id": "0056d4e1-6ccc-4493-96dc-66660ad1a271",
+        "type": "npc",
+        "name": "Jesper Clocker",
+        "normalized_name": "jesper clocker",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "5183eb94-3063-46fa-bea2-62da44709140",
+        "type": "npc",
+        "name": "Jorney Yovurn",
+        "normalized_name": "jorney yovurn",
+        "aliases": [
+          "Jorney"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "a1afd166-9d03-4fc8-844c-990479731bb1",
+        "type": "npc",
+        "name": "Jorney Yovurn",
+        "normalized_name": "jorney yovurn",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_jorney"
+      ]
+    },
+    {
+      "test2": {
+        "id": "2d032e68-e2f1-48b9-a3f9-c6e628c9366f",
+        "type": "npc",
+        "name": "Kadra Tourmaline",
+        "normalized_name": "kadra tourmaline",
+        "aliases": [
+          "Mara Silver",
+          "Councilmember Kadra Tourmaline",
+          "Kadra"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "1f57cd2f-3a84-470d-9477-bcd8901b1087",
+        "type": "npc",
+        "name": "Kadra Tourmaline",
+        "normalized_name": "kadra tourmaline",
+        "aliases": [
+          "Mara Silver"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_kadra",
+        "chunk-3:npc_kadra",
+        "chunk-8:npc_kadra_tourmaline"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b47803f1-fe6d-4eab-afb8-3a255371d99c",
+        "type": "npc",
+        "name": "Kraps",
+        "normalized_name": "kraps",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "66e52ef9-2664-43e4-bb32-a9cf64156c85",
+        "type": "npc",
+        "name": "Kunk",
+        "normalized_name": "kunk",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2d14b8e0-3dcb-4170-a7cf-751e56d6c25f",
+        "type": "npc",
+        "name": "Kunk",
+        "normalized_name": "kunk",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:npc_kunk"
+      ]
+    },
+    {
+      "test2": {
+        "id": "2a1bc97a-6c40-4064-90b1-5c05ac40ff07",
+        "type": "npc",
+        "name": "Kylar Birthwitch",
+        "normalized_name": "kylar birthwitch",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "7146999a-4316-477c-b04c-68f285085b39",
+        "type": "npc",
+        "name": "Kylar Birthwitch",
+        "normalized_name": "kylar birthwitch",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_kylar"
+      ]
+    },
+    {
+      "test2": {
+        "id": "80cd966c-3050-490c-909d-b8ca1098ddc4",
+        "type": "npc",
+        "name": "Larkin",
+        "normalized_name": "larkin",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "da2a8598-9e7f-404a-a901-7cdd4d9b63fa",
+        "type": "npc",
+        "name": "Lemon the Blood",
+        "normalized_name": "lemon the blood",
+        "aliases": [
+          "Lemon"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "5804f50d-2ff6-462b-957e-4ffd008eddbc",
+        "type": "npc",
+        "name": "Lila",
+        "normalized_name": "lila",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "35f89367-6970-491d-ba81-4a56f3b71a3c",
+        "type": "npc",
+        "name": "Lord Laird Sealas",
+        "normalized_name": "lord laird sealas",
+        "aliases": [
+          "Sealas"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "a4155f91-6159-49c4-8c50-b658a856b234",
+        "type": "npc",
+        "name": "Malaga Taerwain",
+        "normalized_name": "malaga taerwain",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "da0ac212-8360-44a9-97eb-0e79aee926fa",
+        "type": "npc",
+        "name": "Malaga Taerwain",
+        "normalized_name": "malaga taerwain",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_malaga"
+      ]
+    },
+    {
+      "test2": {
+        "id": "002df14c-e808-4350-be04-679f321c5a04",
+        "type": "npc",
+        "name": "Malcolm Sharp",
+        "normalized_name": "malcolm sharp",
+        "aliases": [
+          "Malcolm"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "89cf21dc-82c3-4629-82be-26f317f1f644",
+        "type": "npc",
+        "name": "Melette Feraduce",
+        "normalized_name": "melette feraduce",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "95313a15-f051-40dd-8125-8388729c85a8",
+        "type": "npc",
+        "name": "Melette Feraduce",
+        "normalized_name": "melette feraduce",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_melette"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f9b5600f-f18a-4c9b-a9d3-c04206a102f9",
+        "type": "npc",
+        "name": "Merriath the Quick",
+        "normalized_name": "merriath the quick",
+        "aliases": [
+          "Ellie Mircar",
+          "Merriath"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "426d4013-70e0-4e36-a47f-72e5cd0f6b91",
+        "type": "npc",
+        "name": "Merriath the Quick",
+        "normalized_name": "merriath the quick",
+        "aliases": [
+          "Ellie Mircar"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_merriath",
+        "chunk-8:npc_merriath"
+      ]
+    },
+    {
+      "test2": {
+        "id": "4c28c384-48f5-45ae-aab8-4ad255b74267",
+        "type": "npc",
+        "name": "Messa Barristar",
+        "normalized_name": "messa barristar",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "c15cd407-7930-419f-a49f-7c70f6d4d2bb",
+        "type": "npc",
+        "name": "Messa Barristar",
+        "normalized_name": "messa barristar",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_messa_barristar"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b62ce9b2-f66f-4282-a333-7d28e1763a59",
+        "type": "npc",
+        "name": "Mort",
+        "normalized_name": "mort",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "9d43c7ee-8da3-45e1-80e3-b201b0b96d32",
+        "type": "npc",
+        "name": "Muiri Tender",
+        "normalized_name": "muiri tender",
+        "aliases": [
+          "Muiri"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "36a2aded-5cac-4808-9d4f-9fd4e8c9e700",
+        "type": "npc",
+        "name": "Neveta Feraduce",
+        "normalized_name": "neveta feraduce",
+        "aliases": [
+          "Neveta",
+          "N."
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "aad654f9-0e81-4464-bdcf-b79d7dd40181",
+        "type": "npc",
+        "name": "Neveta Feraduce",
+        "normalized_name": "neveta feraduce",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_neveta",
+        "chunk-3:npc_neveta"
+      ]
+    },
+    {
+      "test2": {
+        "id": "fcd2eaee-1476-4c37-a1f9-6b7a0c058dea",
+        "type": "npc",
+        "name": "Nibhin Blondbeard",
+        "normalized_name": "nibhin blondbeard",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "95017618-9262-4a89-8512-a8a6b0332b3d",
+        "type": "npc",
+        "name": "Nibhin Blondbeard",
+        "normalized_name": "nibhin blondbeard",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_nibhin_blondbeard"
+      ]
+    },
+    {
+      "test2": {
+        "id": "32ac5454-8a2a-46ff-ac3e-667747b77bf2",
+        "type": "npc",
+        "name": "Olduce Merrygood",
+        "normalized_name": "olduce merrygood",
+        "aliases": [
+          "Olduce"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "c86c64a1-2692-4091-914f-86322e0d6f7b",
+        "type": "npc",
+        "name": "Olduce Merrygood",
+        "normalized_name": "olduce merrygood",
+        "aliases": [
+          "the moonshiner"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_olduce",
+        "chunk-5:npc_olduce_merrygood",
+        "chunk-9:npc_olduce_merrygood"
+      ]
+    },
+    {
+      "test2": {
+        "id": "48ea8541-b93b-46c1-a812-32e34da35d4f",
+        "type": "npc",
+        "name": "Orich Stronghammer",
+        "normalized_name": "orich stronghammer",
+        "aliases": [
+          "Orich"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "f4cbebca-b310-4b56-9b1d-8429accaa61d",
+        "type": "npc",
+        "name": "Orich Stronghammer",
+        "normalized_name": "orich stronghammer",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_orich"
+      ]
+    },
+    {
+      "test2": {
+        "id": "7ae49e24-2853-4fe2-bd96-7037890e9ef8",
+        "type": "npc",
+        "name": "Paumine Sandalwood",
+        "normalized_name": "paumine sandalwood",
+        "aliases": [
+          "Councilmember Paumine Sandalwood",
+          "Paumine"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "0b5884c3-cb5e-4fe2-aa33-4639dda12e06",
+        "type": "npc",
+        "name": "Paumine Sandalwood",
+        "normalized_name": "paumine sandalwood",
+        "aliases": [
+          "Councilmember Paumine Sandalwood",
+          "Paumine"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_paumine",
+        "chunk-3:npc_paumine",
+        "chunk-5:npc_paumine_sandalwood",
+        "chunk-9:npc_paumine_sandalwood"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f40be7ad-7403-4573-830d-66a43e43bdd0",
+        "type": "npc",
+        "name": "Phelm Barristar",
+        "normalized_name": "phelm barristar",
+        "aliases": [
+          "Phelm"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "37df6a9a-3797-4c7e-a4f5-d6ddbb61d0c8",
+        "type": "npc",
+        "name": "Phelm Barristar",
+        "normalized_name": "phelm barristar",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_phelm",
+        "chunk-4:npc_phelm_barristar"
+      ]
+    },
+    {
+      "test2": {
+        "id": "62872e58-81bf-41bd-9bee-4a9d638eadea",
+        "type": "npc",
+        "name": "Piotr Scragmore",
+        "normalized_name": "piotr scragmore",
+        "aliases": [
+          "Piotr"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "0e70b137-a36b-4f3f-91fb-b0d1cca48670",
+        "type": "npc",
+        "name": "Piotr Scragmore",
+        "normalized_name": "piotr scragmore",
+        "aliases": [
+          "Piotr"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:npc_piotr_scragmore"
+      ]
+    },
+    {
+      "test2": {
+        "id": "591670a9-0883-4821-b49c-4fd15eb1775e",
+        "type": "npc",
+        "name": "Ralekai Gravemore",
+        "normalized_name": "ralekai gravemore",
+        "aliases": [
+          "Ralekai",
+          "the necromancer",
+          "Master Ralekai",
+          "the wizard"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "714a953f-ae30-4c08-981b-c020b6b1ccde",
+        "type": "npc",
+        "name": "Ralekai Gravemore",
+        "normalized_name": "ralekai gravemore",
+        "aliases": [
+          "Ralekai",
+          "Master Ralekai",
+          "the necromancer",
+          "the wizard"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_ralekai",
+        "chunk-2:npc_ralekai",
+        "chunk-5:npc_ralekai_gravemore",
+        "chunk-6:npc_ralekai_gravemore",
+        "chunk-7:npc_ralekai",
+        "chunk-8:npc_ralekai_gravemore"
+      ]
+    },
+    {
+      "test2": {
+        "id": "3addeff4-0226-4e34-b123-38c2efadfa78",
+        "type": "npc",
+        "name": "Reson Fergone",
+        "normalized_name": "reson fergone",
+        "aliases": [
+          "Reson"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "672854c3-45f7-42df-a949-c048cd4e06c4",
+        "type": "npc",
+        "name": "Reson Fergone",
+        "normalized_name": "reson fergone",
+        "aliases": [
+          "Former Councilmember Reson Fergone",
+          "Reson"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_reson",
+        "chunk-5:npc_reson_fergone",
+        "chunk-9:npc_reson_fergone"
+      ]
+    },
+    {
+      "test2": {
+        "id": "570c9f09-3ec8-4688-be91-2689f4b8e329",
+        "type": "npc",
+        "name": "Scratches",
+        "normalized_name": "scratches",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "110b979d-88e1-4a42-9314-b5078df4b6f6",
+        "type": "npc",
+        "name": "Sir Brenarfom Steelcrest",
+        "normalized_name": "sir brenarfom steelcrest",
+        "aliases": [
+          "Brenarfom"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "cb7ed837-0df0-4ea3-a90f-7fea921b75fb",
+        "type": "npc",
+        "name": "Sir Brenarfom Steelcrest",
+        "normalized_name": "sir brenarfom steelcrest",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:npc_brenarfom_steelcrest"
+      ]
+    },
+    {
+      "test2": {
+        "id": "13f38128-8478-453f-adfa-d7c6f33a81d1",
+        "type": "npc",
+        "name": "Sir Eldoroth Conway",
+        "normalized_name": "sir eldoroth conway",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "366dfda7-f521-47bd-9c8a-b53b83be9c75",
+        "type": "npc",
+        "name": "Sir Eldoroth Conway",
+        "normalized_name": "sir eldoroth conway",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:npc_sir_eldoroth"
+      ]
+    },
+    {
+      "test2": {
+        "id": "aed83c14-0ad8-433f-9615-15107e08ff17",
+        "type": "npc",
+        "name": "Sir Farragut Eastward",
+        "normalized_name": "sir farragut eastward",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "c4b002e4-d195-48e0-b6a2-1bfa731af50a",
+        "type": "npc",
+        "name": "Someth Skullcleaver",
+        "normalized_name": "someth skullcleaver",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "a6c92503-94e9-422c-bfd1-3d939b93e91b",
+        "type": "npc",
+        "name": "Someth Skullcleaver",
+        "normalized_name": "someth skullcleaver",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:npc_someth_skullcleaver",
+        "chunk-6:npc_someth",
+        "chunk-7:npc_someth",
+        "chunk-9:npc_someth_skullcleaver"
+      ]
+    },
+    {
+      "test2": {
+        "id": "6be0fc98-8dd7-4736-82b0-b0653488619a",
+        "type": "npc",
+        "name": "Stinky",
+        "normalized_name": "stinky",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "fc679864-68d2-4e60-b1d6-04fd3777695c",
+        "type": "npc",
+        "name": "Therrath Shortcloak",
+        "normalized_name": "therrath shortcloak",
+        "aliases": [
+          "Therrath",
+          "the Black Skull leader",
+          "the bandit captain"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "201847d8-565a-4d2f-83ef-dd976fe9fe61",
+        "type": "npc",
+        "name": "Therrath Shortcloak",
+        "normalized_name": "therrath shortcloak",
+        "aliases": [
+          "the nasty Therrath Shortcloak",
+          "Therrath"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_therrath",
+        "chunk-6:npc_therrath_shortcloak",
+        "chunk-7:npc_therrath",
+        "chunk-9:npc_therrath_shortcloak"
+      ]
+    },
+    {
+      "test2": {
+        "id": "aff6684b-1336-4355-b18a-ff09bc27ac43",
+        "type": "npc",
+        "name": "Tomar Bettlewood",
+        "normalized_name": "tomar bettlewood",
+        "aliases": [
+          "Tomar",
+          "the namesake of Tomar's Crossing"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "b46ee1bc-23b7-4b33-8446-f53dc3ea2481",
+        "type": "npc",
+        "name": "Tomar",
+        "normalized_name": "tomar",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:npc_tomar"
+      ]
+    },
+    {
+      "test2": {
+        "id": "cd00fd29-e15c-4bf7-ae6c-975f84ec29ed",
+        "type": "npc",
+        "name": "Vibnor Prefect",
+        "normalized_name": "vibnor prefect",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "d279ce82-201a-4b8a-bc39-99c1b9e7e87e",
+        "type": "npc",
+        "name": "Vibnor Prefect",
+        "normalized_name": "vibnor prefect",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:npc_vibnor"
+      ]
+    },
+    {
+      "test2": {
+        "id": "45d01d44-e81a-41f4-ba6f-560dcad27506",
+        "type": "npc",
+        "name": "Xancrown",
+        "normalized_name": "xancrown",
+        "aliases": [
+          "the plague demon",
+          "the demon",
+          "the beast Xancrown"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "6a7606d4-a18b-4d32-8df0-8d8d4d015b73",
+        "type": "npc",
+        "name": "Xancrown",
+        "normalized_name": "xancrown",
+        "aliases": [
+          "the plague demon"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:npc_xancrown",
+        "chunk-7:other_xancrown",
+        "chunk-8:npc_xancrown"
+      ]
+    },
+    {
+      "test2": {
+        "id": "a31d3880-7789-4523-90dd-da15b6023aec",
+        "type": "location",
+        "name": "All That Glitters",
+        "normalized_name": "all that glitters",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2bb4d22b-e0bc-449b-8696-e0e43fe8c624",
+        "type": "location",
+        "name": "All That Glitters",
+        "normalized_name": "all that glitters",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:location_all_that_glitters"
+      ]
+    },
+    {
+      "test2": {
+        "id": "936883ab-fdee-49b8-9257-eee569008ad6",
+        "type": "location",
+        "name": "Bazil's Potions",
+        "normalized_name": "bazil s potions",
+        "aliases": [
+          "Bazil's home",
+          "Bazil's yurt"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2a239872-80e3-4376-8860-b135e0a329ab",
+        "type": "location",
+        "name": "Bazil’s Potions",
+        "normalized_name": "bazil s potions",
+        "aliases": [
+          "Bazil’s home"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:location_bazil"
+      ]
+    },
+    {
+      "test2": {
+        "id": "aac5d2d3-dd00-41ba-9302-63070008f297",
+        "type": "location",
+        "name": "Brinner's Brews",
+        "normalized_name": "brinner s brews",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "c333baff-3e7a-4d2a-92cb-529d4db5a309",
+        "type": "location",
+        "name": "Councilmember Kadra Tourmaline's Home",
+        "normalized_name": "councilmember kadra tourmaline s home",
+        "aliases": [
+          "Kadra's home"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "4685802d-9f58-42ce-a4c1-34f1de68cc07",
+        "type": "location",
+        "name": "Demonplague Dungeon",
+        "normalized_name": "demonplague dungeon",
+        "aliases": []
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "757fedb1-84bc-48f9-89b0-390c38e17d8e",
+        "type": "location",
+        "name": "Massive dungeon beneath the Luna Valley",
+        "normalized_name": "massive dungeon beneath the luna valley",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "61405ce9-a1b2-4adb-8484-8432e428b24e",
+        "type": "location",
+        "name": "Duladarin Star Elf Barrows",
+        "normalized_name": "duladarin star elf barrows",
+        "aliases": [
+          "star elf barrows",
+          "Star Elf Barrows",
+          "Duladarin barrows",
+          "the barrows"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "c4e36f59-b46b-4e02-af79-9ffd12298586",
+        "type": "location",
+        "name": "Duladarin Star Elf Barrows",
+        "normalized_name": "duladarin star elf barrows",
+        "aliases": [
+          "The Star Elf Barrows",
+          "star elf barrows",
+          "Star elf barrows",
+          "Duladarin barrows",
+          "Star Elf Barrows"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_barrow",
+        "chunk-2:loc_star_elf_barrows",
+        "chunk-7:location_star_barrow",
+        "chunk-8:location_star_elf_barrows"
+      ]
+    },
+    {
+      "test2": {
+        "id": "3624dd1e-8e45-4783-91e1-865e9921f595",
+        "type": "location",
+        "name": "Feraduce Traders",
+        "normalized_name": "feraduce traders",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "fc619370-fdab-4717-ac11-818dafeccb3f",
+        "type": "location",
+        "name": "Fire and Grind: Miller and Bakery",
+        "normalized_name": "fire and grind miller and bakery",
+        "aliases": [
+          "Fire and Grind"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "6b803a9a-e5aa-4b51-83ac-6641d5275b91",
+        "type": "location",
+        "name": "Fire and Grind",
+        "normalized_name": "fire and grind",
+        "aliases": [
+          "Barristar mill and bakery"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:location_fire_grind"
+      ]
+    },
+    {
+      "test2": {
+        "id": "ade60bc4-fc2d-4221-840b-6f9b04970ce6",
+        "type": "location",
+        "name": "Fort Frostfell",
+        "normalized_name": "fort frostfell",
+        "aliases": [
+          "Frostfell"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "ea64a518-16ad-4948-9185-b43a764f1fc6",
+        "type": "location",
+        "name": "Fort Frostfell",
+        "normalized_name": "fort frostfell",
+        "aliases": [
+          "Frostfell"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_frostfell",
+        "chunk-2:loc_fort_frostfell",
+        "chunk-4:location_frostfell",
+        "chunk-5:location_fort_frostfell",
+        "chunk-6:location_fort_frostfell",
+        "chunk-8:location_fort_frostfell"
+      ]
+    },
+    {
+      "test2": {
+        "id": "45521cb2-c011-4c05-beee-22454f42cc0a",
+        "type": "location",
+        "name": "Fort Icewind",
+        "normalized_name": "fort icewind",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2c431fb0-031b-4a1d-a5da-7fd31f93ba0c",
+        "type": "location",
+        "name": "Fort Icewind",
+        "normalized_name": "fort icewind",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:location_fort_icewind"
+      ]
+    },
+    {
+      "test2": {
+        "id": "2af2e284-eb4d-4c71-b5fc-ad25e8b2a8f5",
+        "type": "location",
+        "name": "Gardong Marhold",
+        "normalized_name": "gardong marhold",
+        "aliases": [
+          "the ziggurat"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "c892c20f-d67c-46aa-a6f8-20739090c4f8",
+        "type": "location",
+        "name": "Gardong Marhold",
+        "normalized_name": "gardong marhold",
+        "aliases": [
+          "the ziggurat",
+          "the stone temple"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_gardong",
+        "chunk-2:loc_gardong",
+        "chunk-5:location_gardong_marhold",
+        "chunk-6:location_gardong_marhold"
+      ]
+    },
+    {
+      "test2": {
+        "id": "c6dc3506-2c47-4f99-b13c-effa9e9c0021",
+        "type": "location",
+        "name": "Hemlet",
+        "normalized_name": "hemlet",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "041b9156-a3d6-43a3-ad93-ecf35b6edfdb",
+        "type": "location",
+        "name": "Hemlet and Sweetwater Refugee Camps",
+        "normalized_name": "hemlet and sweetwater refugee camps",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "d16c8887-4d71-4b6f-825b-4bea91fbffec",
+        "type": "location",
+        "name": "Ice Tongue Glacier",
+        "normalized_name": "ice tongue glacier",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "9ba990a3-6249-4d03-ab8a-2606164ceee3",
+        "type": "location",
+        "name": "Ice Tongue Glacier",
+        "normalized_name": "ice tongue glacier",
+        "aliases": [
+          "the glacier"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_ice_tongue",
+        "chunk-4:location_ice_tongue_glacier",
+        "chunk-8:location_ice_tongue_glacier"
+      ]
+    },
+    {
+      "test2": {
+        "id": "8e347ea7-fdf5-4615-81f5-5d0c94f38201",
+        "type": "location",
+        "name": "Jorney's Tavern",
+        "normalized_name": "jorney s tavern",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "4e8c96d3-e63b-4e7d-b2cf-daabf0afa33c",
+        "type": "location",
+        "name": "Jorney’s Tavern",
+        "normalized_name": "jorney s tavern",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:location_jorney_tavern"
+      ]
+    },
+    {
+      "test2": {
+        "id": "8af5d5be-8800-4743-8507-bf3b85bbd067",
+        "type": "location",
+        "name": "Luna Valley",
+        "normalized_name": "luna valley",
+        "aliases": [
+          "the Valley"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "2e903443-e4d8-4c44-aa58-9072185c0ca0",
+        "type": "location",
+        "name": "Luna Valley",
+        "normalized_name": "luna valley",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_luna",
+        "chunk-2:loc_luna_valley",
+        "chunk-8:location_luna_valley",
+        "chunk-9:location_luna_valley"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b18add31-7785-4b18-8a02-e7a70eb475e9",
+        "type": "location",
+        "name": "Maragath's Prize",
+        "normalized_name": "maragath s prize",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "9d8eedd0-13ec-4cef-a643-c32c961cf82c",
+        "type": "location",
+        "name": "Maragath’s Prize",
+        "normalized_name": "maragath s prize",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_maragath"
+      ]
+    },
+    {
+      "test2": {
+        "id": "a523a669-40b9-4aa2-8ed8-b8d6867ff9eb",
+        "type": "location",
+        "name": "Naradah",
+        "normalized_name": "naradah",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "cdd22515-3da9-4c8b-aa00-085443d709b8",
+        "type": "location",
+        "name": "Naradah",
+        "normalized_name": "naradah",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_naradah"
+      ]
+    },
+    {
+      "test2": {
+        "id": "6b8a6f4a-81be-4f68-82ac-66d5873a7c6b",
+        "type": "location",
+        "name": "Phelm and Messa's bakery",
+        "normalized_name": "phelm and messa s bakery",
+        "aliases": []
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": {
+        "id": "6b803a9a-e5aa-4b51-83ac-6641d5275b91",
+        "type": "location",
+        "name": "Fire and Grind",
+        "normalized_name": "fire and grind",
+        "aliases": [
+          "Barristar mill and bakery"
+        ]
+      },
+      "match_basis": "duplicate identity of Test 2 entity Fire and Grind: Miller and Bakery",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "8429e783-3d5b-405a-87d1-f0d6398713b7",
+        "type": "location",
+        "name": "Ralekai's Laboratory",
+        "normalized_name": "ralekai s laboratory",
+        "aliases": [
+          "S9"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "487f8bf5-d0ae-46c5-af96-e371f8213254",
+        "type": "location",
+        "name": "Ralekai’s Laboratory",
+        "normalized_name": "ralekai s laboratory",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:location_ralekai_lab"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f2b54b6d-ad6b-47bb-82ee-e9ba6fdb3b98",
+        "type": "location",
+        "name": "Safeharbor",
+        "normalized_name": "safeharbor",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "c0792fbe-9c3d-4285-ab8f-e359a2e301c7",
+        "type": "location",
+        "name": "Safeharbor",
+        "normalized_name": "safeharbor",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-9:location_safeharbor"
+      ]
+    },
+    {
+      "test2": {
+        "id": "1a8bc8b0-5e87-4ff6-a56d-1cf4e0c4a177",
+        "type": "location",
+        "name": "Safeharbor Refugee Camp",
+        "normalized_name": "safeharbor refugee camp",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "fa7fdcf0-e09c-41cd-b414-94d146027da4",
+        "type": "location",
+        "name": "Star Elf Barrows Altar",
+        "normalized_name": "star elf barrows altar",
+        "aliases": [
+          "Altar"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "f29ea70a-fd53-49fc-b1c7-35852dc39bdc",
+        "type": "location",
+        "name": "S10 Altar",
+        "normalized_name": "s10 altar",
+        "aliases": [
+          "Altar"
+        ]
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": [
+        "chunk-8:location_altar_s10"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b15dee7e-f036-4ed2-8405-cb3b8a2edd4d",
+        "type": "location",
+        "name": "Stronghammer's",
+        "normalized_name": "stronghammer s",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "74db5e10-1011-4825-ad17-b77c2a63b41e",
+        "type": "location",
+        "name": "Sweetwater",
+        "normalized_name": "sweetwater",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "83f2f1f1-28f6-47e2-a7de-ae5428be7f93",
+        "type": "location",
+        "name": "Temple of Long Life",
+        "normalized_name": "temple of long life",
+        "aliases": [
+          "Isperil’s church"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "aeb2be7b-dc6e-45f4-ba17-85b38cbc08bb",
+        "type": "location",
+        "name": "Temple of Long Life",
+        "normalized_name": "temple of long life",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:location_temple"
+      ]
+    },
+    {
+      "test2": {
+        "id": "6a8081d6-eae9-4fbd-8ff8-ddffba9f821e",
+        "type": "location",
+        "name": "The Elegant Saw",
+        "normalized_name": "the elegant saw",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "d8744e65-58b7-47f9-804f-25a6e19e67bb",
+        "type": "location",
+        "name": "The Elegant Saw",
+        "normalized_name": "the elegant saw",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:location_elegant_saw"
+      ]
+    },
+    {
+      "test2": {
+        "id": "3f46e1ed-92ed-4033-8d94-7e6172bdbe67",
+        "type": "location",
+        "name": "The Weary Traveler",
+        "normalized_name": "the weary traveler",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "495b903f-9c8f-411a-9569-6d913eda832b",
+        "type": "location",
+        "name": "The Weary Traveler",
+        "normalized_name": "the weary traveler",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:location_weary"
+      ]
+    },
+    {
+      "test2": {
+        "id": "15acf023-ce78-40d6-80c2-f0c0bc601725",
+        "type": "location",
+        "name": "Tomar's Crossing",
+        "normalized_name": "tomar s crossing",
+        "aliases": [
+          "the Crossing",
+          "The Crossing"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "e92b2956-4791-486b-8ff1-d8481d7bccf5",
+        "type": "location",
+        "name": "Tomar’s Crossing",
+        "normalized_name": "tomar s crossing",
+        "aliases": [
+          "The Crossing"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:loc_tomar",
+        "chunk-2:loc_tomars_crossing",
+        "chunk-3:location_tomar",
+        "chunk-4:location_tomars_crossing",
+        "chunk-5:location_tomars_crossing",
+        "chunk-9:location_tomars_crossing"
+      ]
+    },
+    {
+      "test2": {
+        "id": "2d4ec9f5-be74-4289-9e3c-631c3fbc0909",
+        "type": "faction",
+        "name": "Al Nasar gold dwarves",
+        "normalized_name": "al nasar gold dwarves",
+        "aliases": [
+          "Al Nasar",
+          "gold dwarves of Al Nasar",
+          "Al Nasar civilization",
+          "Al Nasar dwarves"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "60cdaea6-3364-484e-a530-ef3efedb9fa7",
+        "type": "faction",
+        "name": "Al Nasar",
+        "normalized_name": "al nasar",
+        "aliases": [
+          "the gold dwarves"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:faction_al_nasar"
+      ]
+    },
+    {
+      "test2": {
+        "id": "5128e757-486b-439d-930f-cf6b03c5f5a8",
+        "type": "faction",
+        "name": "Baryl Harb tribe",
+        "normalized_name": "baryl harb tribe",
+        "aliases": [
+          "Baryl Harb goblins",
+          "Baryl Harb goblinoids",
+          "Baryl Harb clan",
+          "Baryl Harb goblinoid bandits"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "eaf0c095-95a8-4e5f-821a-c376724fb41b",
+        "type": "faction",
+        "name": "Baryl Harb",
+        "normalized_name": "baryl harb",
+        "aliases": [
+          "the Baryl Harb tribe",
+          "Baryl Harb goblinoid bandits",
+          "Baryl Harb tribe",
+          "Baryl Harb goblins"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-2:fac_baryl_harb",
+        "chunk-5:faction_baryl_harb",
+        "chunk-7:faction_baryl_harb",
+        "chunk-9:faction_baryl_harb_goblins"
+      ]
+    },
+    {
+      "test2": {
+        "id": "dfb74569-9bc3-4323-9bc2-41fae87857ff",
+        "type": "faction",
+        "name": "Black Skull Bandits",
+        "normalized_name": "black skull bandits",
+        "aliases": [
+          "Black Skulls",
+          "Black Skull bandit minions"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "8a8ff21e-7722-441c-91f2-95796f63cae3",
+        "type": "faction",
+        "name": "Black Skull Bandits",
+        "normalized_name": "black skull bandits",
+        "aliases": [
+          "the Black Skulls",
+          "Black Skull",
+          "Black Skulls"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:faction_black_skull",
+        "chunk-2:fac_black_skull",
+        "chunk-6:faction_black_skulls",
+        "chunk-7:faction_black_skulls",
+        "chunk-9:faction_black_skull_bandits"
+      ]
+    },
+    {
+      "test2": {
+        "id": "2c3372c9-4ce9-4f47-af07-00fd1c87e4ba",
+        "type": "faction",
+        "name": "Cult of Chaos",
+        "normalized_name": "cult of chaos",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "85bec221-7608-4aad-bde8-f6794d16729a",
+        "type": "faction",
+        "name": "Cult of Chaos",
+        "normalized_name": "cult of chaos",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:faction_cult",
+        "chunk-4:faction_cult_chaos"
+      ]
+    },
+    {
+      "test2": {
+        "id": "ee73203a-de41-427a-a41b-9e45d0f23989",
+        "type": "faction",
+        "name": "Duladarin star elves",
+        "normalized_name": "duladarin star elves",
+        "aliases": [
+          "Duladarin",
+          "star elves",
+          "Duladarin elves"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "a0a40c9e-1cd6-4383-93a5-e5b76a4eeac6",
+        "type": "faction",
+        "name": "Duladarin",
+        "normalized_name": "duladarin",
+        "aliases": [
+          "the star elves"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:faction_duladarin"
+      ]
+    },
+    {
+      "test2": {
+        "id": "25fc6085-5a0b-468a-9d73-b096ef10ca9b",
+        "type": "faction",
+        "name": "Gravdahs",
+        "normalized_name": "gravdahs",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "86d58fed-02cc-4463-b6d5-99c24ee2765d",
+        "type": "faction",
+        "name": "Gruk'uks",
+        "normalized_name": "gruk uks",
+        "aliases": [
+          "the Gruk’uks",
+          "Bazig's ogre clan"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "5fdab920-9c57-42d5-ac92-f848bdc31065",
+        "type": "faction",
+        "name": "Gruk’uks",
+        "normalized_name": "gruk uks",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:faction_grukuks"
+      ]
+    },
+    {
+      "test2": {
+        "id": "25d28d9a-9213-4d4a-9e4f-1f9767998bef",
+        "type": "faction",
+        "name": "Minas Herion",
+        "normalized_name": "minas herion",
+        "aliases": [
+          "The Valley Warders",
+          "Feriae's druid circle",
+          "Minas Herion druids",
+          "Feriae's compatriots"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "65acf1c4-e810-4195-8f71-8710f6f2f821",
+        "type": "faction",
+        "name": "Minas Herion",
+        "normalized_name": "minas herion",
+        "aliases": [
+          "The Valley Warders"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-1:faction_minas",
+        "chunk-8:faction_minas_herion",
+        "chunk-9:faction_minas_herion"
+      ]
+    },
+    {
+      "test2": {
+        "id": "cf8d80dd-b2dd-462d-9e49-5aae7610b306",
+        "type": "faction",
+        "name": "Order of the Last Bastion Knights",
+        "normalized_name": "order of the last bastion knights",
+        "aliases": [
+          "the knights",
+          "Order of the Last Bastion",
+          "the Order",
+          "Order of the Last Bastion Knight"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "643e53fa-01b9-49e3-82e4-61461d6314c8",
+        "type": "faction",
+        "name": "Order of the Last Bastion Knights",
+        "normalized_name": "order of the last bastion knights",
+        "aliases": [
+          "Order of the Last Bastion",
+          "the Order of the Last Bastion Knights"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:faction_order",
+        "chunk-5:faction_order_last_bastion",
+        "chunk-6:faction_order_last_bastion",
+        "chunk-8:faction_order_last_bastion",
+        "chunk-9:faction_order_last_bastion"
+      ]
+    },
+    {
+      "test2": {
+        "id": "8c0b949c-7d60-4f3d-bfd5-37f866a6ae1d",
+        "type": "faction",
+        "name": "Raceon Empire",
+        "normalized_name": "raceon empire",
+        "aliases": [
+          "Raceon human empire",
+          "Raceon",
+          "Raceon humans"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "913b44dc-2915-4bfd-a507-e1a03796bb9e",
+        "type": "faction",
+        "name": "Raceon Empire",
+        "normalized_name": "raceon empire",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-9:faction_raceon_empire"
+      ]
+    },
+    {
+      "test2": {
+        "id": "d2b09484-e0b4-4b65-814d-a6ef65a0c387",
+        "type": "faction",
+        "name": "Safeharbor commoners",
+        "normalized_name": "safeharbor commoners",
+        "aliases": [
+          "the commoners"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "f06dbed9-1721-43b2-8240-c5d0e6ac8357",
+        "type": "faction",
+        "name": "Safeharbor nobles",
+        "normalized_name": "safeharbor nobles",
+        "aliases": [
+          "the nobles",
+          "Safeharbor's nobles",
+          "the Nobles"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "f36d95c0-d06a-4726-aa4d-f3907186a51a",
+        "type": "faction",
+        "name": "Safeharbor Nobles",
+        "normalized_name": "safeharbor nobles",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:faction_safeharbor_nobles"
+      ]
+    },
+    {
+      "test2": {
+        "id": "fa5f4c2d-b255-4da7-bc02-c974635ee387",
+        "type": "faction",
+        "name": "Safeharbor Watch",
+        "normalized_name": "safeharbor watch",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "1b0fffd7-6ac2-4798-9eec-4dd2132eefba",
+        "type": "faction",
+        "name": "Village Council",
+        "normalized_name": "village council",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "477110f2-585e-4e6c-a8a1-c2a5d7d1dec9",
+        "type": "faction",
+        "name": "Yugtug greenskins",
+        "normalized_name": "yugtug greenskins",
+        "aliases": [
+          "Yugtug",
+          "greenskin Yugtugs",
+          "Yugtugs"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "14ea6a5d-6b1f-45a5-98d3-bfd31af7ecab",
+        "type": "item",
+        "name": "+1 greatsword",
+        "normalized_name": "1 greatsword",
+        "aliases": [
+          "stone greatsword"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "ac747538-c9cc-41a4-8e95-007370c6a737",
+        "type": "item",
+        "name": "+1 greatsword",
+        "normalized_name": "1 greatsword",
+        "aliases": [
+          "the stone greatsword"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-6:item_stone_greatsword"
+      ]
+    },
+    {
+      "test2": {
+        "id": "260f6e49-93a0-4d33-9f4d-b7e40d441416",
+        "type": "item",
+        "name": "Amulet of Demonic Defense",
+        "normalized_name": "amulet of demonic defense",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "58fd6bc2-58e3-440b-a676-639337ac6904",
+        "type": "item",
+        "name": "Amulet of Demonic Defense",
+        "normalized_name": "amulet of demonic defense",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-8:item_amulet_demonic_defense"
+      ]
+    },
+    {
+      "test2": {
+        "id": "f8ecd3a7-a469-4fed-864f-ce6a63808c46",
+        "type": "item",
+        "name": "Birthwitch family signet ring",
+        "normalized_name": "birthwitch family signet ring",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "a01434df-c1b6-42ff-b376-b16c0c8f21e6",
+        "type": "item",
+        "name": "Bjalien's locket",
+        "normalized_name": "bjalien s locket",
+        "aliases": [
+          "Crescent-shaped locket",
+          "Bjalien Viadas' locket",
+          "the locket",
+          "Missing Locket"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "a0a5c9ff-b4ba-467a-94c2-64e69fb3b062",
+        "type": "item",
+        "name": "Bjalien’s crescent-shaped locket",
+        "normalized_name": "bjalien s crescent shaped locket",
+        "aliases": [
+          "Neveta’s locket"
+        ]
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": [
+        "chunk-2:quest_missing_locket"
+      ]
+    },
+    {
+      "test2": {
+        "id": "d1b63767-94ff-4fea-ba4d-4e0b69fc3c79",
+        "type": "item",
+        "name": "Black Arrowheads",
+        "normalized_name": "black arrowheads",
+        "aliases": [
+          "broken tips of black arrowheads"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "b164a190-15a2-4a5c-82cb-a4cc6be159f3",
+        "type": "item",
+        "name": "Gem of brightness",
+        "normalized_name": "gem of brightness",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "1382a849-c90e-4596-ab48-713ca8ae933c",
+        "type": "item",
+        "name": "Gold-dolphin ring",
+        "normalized_name": "gold dolphin ring",
+        "aliases": [
+          "ring made of tiny gold dolphins"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "e824ae33-a5b6-4ccb-a619-1acb4e04613a",
+        "type": "item",
+        "name": "Hat of disguise",
+        "normalized_name": "hat of disguise",
+        "aliases": [
+          "Ellie's hair ribbon",
+          "hair ribbon"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "45b4fe5d-b559-4c0f-98ef-f9e0ec6b25d3",
+        "type": "item",
+        "name": "High priest's signet ring",
+        "normalized_name": "high priest s signet ring",
+        "aliases": [
+          "the ring from the priest's pocket"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "5e9cf2bc-931e-44e6-8171-b441e2fe7eaa",
+        "type": "item",
+        "name": "Lightning cage",
+        "normalized_name": "lightning cage",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "20e208d7-234f-4eb7-a95c-b683273addc0",
+        "type": "item",
+        "name": "Phelm's hidden gold stash",
+        "normalized_name": "phelm s hidden gold stash",
+        "aliases": [
+          "Phelm's hidden gold bars"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "74834d31-cbe1-4e1d-8fa5-d64a016f0895",
+        "type": "item",
+        "name": "Ralekai's Brand",
+        "normalized_name": "ralekai s brand",
+        "aliases": [
+          "Gravdah house symbol",
+          "the brand"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "4622124d-1410-4621-8bf5-f2f98a5ebf3b",
+        "type": "item",
+        "name": "Ralekai’s brand",
+        "normalized_name": "ralekai s brand",
+        "aliases": [
+          "Gravdah house symbol"
+        ]
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:item_ralekai_brand"
+      ]
+    },
+    {
+      "test2": {
+        "id": "fdd9e77f-2830-4ae8-b934-097813690836",
+        "type": "item",
+        "name": "Ralekai's spellbook",
+        "normalized_name": "ralekai s spellbook",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "41ed2c38-8bcb-4d4a-a3e7-b066388daed4",
+        "type": "item",
+        "name": "Shark-tooth necklace",
+        "normalized_name": "shark tooth necklace",
+        "aliases": [
+          "necklace of shark teeth"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "53bf1d61-d794-4af5-954c-846e70e0c61b",
+        "type": "item",
+        "name": "Someth's weapons cache",
+        "normalized_name": "someth s weapons cache",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "080a7a72-55ed-4266-8251-965ee9540f59",
+        "type": "item",
+        "name": "Star elf treasure trove",
+        "normalized_name": "star elf treasure trove",
+        "aliases": [
+          "Duladarin treasure trove",
+          "treasure of the star elves"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "69acee6f-95ea-41a9-a740-bfb0b24ec866",
+        "type": "item",
+        "name": "Therrath's gauntlet",
+        "normalized_name": "therrath s gauntlet",
+        "aliases": [
+          "the gauntlet",
+          "armored gauntlet"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "ac4843d7-2686-47f3-9b05-663e65558291",
+        "type": "item",
+        "name": "Therrath’s gauntlet",
+        "normalized_name": "therrath s gauntlet",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:item_therrath_gauntlet"
+      ]
+    },
+    {
+      "test2": {
+        "id": "c35707c0-0c02-425b-8ad8-9995a5a401db",
+        "type": "item",
+        "name": "Yugtug ritual tablet",
+        "normalized_name": "yugtug ritual tablet",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "b3e5f9dd-b47d-4c09-bb0d-b7cba2bbf9e1",
+        "type": "item",
+        "name": "Yugtug Ritual Tablet",
+        "normalized_name": "yugtug ritual tablet",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:item_yugtug_ritual_tablet"
+      ]
+    },
+    {
+      "test2": {
+        "id": "35989aea-31ae-4fe5-aca5-c23c0a398119",
+        "type": "event",
+        "name": "Baryl Harb goblins' food-wagon ambush",
+        "normalized_name": "baryl harb goblins food wagon ambush",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "5e1dde3d-a0e5-4c72-927f-f61f9bb5e82c",
+        "type": "event",
+        "name": "Comet Impact",
+        "normalized_name": "comet impact",
+        "aliases": [
+          "glacier melt catastrophe",
+          "the comet",
+          "the disaster",
+          "the melt"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "8acf1f98-a9ef-4c1e-ade3-f5d34e5e4b80",
+        "type": "event",
+        "name": "Comet Strike on Luna Valley",
+        "normalized_name": "comet strike on luna valley",
+        "aliases": [
+          "the glacier melt catastrophe"
+        ]
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "9355e8b3-e123-47c7-9c1b-ade4b4861e26",
+        "type": "event",
+        "name": "Demonplague",
+        "normalized_name": "demonplague",
+        "aliases": [
+          "the demonic disease",
+          "the disease"
+        ]
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "54c8c705-ec23-48fc-9ace-bd8bc3a3af94",
+        "type": "event",
+        "name": "Duladarin Binding Ritual",
+        "normalized_name": "duladarin binding ritual",
+        "aliases": [
+          "star elf imprisonment ritual",
+          "powerful imprisonment ritual"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "27fd2996-0569-4c86-90f9-732afc999f3c",
+        "type": "event",
+        "name": "Binding of Xancrown",
+        "normalized_name": "binding of xancrown",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "4ba4a3fb-3c83-4858-ad4f-1cf3d202eb02",
+        "type": "event",
+        "name": "Food Riot",
+        "normalized_name": "food riot",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "2431bf92-914c-4189-a4e1-b10910dc1ea4",
+        "type": "event",
+        "name": "Hemlet Slayer murders",
+        "normalized_name": "hemlet slayer murders",
+        "aliases": [
+          "Hemlet Slayer"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "4f0f5b5a-0d45-439d-9508-6a2532dfb68f",
+        "type": "event",
+        "name": "Death of Lila Clocker",
+        "normalized_name": "death of lila clocker",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "eb71a742-2af2-4833-a549-f973209a8d82",
+        "type": "event",
+        "name": "Holy War",
+        "normalized_name": "holy war",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "0f8961ee-c698-44ee-9d5b-3828ea6a594f",
+        "type": "event",
+        "name": "Huberg Greyborn's Assault on Frostfell",
+        "normalized_name": "huberg greyborn s assault on frostfell",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "c2599b10-a542-4b68-8f8a-b288b21cccdd",
+        "type": "event",
+        "name": "Market Murders",
+        "normalized_name": "market murders",
+        "aliases": []
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "265d08fc-ce2b-411f-801d-a62acb178481",
+        "type": "event",
+        "name": "Tomar’s Crossing Market Murders",
+        "normalized_name": "tomar s crossing market murders",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": [
+        "chunk-4:quest_market_murders"
+      ]
+    },
+    {
+      "test2": {
+        "id": "8c65d347-c1e7-4353-a703-e35e77c0e503",
+        "type": "event",
+        "name": "Minas Herion's ritual",
+        "normalized_name": "minas herion s ritual",
+        "aliases": []
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "c5c4b891-3a1b-40f2-9bb1-9fa797c562ec",
+        "type": "event",
+        "name": "Minas Herion’s Ice-Sealing Ritual",
+        "normalized_name": "minas herion s ice sealing ritual",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "91fc4674-531e-4a8a-b3e7-073930415c7a",
+        "type": "event",
+        "name": "Noble Revolution",
+        "normalized_name": "noble revolution",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "06eee3bd-d444-4ece-9c9b-d3fffbab1290",
+        "type": "event",
+        "name": "Noble Revolution",
+        "normalized_name": "noble revolution",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:event_noble_revolution"
+      ]
+    },
+    {
+      "test2": {
+        "id": "08105c80-13c1-4594-bcec-6312690e7dc3",
+        "type": "event",
+        "name": "Nobles vs. Commoners",
+        "normalized_name": "nobles vs commoners",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "acf16a61-02dd-433b-8f92-dbbf4efef331",
+        "type": "event",
+        "name": "Tomar's Crossing Election",
+        "normalized_name": "tomar s crossing election",
+        "aliases": [
+          "Election",
+          "the election event"
+        ]
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "3cd0b7b6-c731-48bf-956e-8448c6941b50",
+        "type": "event",
+        "name": "Tomar’s Crossing Election",
+        "normalized_name": "tomar s crossing election",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-5:event_election"
+      ]
+    },
+    {
+      "test2": {
+        "id": "b2bdff8e-14dc-42c2-871e-42e9863ff412",
+        "type": "event",
+        "name": "Xancrown's Reawakenings",
+        "normalized_name": "xancrown s reawakenings",
+        "aliases": []
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "f4e38f0b-a286-4603-9933-95460af81974",
+        "type": "event",
+        "name": "Xancrown Waking Again",
+        "normalized_name": "xancrown waking again",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "7ae9bead-1c2b-45a0-93a7-d1678a005f57",
+        "type": "quest",
+        "name": "Feed the Hungry",
+        "normalized_name": "feed the hungry",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "cd699557-9187-4ae6-a08f-8ff56b9131dd",
+        "type": "quest",
+        "name": "Guard the Gold",
+        "normalized_name": "guard the gold",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "b66da998-94be-4003-ab29-bacd105c27f2",
+        "type": "quest",
+        "name": "Guard the Gold",
+        "normalized_name": "guard the gold",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-4:quest_guard_the_gold"
+      ]
+    },
+    {
+      "test2": {
+        "id": "133e6f5f-f959-4ef9-9d31-aea81bab8aa8",
+        "type": "quest",
+        "name": "Housing for Refugees",
+        "normalized_name": "housing for refugees",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "89b31598-10eb-405b-86d1-0aa6bfc30028",
+        "type": "quest",
+        "name": "Meat for Tomar's Citizens",
+        "normalized_name": "meat for tomar s citizens",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "479b91c0-8ba5-4c12-adb0-fd379d9980d4",
+        "type": "quest",
+        "name": "Refugee Voting Rights",
+        "normalized_name": "refugee voting rights",
+        "aliases": [
+          "Voting Rights",
+          "refugee citizenship campaign"
+        ]
+      },
+      "classification": "MATCHED_RENAMED_OR_ALIAS",
+      "test3": {
+        "id": "e74f843e-4ee2-4a6e-ac9d-15370b348096",
+        "type": "quest",
+        "name": "Voting Rights",
+        "normalized_name": "voting rights",
+        "aliases": []
+      },
+      "match_basis": "curated source-equivalent semantic identity",
+      "test3_candidate_ids": [
+        "chunk-4:quest_voting_rights"
+      ]
+    },
+    {
+      "test2": {
+        "id": "a174867e-e2bb-4fe7-9839-a4375d14620a",
+        "type": "quest",
+        "name": "Stop Ralekai and free the prisoners",
+        "normalized_name": "stop ralekai and free the prisoners",
+        "aliases": []
+      },
+      "classification": "MATCHED_SAME_IDENTITY",
+      "test3": {
+        "id": "b5924a81-7ae9-4754-9452-d9657058fc36",
+        "type": "quest",
+        "name": "Stop Ralekai and Free the Prisoners",
+        "normalized_name": "stop ralekai and free the prisoners",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-7:quest_stop_ralekai"
+      ]
+    },
+    {
+      "test2": {
+        "id": "d363292c-b1ca-4b5c-8b01-c32767270d42",
+        "type": "quest",
+        "name": "The Frozen Necromancer",
+        "normalized_name": "the frozen necromancer",
+        "aliases": []
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": {
+        "id": "b5924a81-7ae9-4754-9452-d9657058fc36",
+        "type": "quest",
+        "name": "Stop Ralekai and Free the Prisoners",
+        "normalized_name": "stop ralekai and free the prisoners",
+        "aliases": []
+      },
+      "match_basis": "duplicate identity of Test 2 entity Stop Ralekai and free the prisoners",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "6ff796db-637f-45ef-aa82-60cee4d3a842",
+        "type": "other",
+        "name": "Cay Naja",
+        "normalized_name": "cay naja",
+        "aliases": []
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": {
+        "id": "b4d567eb-90ff-4176-b040-dd51599567a5",
+        "type": "deity",
+        "name": "Cay Naja",
+        "normalized_name": "cay naja",
+        "aliases": []
+      },
+      "match_basis": "duplicate identity of Test 2 entity Cay Naja",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "273f9bde-1d7e-435a-81ad-d1558f987c33",
+        "type": "other",
+        "name": "Salu",
+        "normalized_name": "salu",
+        "aliases": []
+      },
+      "classification": "MATCHED_RETYPED",
+      "test3": {
+        "id": "3e5997aa-1362-4422-bdff-447e18934a7e",
+        "type": "deity",
+        "name": "Salu",
+        "normalized_name": "salu",
+        "aliases": []
+      },
+      "match_basis": "exact normalized name or explicit alias",
+      "test3_candidate_ids": [
+        "chunk-3:deity_salu"
+      ]
+    },
+    {
+      "test2": {
+        "id": "666ea673-0e19-4fb7-8e97-b08d7a878899",
+        "type": "other",
+        "name": "The Demonplague",
+        "normalized_name": "the demonplague",
+        "aliases": [
+          "Demonplague",
+          "demonplague",
+          "the plague"
+        ]
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": null,
+      "match_basis": "duplicate identity of Test 2 entity Demonplague",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "ba7491f5-a07a-4437-8d08-6f1c1f97d283",
+        "type": "other",
+        "name": "Tomar's Legend",
+        "normalized_name": "tomar s legend",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "ea3bfc04-22fd-4de3-9ef2-6a705b86bb31",
+        "type": "other",
+        "name": "valok",
+        "normalized_name": "valok",
+        "aliases": []
+      },
+      "classification": "MISSING_FROM_TEST3_EXTRACTION",
+      "test3": null,
+      "match_basis": "no exact name, alias, or curated semantic identity in any validated Test 3 candidate",
+      "test3_candidate_ids": []
+    },
+    {
+      "test2": {
+        "id": "2be4e1c7-8a85-4c9e-ae6b-ed39a9598110",
+        "type": "other",
+        "name": "Xancrown",
+        "normalized_name": "xancrown",
+        "aliases": []
+      },
+      "classification": "TEST2_DUPLICATE_CORRECTLY_REMOVED",
+      "test3": {
+        "id": "6a7606d4-a18b-4d32-8df0-8d8d4d015b73",
+        "type": "npc",
+        "name": "Xancrown",
+        "normalized_name": "xancrown",
+        "aliases": [
+          "the plague demon"
+        ]
+      },
+      "match_basis": "duplicate identity of Test 2 entity Xancrown",
+      "test3_candidate_ids": []
+    }
+  ],
+  "test3_only": [
+    {
+      "test3": {
+        "id": "a6c3bdce-34e8-4747-928d-068fce2cf7d9",
+        "type": "location",
+        "name": "Frostfell Crypts",
+        "normalized_name": "frostfell crypts",
+        "aliases": [
+          "the crypts"
+        ]
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "5a17650b-1561-47dc-abd3-35db3a58e3a9",
+        "type": "faction",
+        "name": "Duladarin star elf druids",
+        "normalized_name": "duladarin star elf druids",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "79b5298c-afea-4c7d-91c0-20723a4a17fd",
+        "type": "faction",
+        "name": "Hemlet Refugees",
+        "normalized_name": "hemlet refugees",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "7b3e5512-3308-48b8-b3c7-14b22c41de46",
+        "type": "faction",
+        "name": "Sweetwater Refugees",
+        "normalized_name": "sweetwater refugees",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "95073671-4458-4b61-b132-66f572ac7341",
+        "type": "item",
+        "name": "+1 longsword",
+        "normalized_name": "1 longsword",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "f080101b-de5b-47f3-8381-b305dee7a626",
+        "type": "event",
+        "name": "Fall of Fort Icewind",
+        "normalized_name": "fall of fort icewind",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "b9ce4ca7-6f2f-446b-a906-c7087b5ef25d",
+        "type": "event",
+        "name": "Kadra Tourmaline’s Murder",
+        "normalized_name": "kadra tourmaline s murder",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "2d4d9dc6-0025-4042-ab5f-22c55aba4d71",
+        "type": "event",
+        "name": "Reson’s Body",
+        "normalized_name": "reson s body",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "530ec392-1149-4369-8d25-ec912e0328f0",
+        "type": "quest",
+        "name": "Baryl Harb Revenge",
+        "normalized_name": "baryl harb revenge",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "4182a3b4-1342-4abd-bb51-ee5ec8ff8b72",
+        "type": "quest",
+        "name": "Find Allia Thernius",
+        "normalized_name": "find allia thernius",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "9f30f637-accc-47aa-8d93-f07667119560",
+        "type": "quest",
+        "name": "Free the prisoners in Gardong Marhold",
+        "normalized_name": "free the prisoners in gardong marhold",
+        "aliases": []
+      },
+      "classification": "TEST3_DUPLICATE_OR_NOISE",
+      "notes": "Overlaps the retained Stop Ralekai and Free the Prisoners quest."
+    },
+    {
+      "test3": {
+        "id": "ca784810-5d56-4192-909c-2bddfabeec0e",
+        "type": "quest",
+        "name": "Goblins in Frostfell",
+        "normalized_name": "goblins in frostfell",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "a7aca64f-89fd-42f6-b111-435bd7b62526",
+        "type": "quest",
+        "name": "Market Murders",
+        "normalized_name": "market murders",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    },
+    {
+      "test3": {
+        "id": "0f73e619-33ee-4928-9441-64f3bbf92d15",
+        "type": "quest",
+        "name": "Missing Locket",
+        "normalized_name": "missing locket",
+        "aliases": []
+      },
+      "classification": "NEW_VALID_RECALL",
+      "notes": "Source-backed Test 3 canonical entity with no Test 2 canonical identity match."
+    }
+  ]
+}

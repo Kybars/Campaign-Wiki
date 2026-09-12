@@ -40,7 +40,7 @@ Old implementation plans are historical unless the active plan references them. 
 - Entity-existence evidence and fact evidence are distinct.
 - Store each logical relationship once and render it bidirectionally.
 - Location containment is authoritative, source-backed, and cycle-safe.
-- Prefer false negatives to invented facts, false positives, or wrong merges.
+- Prefer false negatives to invented facts, false positives, or wrong merges, but do not omit clearly named, source-backed entities merely because they are minor or have few facts.
 - `Enemy` is a role/tag, not an entity type; `Deity` is an entity type; `Other` is the sparse fallback.
 - Search must not depend on prominence.
 
@@ -111,7 +111,7 @@ Old implementation plans are historical unless the active plan references them. 
 
 - Inspect `package.json`; document or run only commands that exist.
 - Canonical checks: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build` when appropriate.
-- Deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, and `npm run evaluate:checkpoints`.
+- Deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, and `npm run evaluate:recall`.
 - `npm run evaluate` is the optional live extraction evaluation and requires configured OpenAI credentials; it is never part of normal verification.
 - Provider preflight is `npm run ai:preflight`; it makes no generation call. `npm run smoke:local` requires an already running local model.
 - Normal deterministic verification must not need OpenAI credits or a running local model unless a dedicated smoke test says so.

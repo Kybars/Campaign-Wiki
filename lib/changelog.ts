@@ -13,6 +13,15 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-12",
+    title: "Recall audit and extraction guard",
+    changes: [
+      "Audited Test 2 and Test 3 entity recall with a complete deterministic crosswalk and stage attribution.",
+      "Added a source-backed named-entity recall guard and a zero-model-call recall regression evaluation.",
+    ],
+  },
+  {
+    version: "0.4.7",
+    date: "2026-09-12",
     title: "Derived lean recovery",
     changes: [
       "Added an explicit, server-only command for creating a new lean campaign from validated cached extraction and reconciliation.",

@@ -69,6 +69,8 @@ describe("v0.3 Milestone 1 structured rich extraction", () => {
     expect(EXTRACTION_SYSTEM_PROMPT).toContain("Never add outside lore");
     expect(EXTRACTION_SYSTEM_PROMPT).toContain("Every fact needs its own short verbatim supporting excerpt");
     expect(EXTRACTION_SYSTEM_PROMPT).toContain("Do not duplicate these relationship-backed concepts as text facts");
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain("Do not omit a clearly named, source-backed campaign entity");
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain("check every supported entity category and every relationship endpoint");
   });
 
   it("preserves exact mechanics and separates narrative powers in the schema and prompt", () => {
