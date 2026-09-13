@@ -15,6 +15,7 @@
 # testing
 /coverage
 /artifacts/extraction-ab/
+/artifacts/extraction-local-baseline/
 
 # Supabase local project-link metadata
 /supabase/.temp/

@@ -1,6 +1,6 @@
 import { zodTextFormat } from "openai/helpers/zod";
 import type OpenAI from "openai";
-import type { z } from "zod";
+import { z } from "zod";
 import { modelCallUsage, type ModelCallUsage } from "@/lib/ai/usage";
 import type { ResolvedAIProviderConfig } from "@/lib/env";
 
@@ -51,19 +51,112 @@ interface LocalChatResponse {
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 }
 
+export type LocalStructuredFailureClass = "transport failure" | "HTTP 4xx" | "HTTP 5xx" | "malformed JSON" | "schema-invalid JSON";
+
+export class LocalStructuredModelError extends Error {
+  constructor(
+    message: string,
+    readonly failureClass: LocalStructuredFailureClass,
+    readonly details: {
+      endpoint: string;
+      modelId: string;
+      schemaName: string;
+      httpStatus?: number;
+      responseBodyExcerpt?: string;
+    },
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "LocalStructuredModelError";
+  }
+}
+
+function shortResponseExcerpt(value: string): string | undefined {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact ? compact.slice(0, 500) : undefined;
+}
+
 export function createLocalStructuredModelProvider(config: Extract<ResolvedAIProviderConfig, { providerId: "local" }>, fetchImpl: typeof fetch = fetch): StructuredModelProvider {
   return {
     providerId: "local",
     modelId: config.modelId,
     async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
-      const response = await fetchImpl(`${config.baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) }, body: JSON.stringify({ model: config.modelId, messages: [{ role: "system", content: `${system}\nReturn only valid JSON matching the requested ${schemaName} structure.` }, { role: "user", content: userContent(payload) }], response_format: { type: "json_object" }, temperature: 0 }) });
-      if (!response.ok) throw new Error(`Local AI request failed (${response.status} ${response.statusText})`);
-      const body = await response.json() as LocalChatResponse;
+      const endpoint = `${config.baseUrl}/chat/completions`;
+      const jsonSchema = z.toJSONSchema(schema);
+      let response: Response;
+      try {
+        response = await fetchImpl(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) },
+          body: JSON.stringify({
+            model: config.modelId,
+            messages: [
+              { role: "system", content: `${system}\nReturn only valid JSON matching the requested ${schemaName} structure.` },
+              { role: "user", content: userContent(payload) },
+            ],
+            response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
+            reasoning_effort: "none",
+            temperature: 0,
+          }),
+        });
+      } catch (error) {
+        throw new LocalStructuredModelError(
+          `Local AI transport failure for ${schemaName} at ${endpoint} using ${config.modelId}`,
+          "transport failure",
+          { endpoint, modelId: config.modelId, schemaName },
+          { cause: error },
+        );
+      }
+      const responseText = await response.text();
+      if (!response.ok) {
+        const failureClass = response.status >= 500 ? "HTTP 5xx" : "HTTP 4xx";
+        const excerpt = shortResponseExcerpt(responseText);
+        throw new LocalStructuredModelError(
+          `Local AI request failed (${response.status} ${response.statusText}) for ${schemaName} at ${endpoint} using ${config.modelId}${excerpt ? `: ${excerpt}` : ""}`,
+          failureClass,
+          { endpoint, modelId: config.modelId, schemaName, httpStatus: response.status, responseBodyExcerpt: excerpt },
+        );
+      }
+      let body: LocalChatResponse;
+      try {
+        body = JSON.parse(responseText) as LocalChatResponse;
+      } catch (error) {
+        throw new LocalStructuredModelError(
+          `Local AI returned a malformed response envelope for ${schemaName}`,
+          "malformed JSON",
+          { endpoint, modelId: config.modelId, schemaName, responseBodyExcerpt: shortResponseExcerpt(responseText) },
+          { cause: error },
+        );
+      }
       const content = body.choices?.[0]?.message?.content;
-      if (!content) throw new Error(`Local AI returned no ${schemaName} content`);
+      if (!content) {
+        throw new LocalStructuredModelError(
+          `Local AI returned no ${schemaName} content`,
+          "schema-invalid JSON",
+          { endpoint, modelId: config.modelId, schemaName, responseBodyExcerpt: shortResponseExcerpt(responseText) },
+        );
+      }
       let json: unknown;
-      try { json = JSON.parse(content); } catch { throw new Error(`Local AI returned malformed JSON for ${schemaName}`); }
-      const output = schema.parse(json);
+      try {
+        json = JSON.parse(content);
+      } catch (error) {
+        throw new LocalStructuredModelError(
+          `Local AI returned malformed JSON for ${schemaName}`,
+          "malformed JSON",
+          { endpoint, modelId: config.modelId, schemaName, responseBodyExcerpt: shortResponseExcerpt(content) },
+          { cause: error },
+        );
+      }
+      const parsed = schema.safeParse(json);
+      if (!parsed.success) {
+        throw new LocalStructuredModelError(
+          `Local AI returned schema-invalid JSON for ${schemaName}: ${parsed.error.issues.slice(0, 3).map((issue) => `${issue.path.join(".") || "<root>"}: ${issue.message}`).join("; ")}`,
+          "schema-invalid JSON",
+          { endpoint, modelId: config.modelId, schemaName },
+          { cause: parsed.error },
+        );
+      }
+      const output = parsed.data;
       const model = body.model ?? config.modelId;
       const usage: ModelCallUsage = { model, responseId: body.id ?? null, inputTokens: body.usage?.prompt_tokens ?? null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: body.usage?.completion_tokens ?? null, totalTokens: body.usage?.total_tokens ?? null, estimatedCostUsd: null };
       return { output, providerId: "local" as const, modelId: model, responseId: body.id ?? null, usage };

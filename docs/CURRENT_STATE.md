@@ -8,8 +8,8 @@ Update this disposable implementation snapshot after every completed milestone. 
 - Snapshot HEAD at experiment start: `53aee4208b4bcc6d6f1459745c328b46b10ec774` (recall audit/fix committed and pushed)
 - Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: controlled Luna-versus-Terra extraction A/B and frozen benchmark harness/report
-- Working tree: experiment harness, frozen reference, report, and this snapshot are pending commit
+- Latest targeted work: controlled Ollama single-pass extraction baseline and stress/variance harness/report
+- Working tree: local-provider compatibility instrumentation, local benchmark harness/report, and this snapshot are pending commit
 
 ## Current processing flow
 
@@ -96,6 +96,18 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Decision: `REDESIGN_EXTRACTION_PIPELINE`. Terra is materially stronger, but both models remain below 90% recall and both retain systematic category failures; Terra recalled zero of nine quest occurrences.
 - Production extraction remains `gpt-5.6-luna`. Report: `docs/audits/luna_terra_extraction_ab.md`.
 
+## Ollama single-pass extraction baseline
+
+- Local environment: Ollama `qwen3.5:9b`, digest `6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7`, 32,768 context, reasoning disabled, temperature 0, extraction concurrency 1, and persistence disabled.
+- The strict JSON schema is derived from the production Zod contract. The production prompt, schema, ontology, chunking, validation, and single-pass architecture were unchanged.
+- First scored run on frozen chunks 3/5/4: 0/3 valid outputs; all ended as client-visible transport disconnects after 302.225–304.599 seconds.
+- All-nine stress run: 0/9 valid outputs; nine transport failures; mean 304.878 seconds, median 304.842 seconds, p95 305.528 seconds; no response reported usage or content.
+- Second scored run: 0/3 valid outputs with identical failure-class stability and aggregate latency only 5.346 seconds above run 1.
+- Recall, precision, F1, per-type recall, and historical-miss recovery are unavailable rather than zero because no scored operation returned a valid extraction.
+- Decision: `LOCAL_SINGLE_PASS_SCHEMA_OVERLOADED`. A tiny strict schema succeeds, while the full production contract failed all 15 controlled attempts at a repeatable five-minute boundary. Evidence is sufficient to proceed to the separately scoped two-pass redesign.
+- Safety: 0 OpenAI, reconciliation, or enrichment calls; 0 campaign, official cache, or checkpoint writes. Test 2, original Test 3, Test 3 Recovery, and the cached graph fingerprint remained unchanged.
+- Report: `docs/audits/ollama_single_pass_extraction_baseline.md`. Raw captures: ignored `artifacts/extraction-local-baseline/`.
+
 ## Test 3 derived lean recovery
 
 - Usable recovery campaign: `Demonplague - Test 3 Recovery` (`1151fb31-876b-4277-9718-76313c1c8d98`), status `complete`.
@@ -112,14 +124,17 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Cumulative recorded enrichment recovery cost: `$3.3255693`, excluding extraction and unmeasured work.
 - Extraction remains the main candidate for later economy optimization.
 - The A/B added a known Terra estimate of `$0.5635378`; the combined experiment total is unavailable because Luna pricing is absent rather than guessed.
+- The Ollama baseline made 15 local extraction attempts and 0 paid calls. Failed local usage was not reported and remains `null`, never zero or priced as OpenAI usage.
 
 ## Verification snapshot
 
-- Latest deterministic suite: 31 test files, 262 tests passed.
+- Latest deterministic suite: 31 test files, 263 tests passed.
 - Successfully run for the recall fix: lint, typecheck, test, build, replay, lean, extraction-workload, checkpoint, and recall evaluations.
 - The A/B verification passed lint, typecheck, 31 test files/262 tests, production build, recall evaluation, extraction-workload evaluation, and read-only A/B evaluation. Protected campaign timestamps/counts and the cached graph fingerprint remained unchanged.
 - Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, and `npm run evaluate:recall`.
 - `npm run ai:preflight` performs no generation; `npm run smoke:local` needs an already running local model.
+- `npm run evaluate:extraction-local` summarizes the completed isolated capture without rerunning it; `--dry-run` verifies the 15-attempt local-only plan before an initial capture.
+- Ollama-baseline verification passed lint, typecheck, 31 test files/263 tests, the production build, focused provider tests, recall evaluation, extraction-workload evaluation, and saved local-baseline summary evaluation.
 
 ## Deferred work
 

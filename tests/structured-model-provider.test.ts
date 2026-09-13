@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createLocalStructuredModelProvider, createOpenAIStructuredModelProvider, preflightLocalStructuredModelProvider } from "@/lib/ai/structured-model-provider";
+import { createLocalStructuredModelProvider, createOpenAIStructuredModelProvider, LocalStructuredModelError, preflightLocalStructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { assertAIProviderPersistenceAllowed, resolveAIProviderConfig } from "@/lib/env";
 import { enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentFixtureGraph, enrichmentFixtureOutput } from "@/fixtures/enrichment-cache";
@@ -66,6 +66,20 @@ describe("local structured model adapter", () => {
     const result = await createLocalStructuredModelProvider(config, fetchMock).parseStructured(request);
     expect(result).toMatchObject({ output: { answer: "yes" }, providerId: "local", modelId: "local-model", responseId: "local-1", usage: { inputTokens: null, outputTokens: null, totalTokens: null, estimatedCostUsd: null } });
     expect(fetchMock).toHaveBeenCalledWith("http://localhost:11434/v1/chat/completions", expect.objectContaining({ method: "POST" }));
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(requestBody).toMatchObject({
+      model: "local-model",
+      reasoning_effort: "none",
+      temperature: 0,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "fixture_answer",
+          strict: true,
+          schema: expect.objectContaining({ type: "object", properties: { answer: expect.objectContaining({ type: "string" }) } }),
+        },
+      },
+    });
   });
 
   it("maps reliable local token fields without inventing cost", async () => {
@@ -77,9 +91,21 @@ describe("local structured model adapter", () => {
     const malformed = createLocalStructuredModelProvider(config, vi.fn().mockResolvedValue(response({ choices: [{ message: { content: "not-json" } }] })));
     await expect(malformed.parseStructured(request)).rejects.toThrow(/malformed JSON/);
     const invalid = createLocalStructuredModelProvider(config, vi.fn().mockResolvedValue(response({ choices: [{ message: { content: JSON.stringify({ answer: 3 }) } }] })));
-    await expect(invalid.parseStructured(request)).rejects.toThrow();
-    const unavailable = createLocalStructuredModelProvider(config, vi.fn().mockResolvedValue(response({}, 503)));
-    await expect(unavailable.parseStructured(request)).rejects.toThrow(/Local AI request failed \(503/);
+    await expect(invalid.parseStructured(request)).rejects.toMatchObject({ failureClass: "schema-invalid JSON" });
+    const unavailable = createLocalStructuredModelProvider(config, vi.fn().mockResolvedValue(new Response("runner failed", { status: 503, statusText: "Failure" })));
+    await expect(unavailable.parseStructured(request)).rejects.toMatchObject({
+      failureClass: "HTTP 5xx",
+      details: expect.objectContaining({ httpStatus: 503, endpoint: "http://localhost:11434/v1/chat/completions", modelId: "local-model", schemaName: "fixture_answer", responseBodyExcerpt: "runner failed" }),
+    });
+  });
+
+  it("classifies transport failures and never falls back to OpenAI", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("connection refused"));
+    const provider = createLocalStructuredModelProvider(config, fetchMock);
+    const error = await provider.parseStructured(request).catch((cause) => cause);
+    expect(error).toBeInstanceOf(LocalStructuredModelError);
+    expect(error).toMatchObject({ failureClass: "transport failure", details: { endpoint: "http://localhost:11434/v1/chat/completions", modelId: "local-model", schemaName: "fixture_answer" } });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("preflights a local model without making a generation call", async () => {
