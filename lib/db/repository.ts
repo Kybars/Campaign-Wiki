@@ -81,7 +81,7 @@ export async function createExtractionCacheRun(
 
 export async function saveExtractionCacheChunk(
   cacheRunId: string,
-  result: ExtractedChunk,
+  result: Pick<ExtractedChunk, "chunkId" | "rawExtraction" | "extraction" | "diagnostics" | "usage">,
   chunkIndex: number,
   pageNumbers: number[],
 ) {

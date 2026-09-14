@@ -5,7 +5,7 @@ import { buildExtractionInput, EXTRACTION_SYSTEM_PROMPT } from "../lib/ai/prompt
 import { EXTRACTION_BEHAVIOR_VERSION, EXTRACTION_CONTRACT_VERSION } from "../lib/ai/operation-checkpoint";
 import { chunkExtractionSchema, type ChunkExtraction } from "../lib/ai/schemas";
 import { validateChunkExtraction } from "../lib/ai/source-validation";
-import { createLocalStructuredModelProvider, LocalStructuredModelError } from "../lib/ai/structured-model-provider";
+import { createLocalStructuredModelProvider, LocalStructuredModelError, type LocalTransportDiagnostics } from "../lib/ai/structured-model-provider";
 import { resolveAIProviderConfig } from "../lib/env";
 import { normalizeName } from "../lib/graph/normalize";
 import type { DocumentPage, PageChunk } from "../lib/pdf/types";
@@ -43,6 +43,7 @@ interface Attempt {
   success: boolean;
   failureClass?: FailureClass;
   httpStatus?: number;
+  transport?: LocalTransportDiagnostics;
   schemaValidationFailure?: string;
   latencyMs: number;
   usage?: { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null };
@@ -331,7 +332,7 @@ async function main() {
       manifest.attempts.push({ ...base, success: true, latencyMs: artifact.latencyMs, responseModel: response.modelId, responseId: response.responseId, usage: { inputTokens: response.usage.inputTokens, outputTokens: response.usage.outputTokens, totalTokens: response.usage.totalTokens }, rawOutputCharacters: size.characters, rawOutputBytes: size.bytes, entityCandidates: artifact.entityCandidates, facts: artifact.facts, relationships: artifact.relationships, validationDiagnosticCount: artifact.validationDiagnosticCount });
     } catch (error) {
       const classified = error instanceof LocalStructuredModelError ? error : null;
-      const attempt: Attempt = { ...base, success: false, failureClass: classified?.failureClass ?? "schema-invalid JSON", httpStatus: classified?.details.httpStatus, schemaValidationFailure: classified?.failureClass === "schema-invalid JSON" ? classified.message : undefined, latencyMs: Math.round(performance.now() - started), error: error instanceof Error ? error.message : String(error), responseBodyExcerpt: classified?.details.responseBodyExcerpt };
+      const attempt: Attempt = { ...base, success: false, failureClass: classified?.failureClass ?? "schema-invalid JSON", httpStatus: classified?.details.httpStatus, transport: classified?.details.transport, schemaValidationFailure: classified?.failureClass === "schema-invalid JSON" ? classified.message : undefined, latencyMs: Math.round(performance.now() - started), error: error instanceof Error ? error.message : String(error), responseBodyExcerpt: classified?.details.responseBodyExcerpt };
       writeFileSync(new URL(fileName, artifactDirectory), `${JSON.stringify(attempt, null, 2)}\n`);
       manifest.attempts.push(attempt);
     }

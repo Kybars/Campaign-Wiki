@@ -53,6 +53,64 @@ interface LocalChatResponse {
 
 export type LocalStructuredFailureClass = "transport failure" | "HTTP 4xx" | "HTTP 5xx" | "malformed JSON" | "schema-invalid JSON";
 
+export type LocalTransportFailureCode =
+  | "UND_ERR_HEADERS_TIMEOUT"
+  | "UND_ERR_BODY_TIMEOUT"
+  | "ECONNRESET"
+  | "ECONNREFUSED"
+  | "AbortError"
+  | "other transport failure";
+
+export interface LocalTransportDiagnostics {
+  errorName: string | null;
+  errorMessage: string | null;
+  causeName: string | null;
+  causeMessage: string | null;
+  causeCode: string | null;
+  classification: LocalTransportFailureCode;
+  nodeVersion: string;
+  undiciVersion: string | null;
+  elapsedMs: number;
+}
+
+type ErrorLike = { name?: unknown; message?: unknown; code?: unknown; cause?: unknown };
+
+function errorLike(value: unknown): ErrorLike | null {
+  return value !== null && typeof value === "object" ? value as ErrorLike : null;
+}
+
+function errorText(value: unknown): string | null {
+  return typeof value === "string" && value.length ? value : null;
+}
+
+export function classifyLocalTransportError(error: unknown): LocalTransportFailureCode {
+  const outer = errorLike(error);
+  const nested = errorLike(outer?.cause);
+  const values = [outer, nested].flatMap((candidate) => [errorText(candidate?.name), errorText(candidate?.message), errorText(candidate?.code)]).filter((value): value is string => value !== null);
+  if (values.includes("UND_ERR_HEADERS_TIMEOUT")) return "UND_ERR_HEADERS_TIMEOUT";
+  if (values.includes("UND_ERR_BODY_TIMEOUT")) return "UND_ERR_BODY_TIMEOUT";
+  if (values.includes("ECONNRESET")) return "ECONNRESET";
+  if (values.includes("ECONNREFUSED")) return "ECONNREFUSED";
+  if (values.includes("AbortError") || values.some((value) => /aborted/i.test(value))) return "AbortError";
+  return "other transport failure";
+}
+
+export function localTransportDiagnostics(error: unknown, elapsedMs: number): LocalTransportDiagnostics {
+  const outer = errorLike(error);
+  const nested = errorLike(outer?.cause);
+  return {
+    errorName: errorText(outer?.name),
+    errorMessage: errorText(outer?.message),
+    causeName: errorText(nested?.name),
+    causeMessage: errorText(nested?.message),
+    causeCode: errorText(nested?.code),
+    classification: classifyLocalTransportError(error),
+    nodeVersion: process.version,
+    undiciVersion: process.versions.undici ?? null,
+    elapsedMs: Math.round(elapsedMs),
+  };
+}
+
 export class LocalStructuredModelError extends Error {
   constructor(
     message: string,
@@ -63,6 +121,7 @@ export class LocalStructuredModelError extends Error {
       schemaName: string;
       httpStatus?: number;
       responseBodyExcerpt?: string;
+      transport?: LocalTransportDiagnostics;
     },
     options?: ErrorOptions,
   ) {
@@ -81,6 +140,7 @@ export function createLocalStructuredModelProvider(config: Extract<ResolvedAIPro
     providerId: "local",
     modelId: config.modelId,
     async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
+      const startedAt = performance.now();
       const endpoint = `${config.baseUrl}/chat/completions`;
       const jsonSchema = z.toJSONSchema(schema);
       let response: Response;
@@ -103,7 +163,7 @@ export function createLocalStructuredModelProvider(config: Extract<ResolvedAIPro
         throw new LocalStructuredModelError(
           `Local AI transport failure for ${schemaName} at ${endpoint} using ${config.modelId}`,
           "transport failure",
-          { endpoint, modelId: config.modelId, schemaName },
+          { endpoint, modelId: config.modelId, schemaName, transport: localTransportDiagnostics(error, performance.now() - startedAt) },
           { cause: error },
         );
       }

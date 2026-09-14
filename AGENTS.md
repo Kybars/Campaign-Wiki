@@ -41,6 +41,7 @@ Old implementation plans are historical unless the active plan references them. 
 - Store each logical relationship once and render it bidirectionally.
 - Location containment is authoritative, source-backed, and cycle-safe.
 - Prefer false negatives to invented facts, false positives, or wrong merges, but do not omit clearly named, source-backed entities merely because they are minor or have few facts.
+- A validated chunk entity inventory is authoritative; rich extraction may enrich it but must not silently shrink it.
 - `Enemy` is a role/tag, not an entity type; `Deity` is an entity type; `Other` is the sparse fallback.
 - Search must not depend on prominence.
 

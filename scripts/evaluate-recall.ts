@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { EXTRACTION_SYSTEM_PROMPT } from "../lib/ai/prompts";
+import { EXTRACTION_INVENTORY_SYSTEM_PROMPT, EXTRACTION_RICH_SYSTEM_PROMPT } from "../lib/ai/prompts";
 import { recallIdentityRules, recallReferenceEntities } from "../fixtures/recall-regression";
 
 interface CrosswalkRow {
@@ -59,8 +59,10 @@ assert.equal(artifact.summary.test2_classifications.TEST2_DUPLICATE_CORRECTLY_RE
 assert.equal(artifact.summary.test2_classifications.MISSING_FROM_TEST3_EXTRACTION, 52);
 assert.equal(artifact.summary.test2_classifications.PRESENT_IN_TEST3_CANDIDATES_BUT_LOST_IN_RECONCILIATION, 0);
 assert.equal(artifact.summary.test2_classifications.AMBIGUOUS_REQUIRES_REVIEW, 0);
-assert.match(EXTRACTION_SYSTEM_PROMPT, /Do not omit a clearly named, source-backed campaign entity/);
-assert.match(EXTRACTION_SYSTEM_PROMPT, /check every supported entity category and every relationship endpoint/);
+assert.match(EXTRACTION_INVENTORY_SYSTEM_PROMPT, /Do not omit a clearly named entity/);
+assert.match(EXTRACTION_INVENTORY_SYSTEM_PROMPT, /scan category by category/);
+assert.match(EXTRACTION_RICH_SYSTEM_PROMPT, /inventory is authoritative/);
+assert.match(EXTRACTION_RICH_SYSTEM_PROMPT, /exactly one rich entity record for every inventory ID/);
 
 for (const reference of recallReferenceEntities) {
   const row = artifact.test2_crosswalk.find((candidate) =>
@@ -106,7 +108,7 @@ console.log(JSON.stringify({
   missingFromTest3Extraction: artifact.summary.test2_classifications.MISSING_FROM_TEST3_EXTRACTION,
   lostInReconciliation: artifact.summary.test2_classifications.PRESENT_IN_TEST3_CANDIDATES_BUT_LOST_IN_RECONCILIATION,
   test3CanonicalEntities: artifact.summary.test3_canonical_entities,
-  promptRecallGuard: "PASS",
+  twoPassPromptContract: "PASS",
   curatedReferenceEntities: recallReferenceEntities.length,
   curatedHistoricallyMissing: recallReferenceEntities.filter((entity) => entity.historicalTest3 === "missing").length,
   sourceTextModelEvaluation: "requires an explicitly authorized inference run",

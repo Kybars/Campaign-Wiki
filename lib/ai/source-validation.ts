@@ -1,5 +1,6 @@
-import type { CandidateEntity, CandidateFact, CandidateRelationship, ChunkExtraction, SourceEvidence } from "@/lib/ai/schemas";
+import type { CandidateEntity, CandidateRelationship, ChunkExtraction, ExtractionInventoryEntity, ExtractionInventoryOutput, ExtractionRichOutput, SourceEvidence } from "@/lib/ai/schemas";
 import type { DocumentPage } from "@/lib/pdf/types";
+import { isFactFieldForEntityType } from "@/lib/knowledge/fields";
 
 export interface ValidationDiagnostic {
   kind: "source" | "entity" | "fact" | "relationship";
@@ -46,7 +47,7 @@ export function validateSource(source: SourceEvidence, pages: DocumentPage[]): s
   return null;
 }
 
-function validSources<T extends CandidateEntity | CandidateFact | CandidateRelationship>(
+function validSources<T extends { sources: SourceEvidence[] }>(
   item: T,
   pages: DocumentPage[],
   identifier: string,
@@ -57,6 +58,101 @@ function validSources<T extends CandidateEntity | CandidateFact | CandidateRelat
     if (reason) diagnostics.push({ kind: "source", identifier, reason });
     return reason === null;
   });
+}
+
+export interface ValidatedInventory {
+  inventory: ExtractionInventoryOutput;
+  diagnostics: ValidationDiagnostic[];
+}
+
+export interface ValidatedRichExtraction {
+  rich: ExtractionRichOutput;
+  diagnostics: ValidationDiagnostic[];
+}
+
+export function validateExtractionInventory(raw: ExtractionInventoryOutput, pages: DocumentPage[]): ValidatedInventory {
+  const diagnostics: ValidationDiagnostic[] = [];
+  const ids = new Set<string>();
+  const entities: ExtractionInventoryEntity[] = [];
+  for (const entity of raw.entities) {
+    if (ids.has(entity.temporary_id)) throw new Error(`Duplicate inventory ID: ${entity.temporary_id}`);
+    ids.add(entity.temporary_id);
+    const sources = validSources(entity, pages, entity.temporary_id, diagnostics);
+    if (!sources.length) {
+      diagnostics.push({ kind: "entity", identifier: entity.temporary_id, reason: "no valid source evidence" });
+      continue;
+    }
+    entities.push({ ...entity, sources });
+  }
+  return { inventory: { entities }, diagnostics };
+}
+
+export function validateExtractionRich(raw: ExtractionRichOutput, inventory: ExtractionInventoryOutput, pages: DocumentPage[]): ValidatedRichExtraction {
+  const diagnostics: ValidationDiagnostic[] = [];
+  const inventoryById = new Map(inventory.entities.map((entity) => [entity.temporary_id, entity]));
+  const seen = new Set<string>();
+  const entities = raw.entities.map((entity) => {
+    if (seen.has(entity.inventory_id)) throw new Error(`Duplicate rich inventory ID: ${entity.inventory_id}`);
+    seen.add(entity.inventory_id);
+    const owner = inventoryById.get(entity.inventory_id);
+    if (!owner) throw new Error(`Unknown rich inventory ID: ${entity.inventory_id}`);
+    if (owner.type !== entity.type) throw new Error(`Rich type mismatch for inventory ID ${entity.inventory_id}`);
+    const factIds = new Set<string>();
+    const facts = entity.facts.flatMap((fact) => {
+      const identifier = `${entity.inventory_id}:${fact.temporary_id}`;
+      if (factIds.has(fact.temporary_id)) throw new Error(`Duplicate fact ID: ${identifier}`);
+      factIds.add(fact.temporary_id);
+      if (!isFactFieldForEntityType(owner.type, fact.field_key)) throw new Error(`Invalid ${owner.type} fact field ${fact.field_key} for inventory ID ${entity.inventory_id}`);
+      const sources = validSources(fact, pages, identifier, diagnostics);
+      if (!sources.length) {
+        diagnostics.push({ kind: "fact", identifier, reason: "no valid source evidence" });
+        return [];
+      }
+      return [{ ...fact, sources }];
+    });
+    return { ...entity, facts };
+  });
+  const missing = inventory.entities.filter((entity) => !seen.has(entity.temporary_id)).map((entity) => entity.temporary_id);
+  if (missing.length) throw new Error(`Rich output omitted inventory IDs: ${missing.join(", ")}`);
+
+  const relationships = raw.relationships.map((relationship) => {
+    const identifier = `${relationship.source_temporary_id}->${relationship.target_temporary_id}:${relationship.relationship_type}`;
+    if (!inventoryById.has(relationship.source_temporary_id) || !inventoryById.has(relationship.target_temporary_id)) throw new Error(`Unknown relationship endpoint: ${identifier}`);
+    if (relationship.source_temporary_id === relationship.target_temporary_id) throw new Error(`Self-relationship is not supported: ${identifier}`);
+    const sources = validSources(relationship, pages, identifier, diagnostics);
+    if (!sources.length) {
+      diagnostics.push({ kind: "relationship", identifier, reason: "no valid source evidence" });
+      return null;
+    }
+    return { ...relationship, sources };
+  }).filter((relationship): relationship is NonNullable<typeof relationship> => relationship !== null);
+
+  const suspected_inventory_misses = raw.suspected_inventory_misses.flatMap((miss) => {
+    const sources = validSources(miss, pages, miss.name, diagnostics);
+    return sources.length ? [{ ...miss, sources }] : [];
+  });
+  return { rich: { entities, relationships, suspected_inventory_misses }, diagnostics };
+}
+
+export function assembleChunkExtraction(inventory: ExtractionInventoryOutput, rich: ExtractionRichOutput): ChunkExtraction {
+  const richById = new Map(rich.entities.map((entity) => [entity.inventory_id, entity]));
+  return {
+    entities: inventory.entities.map((entity) => {
+      const detail = richById.get(entity.temporary_id);
+      if (!detail) throw new Error(`Cannot assemble missing rich inventory ID: ${entity.temporary_id}`);
+      return {
+        temporary_id: entity.temporary_id,
+        name: entity.name,
+        type: entity.type,
+        aliases: entity.aliases,
+        sources: entity.sources,
+        roles: detail.roles,
+        summary: detail.summary,
+        facts: detail.facts,
+      } as CandidateEntity;
+    }),
+    relationships: rich.relationships,
+  };
 }
 
 export function validateChunkExtraction(raw: ChunkExtraction, pages: DocumentPage[]): ValidatedExtraction {

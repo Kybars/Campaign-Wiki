@@ -791,6 +791,38 @@ A test can interrupt and resume a Test-3-scale synthetic workload with no duplic
 
 ---
 
+# 15A. Extraction Redesign Gate — Inventory then Rich Knowledge
+
+## Status
+
+Completed as v0.4.9 with decision `TWO_PASS_STILL_OVERLOADED`.
+
+## Implemented boundary
+
+New-import extraction now runs two separately validated and checkpointed operations per source chunk:
+
+```text
+source chunk
+  → compact authoritative entity inventory
+  → rich facts/relationships grounded to inventory IDs
+  → existing candidate representation
+  → existing global reconciliation
+```
+
+Pass B cannot shrink the validated inventory, create facts for unknown owners, or create relationships with unknown endpoints. Inventory identity and evidence remain distinct from rich knowledge. Inventory/rich model configuration, planning, paid-call guarding, checkpoint invalidation, and workload diagnostics are independent while retaining extraction-stage fallbacks.
+
+## Verification and benchmark outcome
+
+Deterministic tests prove the dense/curated breadth contract, exact ID coverage, type-specific fact validation, corruption recovery, dependency invalidation, downstream-failure reuse, and unchanged reconciliation merge/distinctness behavior.
+
+The controlled `qwen3.5:9b` Ollama re-benchmark held model digest, 32K context, temperature 0, reasoning none, concurrency 1, source chunks, and frozen reference constant. Both scored runs returned `0/3` valid inventories and the stress run returned `0/9`; every inventory operation disconnected around 302–305 seconds, so no rich operation ran and quality metrics remain unavailable.
+
+Report: `docs/audits/two_pass_ollama_extraction_benchmark.md`.
+
+The next extraction action is a separately scoped, no-cost inventory-pressure diagnosis. Do not infer that a paid OpenAI validation or production model switch is authorized.
+
+---
+
 # 16. Milestone 6 — Local Test-3-Scale Rehearsal
 
 ## Goal

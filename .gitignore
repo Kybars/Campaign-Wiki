@@ -16,6 +16,10 @@
 /coverage
 /artifacts/extraction-ab/
 /artifacts/extraction-local-baseline/
+/artifacts/extraction-local-two-pass/
+/artifacts/ollama-inventory-pressure/
+/artifacts/ollama-inventory-category/
+/artifacts/ollama-inventory-pathology/
 
 # Supabase local project-link metadata
 /supabase/.temp/

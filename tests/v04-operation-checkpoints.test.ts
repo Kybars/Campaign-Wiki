@@ -43,16 +43,16 @@ describe("v0.4 M4 interruption durability", () => {
   it("reuses validated extraction chunks from an interrupted run", async () => {
     const store = memoryCheckpointStore();
     const chunks = [0, 1, 2].map((index) => ({ id: `chunk-${index}`, pages: [{ pageNumber: index + 1, text: `Page ${index + 1}` }], characterCount: 6 }));
-    const parse = vi.fn(async ({ payload }: { payload: unknown }) => {
+    const parse = vi.fn(async ({ payload, schemaName }: { payload: unknown; schemaName: string }) => {
       if (JSON.stringify(payload).includes("Page 3")) throw new Error("interrupted");
-      return { output: { entities: [], relationships: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage };
+      return { output: schemaName === "extraction_inventory_output" ? { entities: [] } : { entities: [], relationships: [], suspected_inventory_misses: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage };
     });
     await expect(extractChunksLimited(chunks, 1, undefined, provider(parse as never), { campaignId: "c", documentId: "d", processingMode: "lean", store })).rejects.toThrow("interrupted");
-    parse.mockImplementation(async () => ({ output: { entities: [], relationships: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage }));
+    parse.mockImplementation(async ({ schemaName }: { schemaName: string }) => ({ output: schemaName === "extraction_inventory_output" ? { entities: [] } : { entities: [], relationships: [], suspected_inventory_misses: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage }));
     parse.mockClear();
     const resumed = await extractChunksLimited(chunks, 1, undefined, provider(parse as never), { campaignId: "c", documentId: "d", processingMode: "lean", store });
     expect(resumed.map((item) => item.checkpointStatus)).toEqual(["REUSE", "REUSE", "RUN"]);
-    expect(parse).toHaveBeenCalledOnce();
+    expect(parse).toHaveBeenCalledTimes(2);
   });
 
   it("reuses validated reconciliation after downstream persistence fails", async () => {

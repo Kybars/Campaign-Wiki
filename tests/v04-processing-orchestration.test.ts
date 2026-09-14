@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   finishExtractionCacheRun: vi.fn(), finishEnrichmentCacheRun: vi.fn(), loadCampaignForProcessing: vi.fn(),
   loadCompleteEnrichmentCache: vi.fn(), persistCanonicalGraph: vi.fn(), recordProcessingRun: vi.fn(),
   saveExtractionCacheChunk: vi.fn(), saveReconciliationCacheResult: vi.fn(), updateCampaign: vi.fn(),
-  extractChunksLimited: vi.fn(), reconcileGroupsWithAI: vi.fn(), enrichCanonicalGraphWithAI: vi.fn(),
+  extractChunksLimited: vi.fn(), planTwoPassExtraction: vi.fn(), reconcileGroupsWithAI: vi.fn(), enrichCanonicalGraphWithAI: vi.fn(),
   aggregateCandidates: vi.fn(), buildCanonicalGraph: vi.fn(), buildDeterministicGroups: vi.fn(),
   getAIProviderConfig: vi.fn(), assertAIProviderPersistenceAllowed: vi.fn(),
   getStructuredModelProvider: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock("@/lib/db/repository", () => ({
   recordProcessingRun: mocks.recordProcessingRun, saveExtractionCacheChunk: mocks.saveExtractionCacheChunk,
   saveReconciliationCacheResult: mocks.saveReconciliationCacheResult, updateCampaign: mocks.updateCampaign,
 }));
-vi.mock("@/lib/ai/extract", () => ({ extractChunksLimited: mocks.extractChunksLimited }));
+vi.mock("@/lib/ai/extract", () => ({ extractChunksLimited: mocks.extractChunksLimited, planTwoPassExtraction: mocks.planTwoPassExtraction }));
 vi.mock("@/lib/ai/reconcile", () => ({ reconcileGroupsWithAI: mocks.reconcileGroupsWithAI }));
 vi.mock("@/lib/ai/enrich", () => ({ EnrichmentFailure: class EnrichmentFailure extends Error { usage = []; }, enrichCanonicalGraphWithAI: mocks.enrichCanonicalGraphWithAI }));
 vi.mock("@/lib/ai/enrichment-input", () => ({ enrichmentGraphFingerprint: () => "fixture-fingerprint" }));
@@ -60,8 +60,9 @@ beforeEach(() => {
   mocks.loadCampaignForProcessing.mockResolvedValue({ campaign: { status: "uploaded" }, document: { id: "document" }, pages: [{ pageNumber: 1, text: "Mira is a hunter." }] });
   mocks.claimCampaignForProcessing.mockResolvedValue(true);
   mocks.createExtractionCacheRun.mockResolvedValue("extraction-cache");
+  mocks.planTwoPassExtraction.mockResolvedValue([{ chunkId: "chunk", operationType: "inventory", status: "RUN", reason: "new" }, { chunkId: "chunk", operationType: "rich", status: "RUN", reason: "new" }]);
   mocks.createEnrichmentCacheRun.mockResolvedValue("enrichment-cache");
-  mocks.extractChunksLimited.mockResolvedValue([{ chunkId: "chunk", extraction: { entities: [], relationships: [] }, diagnostics: [], usage }]);
+  mocks.extractChunksLimited.mockResolvedValue([{ chunkId: "chunk", inventory: { entities: [] }, rawInventory: { entities: [] }, richExtraction: { entities: [], relationships: [], suspected_inventory_misses: [] }, rawRichExtraction: { entities: [], relationships: [], suspected_inventory_misses: [] }, extraction: { entities: [], relationships: [] }, diagnostics: [], usage, inventoryUsage: usage, richUsage: usage, inventoryCheckpointStatus: "RUN", richCheckpointStatus: "RUN", checkpointStatus: "RUN" }]);
   mocks.aggregateCandidates.mockReturnValue({ entities: [], relationships: [] });
   mocks.buildDeterministicGroups.mockReturnValue([]);
   mocks.reconcileGroupsWithAI.mockResolvedValue({ decision: undefined, usage });
@@ -75,7 +76,8 @@ beforeEach(() => {
 describe("v0.4 processing orchestration", () => {
   it("uses lean by default, persists safe canonical data, and completes without resolving enrichment", async () => {
     const result = await processCampaign("campaign");
-    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction_inventory");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction_rich");
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("reconciliation");
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
@@ -100,7 +102,7 @@ describe("v0.4 processing orchestration", () => {
     mocks.getAIProviderConfig.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, baseUrl: "http://localhost:11434/v1", allowPersistence: true }));
     mocks.getStructuredModelProvider.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, parseStructured: vi.fn() }));
     const result = await processCampaign("campaign");
-    expect(mocks.extractChunksLimited.mock.calls[0][3]).toMatchObject({ providerId: "local", modelId: "extraction-local" });
+    expect(mocks.extractChunksLimited.mock.calls[0][3]).toMatchObject({ inventory: { providerId: "local", modelId: "extraction_inventory-local" }, rich: { providerId: "local", modelId: "extraction_rich-local" } });
     expect(mocks.reconcileGroupsWithAI.mock.calls[0][1]).toMatchObject({ providerId: "local", modelId: "reconciliation-local" });
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();

@@ -51,6 +51,42 @@ export const candidateRelationshipSchema = z.object({
   sources: z.array(sourceEvidenceSchema).min(1).max(20),
 });
 
+export const extractionInventoryEntitySchema = z.object({
+  temporary_id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  type: entityTypeSchema,
+  aliases: z.array(z.string().min(1).max(200)).max(20),
+  sources: z.array(sourceEvidenceSchema).min(1).max(20),
+});
+
+export const extractionInventoryOutputSchema = z.object({
+  entities: z.array(extractionInventoryEntitySchema),
+});
+
+const extractionRichFactSchema = candidateFactIdentitySchema.extend({
+  field_key: z.enum([...new Set(Object.values(FACT_FIELD_KEYS_BY_ENTITY_TYPE).flat())]),
+});
+
+export const extractionRichEntitySchema = z.object({
+  inventory_id: z.string().min(1).max(100),
+  type: entityTypeSchema,
+  roles: z.array(entityRoleSchema).max(10),
+  summary: z.string().min(1).max(1200),
+  facts: z.array(extractionRichFactSchema).max(80),
+});
+
+export const suspectedInventoryMissSchema = z.object({
+  name: z.string().min(1).max(200),
+  suggested_type: entityTypeSchema,
+  sources: z.array(sourceEvidenceSchema).min(1).max(3),
+});
+
+export const extractionRichOutputSchema = z.object({
+  entities: z.array(extractionRichEntitySchema),
+  relationships: z.array(candidateRelationshipSchema),
+  suspected_inventory_misses: z.array(suspectedInventoryMissSchema).max(12),
+});
+
 export const chunkExtractionSchema = z.object({
   entities: z.array(candidateEntitySchema),
   relationships: z.array(candidateRelationshipSchema),
@@ -77,4 +113,7 @@ export type CandidateEntity = z.infer<typeof candidateEntitySchema>;
 export type CandidateFact = CandidateEntity["facts"][number];
 export type CandidateRelationship = z.infer<typeof candidateRelationshipSchema>;
 export type ChunkExtraction = z.infer<typeof chunkExtractionSchema>;
+export type ExtractionInventoryEntity = z.infer<typeof extractionInventoryEntitySchema>;
+export type ExtractionInventoryOutput = z.infer<typeof extractionInventoryOutputSchema>;
+export type ExtractionRichOutput = z.infer<typeof extractionRichOutputSchema>;
 export type ReconciliationDecision = z.infer<typeof reconciliationDecisionSchema>;

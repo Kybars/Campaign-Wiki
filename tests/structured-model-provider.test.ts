@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createLocalStructuredModelProvider, createOpenAIStructuredModelProvider, LocalStructuredModelError, preflightLocalStructuredModelProvider } from "@/lib/ai/structured-model-provider";
+import { classifyLocalTransportError, createLocalStructuredModelProvider, createOpenAIStructuredModelProvider, LocalStructuredModelError, preflightLocalStructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { assertAIProviderPersistenceAllowed, resolveAIProviderConfig } from "@/lib/env";
 import { enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentFixtureGraph, enrichmentFixtureOutput } from "@/fixtures/enrichment-cache";
@@ -18,10 +18,20 @@ describe("structured model provider selection", () => {
   });
 
   it("resolves stage-specific local models with a backward-compatible shared fallback", () => {
-    const env = { AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "shared", LOCAL_AI_EXTRACTION_MODEL: "extract", LOCAL_AI_RECONCILIATION_MODEL: "reconcile" };
+    const env = { AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "shared", LOCAL_AI_EXTRACTION_MODEL: "extract", LOCAL_AI_EXTRACTION_INVENTORY_MODEL: "inventory", LOCAL_AI_EXTRACTION_RICH_MODEL: "rich", LOCAL_AI_RECONCILIATION_MODEL: "reconcile" };
     expect(resolveAIProviderConfig(env, "extraction").modelId).toBe("extract");
+    expect(resolveAIProviderConfig(env, "extraction_inventory").modelId).toBe("inventory");
+    expect(resolveAIProviderConfig(env, "extraction_rich").modelId).toBe("rich");
     expect(resolveAIProviderConfig(env, "reconciliation").modelId).toBe("reconcile");
     expect(resolveAIProviderConfig(env, "enrichment").modelId).toBe("shared");
+  });
+
+  it("falls extraction substages back through extraction then provider-wide models", () => {
+    expect(resolveAIProviderConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "shared", OPENAI_EXTRACTION_MODEL: "extract" }, "extraction_inventory").modelId).toBe("extract");
+    expect(resolveAIProviderConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "shared" }, "extraction_rich").modelId).toBe("shared");
+    const local = { AI_PROVIDER: "local", LOCAL_AI_BASE_URL: "http://localhost:11434/v1", LOCAL_AI_MODEL: "shared", LOCAL_AI_EXTRACTION_MODEL: "extract" };
+    expect(resolveAIProviderConfig(local, "extraction_inventory").modelId).toBe("extract");
+    expect(resolveAIProviderConfig(local, "extraction_rich").modelId).toBe("extract");
   });
 
   it("fails closed for local canonical persistence unless explicitly acknowledged", () => {
@@ -100,12 +110,23 @@ describe("local structured model adapter", () => {
   });
 
   it("classifies transport failures and never falls back to OpenAI", async () => {
-    const fetchMock = vi.fn().mockRejectedValue(new TypeError("connection refused"));
+    const cause = Object.assign(new Error("Headers Timeout Error"), { name: "HeadersTimeoutError", code: "UND_ERR_HEADERS_TIMEOUT" });
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
     const provider = createLocalStructuredModelProvider(config, fetchMock);
     const error = await provider.parseStructured(request).catch((cause) => cause);
     expect(error).toBeInstanceOf(LocalStructuredModelError);
-    expect(error).toMatchObject({ failureClass: "transport failure", details: { endpoint: "http://localhost:11434/v1/chat/completions", modelId: "local-model", schemaName: "fixture_answer" } });
+    expect(error).toMatchObject({ failureClass: "transport failure", details: { endpoint: "http://localhost:11434/v1/chat/completions", modelId: "local-model", schemaName: "fixture_answer", transport: { errorName: "TypeError", errorMessage: "fetch failed", causeName: "HeadersTimeoutError", causeMessage: "Headers Timeout Error", causeCode: "UND_ERR_HEADERS_TIMEOUT", classification: "UND_ERR_HEADERS_TIMEOUT", nodeVersion: expect.any(String), elapsedMs: expect.any(Number) } } });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("classifies nested local transport causes deterministically", () => {
+    const nested = (code: string, name = "Error") => new TypeError("fetch failed", { cause: Object.assign(new Error(`${code} message`), { name, code }) });
+    expect(classifyLocalTransportError(nested("UND_ERR_HEADERS_TIMEOUT"))).toBe("UND_ERR_HEADERS_TIMEOUT");
+    expect(classifyLocalTransportError(nested("UND_ERR_BODY_TIMEOUT"))).toBe("UND_ERR_BODY_TIMEOUT");
+    expect(classifyLocalTransportError(nested("ECONNRESET"))).toBe("ECONNRESET");
+    expect(classifyLocalTransportError(nested("ECONNREFUSED"))).toBe("ECONNREFUSED");
+    expect(classifyLocalTransportError(new DOMException("The operation was aborted.", "AbortError"))).toBe("AbortError");
+    expect(classifyLocalTransportError(new TypeError("fetch failed"))).toBe("other transport failure");
   });
 
   it("preflights a local model without making a generation call", async () => {

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { extractChunksLimited } from "@/lib/ai/extract";
+import { extractChunksLimited, planTwoPassExtraction } from "@/lib/ai/extract";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
 import { EnrichmentFailure, enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
@@ -32,7 +32,7 @@ import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
-import { OpenAICallBudget, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
+import { OpenAICallBudget, OpenAICallBudgetExceededError, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
 
 export async function processCampaign(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
@@ -50,36 +50,56 @@ export async function processCampaign(campaignId: string, options: { processingM
     ownsProcessing = true;
     const checkpointStore = databaseCheckpointStore();
     const openAIBudget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
-    const extractionProvider = withOpenAICallBudget(getStructuredModelProvider("extraction"), openAIBudget);
+    const inventoryProvider = withOpenAICallBudget(getStructuredModelProvider("extraction_inventory"), openAIBudget);
+    const richProvider = withOpenAICallBudget(getStructuredModelProvider("extraction_rich"), openAIBudget);
     const reconciliationProvider = withOpenAICallBudget(getStructuredModelProvider("reconciliation"), openAIBudget);
-    assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction"));
+    assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction_inventory"));
+    assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction_rich"));
     assertAIProviderPersistenceAllowed(getAIProviderConfig("reconciliation"));
     const chunking = { targetCharacters: getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS, overlapPages: 1 };
     const chunks = chunkPages(pages, chunking);
+    const extractionCheckpointContext = { campaignId, documentId: document.id, processingMode, store: checkpointStore };
+    const extractionPlan = await planTwoPassExtraction(chunks, { inventory: inventoryProvider, rich: richProvider }, extractionCheckpointContext);
+    const plannedOpenAIExtractionCalls = extractionPlan.filter((item) => item.status !== "REUSE" && (item.operationType === "inventory" ? inventoryProvider.providerId : richProvider.providerId) === "openai").length;
+    if (!openAIBudget.allowPlanned(plannedOpenAIExtractionCalls)) throw new OpenAICallBudgetExceededError(openAIBudget.maximumAttempts, plannedOpenAIExtractionCalls);
     cacheRunId = await createExtractionCacheRun(
       campaignId,
       document.id,
-      extractionProvider.providerId === "local" ? `local:${extractionProvider.modelId}` : extractionProvider.modelId,
+      `${inventoryProvider.providerId}:${inventoryProvider.modelId}|${richProvider.providerId}:${richProvider.modelId}`,
       { ...chunking, pageCount: pages.length, chunkCount: chunks.length },
     );
-    await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length } });
+    await recordProcessingRun(campaignId, "candidate_extraction", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length, inventoryOperations: chunks.length, richOperations: chunks.length, extractionOperations: chunks.length * 2, plannedOpenAIExtractionCalls, checkpointPlan: extractionPlan } as unknown as Json });
     const extracted = await extractChunksLimited(chunks, undefined, async (result, chunk, index) => {
       await saveExtractionCacheChunk(cacheRunId!, result, index, chunk.pages.map((page) => page.pageNumber));
-    }, extractionProvider, { campaignId, documentId: document.id, processingMode, store: checkpointStore });
+    }, { inventory: inventoryProvider, rich: richProvider }, extractionCheckpointContext);
     await finishExtractionCacheRun(cacheRunId, "complete");
     cacheComplete = true;
     const rejectedSources = extracted.reduce((count, chunk) => count + chunk.diagnostics.length, 0);
     const aggregate = aggregateCandidates(extracted.map((chunk) => ({ chunkId: chunk.chunkId, ...chunk.extraction })));
-    const extractionCalls = extracted.filter((chunk) => chunk.checkpointStatus !== "REUSE").map((chunk) => chunk.usage);
+    const inventoryCalls = extracted.filter((chunk) => chunk.inventoryCheckpointStatus !== "REUSE").map((chunk) => chunk.inventoryUsage);
+    const richCalls = extracted.filter((chunk) => chunk.richCheckpointStatus !== "REUSE").map((chunk) => chunk.richUsage);
+    const extractionCalls = [...inventoryCalls, ...richCalls];
     const extractionUsage = summarizeModelUsage("candidate_extraction", extractionCalls);
     await recordProcessingRun(campaignId, "candidate_extraction", "complete", {
       output: {
         mode: "live",
         processingMode,
-        provider: extractionProvider.providerId,
-        model: extractionProvider.modelId,
-        cacheHits: extracted.filter((chunk) => chunk.checkpointStatus === "REUSE").length,
+        provider: inventoryProvider.providerId,
+        inventoryModel: inventoryProvider.modelId,
+        richModel: richProvider.modelId,
+        inventoryCacheHits: extracted.filter((chunk) => chunk.inventoryCheckpointStatus === "REUSE").length,
+        richCacheHits: extracted.filter((chunk) => chunk.richCheckpointStatus === "REUSE").length,
+        cacheHits: extracted.filter((chunk) => chunk.inventoryCheckpointStatus === "REUSE").length + extracted.filter((chunk) => chunk.richCheckpointStatus === "REUSE").length,
         cacheMisses: extractionCalls.length,
+        inventoryOperations: chunks.length,
+        richOperations: chunks.length,
+        extractionOperations: chunks.length * 2,
+        inventoryEntities: extracted.reduce((count, chunk) => count + chunk.inventory.entities.length, 0),
+        inventoryOutputBytes: extracted.reduce((count, chunk) => count + Buffer.byteLength(JSON.stringify(chunk.rawInventory), "utf8"), 0),
+        richOutputBytes: extracted.reduce((count, chunk) => count + Buffer.byteLength(JSON.stringify(chunk.rawRichExtraction), "utf8"), 0),
+        suspectedInventoryMisses: extracted.reduce((count, chunk) => count + chunk.richExtraction.suspected_inventory_misses.length, 0),
+        inventoryModelUsage: summarizeModelUsage("candidate_extraction", inventoryCalls),
+        richModelUsage: summarizeModelUsage("candidate_extraction", richCalls),
         entityCandidates: aggregate.entities.length,
         factCandidates: aggregate.entities.reduce((count, entity) => count + (entity.facts?.length ?? 0), 0),
         relationshipCandidates: aggregate.relationships.length,
@@ -196,8 +216,10 @@ export async function processCampaign(campaignId: string, options: { processingM
       graphFingerprint,
       enrichmentDiagnostics,
       mode: "live",
-      cacheHits: 0,
-      cacheMisses: chunks.length,
+      inventoryCacheHits: extracted.filter((chunk) => chunk.inventoryCheckpointStatus === "REUSE").length,
+      richCacheHits: extracted.filter((chunk) => chunk.richCheckpointStatus === "REUSE").length,
+      cacheHits: extracted.filter((chunk) => chunk.inventoryCheckpointStatus === "REUSE").length + extracted.filter((chunk) => chunk.richCheckpointStatus === "REUSE").length,
+      cacheMisses: extractionCalls.length,
       durationMs,
     };
     await updateCampaign(campaignId, { status: "complete", processing_stage: "Wiki generated", processing_diagnostics: diagnostics as unknown as Json });

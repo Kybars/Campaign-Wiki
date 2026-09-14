@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -17,6 +17,8 @@
     "evaluate:extraction-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-workload.ts",
     "evaluate:extraction-ab": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-ab.ts",
     "evaluate:extraction-local": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-local.ts",
+    "evaluate:extraction-local-two-pass": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-extraction-local-two-pass.ts",
+    "evaluate:two-pass-extraction": "node --conditions=react-server --import tsx scripts/evaluate-two-pass-extraction.ts",
     "evaluate:recall": "node --conditions=react-server --import tsx scripts/evaluate-recall.ts",
     "evaluate:checkpoints": "node --conditions=react-server --import tsx scripts/evaluate-checkpoint-resume.ts",
     "evaluate:failure-resume": "tsx scripts/evaluate-failure-resume.ts",

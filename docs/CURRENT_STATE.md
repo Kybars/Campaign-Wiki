@@ -4,19 +4,32 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.8`
-- Snapshot HEAD at experiment start: `53aee4208b4bcc6d6f1459745c328b46b10ec774` (recall audit/fix committed and pushed)
-- Latest completed milestone: M5 — Resumability, Failure Injection, and Paid-Call Guards
+- Package version: `0.4.9`
+- Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
+- Latest completed milestone: v0.4.9 two-pass extraction architecture and controlled local diagnostics
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: controlled Ollama single-pass extraction baseline and stress/variance harness/report
-- Working tree: local-provider compatibility instrumentation, local benchmark harness/report, and this snapshot are pending commit
+- Latest targeted work: compact inventory pass → inventory-grounded rich pass, separate durable checkpoints/planning, controlled Ollama re-benchmark, and local inventory-pathology diagnostics
+- Commit status: v0.4.9 architecture and diagnostic code/audits are ready to commit. Generated local model artifacts remain ignored.
+
+## Experimental status — do not misread as production behavior
+
+- The two-pass architecture is implemented and covered by deterministic tests.
+- The compact names-plus-bounded-evidence inventory result is **diagnostic evidence only**. It is not integrated into the production Pass A schema, prompts, checkpoint identity, planner, or persistence path.
+- The existing full metadata local-Qwen inventory contract is not reliable for the frozen benchmark: transport avoidance, smaller source chunks, and category partitioning did not yield complete coverage.
+- Do not run the unchanged full 3+9+3 local benchmark or paid OpenAI validation from these findings. The next authorized design task is compact Pass A plus a small frozen recall validation.
 
 ## Current processing flow
 
 ```text
-source
+source chunk
   ↓
-extraction
+compact entity inventory
+  ↓
+validated authoritative inventory
+  ↓
+rich facts and relationships grounded to inventory IDs
+  ↓
+existing candidate representation
   ↓
 reconciliation
   ↓
@@ -35,21 +48,23 @@ Wiki Ready
 
 ## Provider coverage
 
-- OpenAI supports extraction, reconciliation, and full enrichment through the shared structured-output boundary.
+- OpenAI supports inventory extraction, rich extraction, reconciliation, and full enrichment through the shared structured-output boundary.
 - A local OpenAI-compatible endpoint supports those same three stages for development/rehearsal.
-- `OPENAI_EXTRACTION_MODEL`, `OPENAI_RECONCILIATION_MODEL`, and `OPENAI_ENRICHMENT_MODEL` fall back to `OPENAI_MODEL`; corresponding local overrides fall back to `LOCAL_AI_MODEL`.
+- Inventory/rich overrides fall back to the existing extraction override and then the provider-wide model; reconciliation and enrichment retain their existing fallbacks.
 - Local extraction concurrency is independently configured and defaults to `1`; OpenAI extraction defaults to `3`.
 - No local failure falls back to OpenAI. Local canonical persistence requires an explicit server-only acknowledgement and is only for a disposable rehearsal.
 
 ## Durability
 
-M4 adds private `ai_operation_checkpoints` for validated, reusable operation output:
+M4 private `ai_operation_checkpoints` now store validated, reusable operation output for:
 
-- extraction chunks;
+- extraction inventory and dependent rich operations per chunk;
 - reconciliation decisions;
 - full-enrichment operations and batches.
 
 Checkpoint identity includes campaign/document scope, provider, exact model, mode where semantic, operation type/key, semantic input hash, upstream fingerprint, behavior version, and schema version. Output is revalidated before reuse. Failed output is never successful. Historical cache records remain readable but are not assigned checkpoint metadata they never stored.
+
+Rich extraction's upstream fingerprint includes the validated inventory and its exact operation identity. Inventory changes invalidate rich reuse; a rich-model-only change preserves inventory reuse. Corrupt inventory forces both substages to rerun, while corrupt rich output preserves inventory reuse.
 
 M5 treats a stored checkpoint that no longer passes schema or semantic validation as failed, then reruns it; it is never reused. `OPENAI_MAX_CALLS_PER_RUN` defaults to `40` and guards application-level OpenAI dispatches at runtime. Checkpoint reuse and local calls do not consume it; controlled semantic retries do. Recovery dry-runs report `REUSE`/`RUN`/`INVALIDATED`, planned OpenAI/local calls, retry ceiling, maximum allowed attempts, and `ALLOW`/`BLOCK`. Provider-internal SDK retry counts remain unobservable.
 
@@ -108,6 +123,49 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Safety: 0 OpenAI, reconciliation, or enrichment calls; 0 campaign, official cache, or checkpoint writes. Test 2, original Test 3, Test 3 Recovery, and the cached graph fingerprint remained unchanged.
 - Report: `docs/audits/ollama_single_pass_extraction_baseline.md`. Raw captures: ignored `artifacts/extraction-local-baseline/`.
 
+## Two-pass extraction and local re-benchmark
+
+- New imports run an authoritative compact entity inventory per chunk, followed by rich facts/relationships grounded to those inventory IDs, then assemble the unchanged candidate contract for existing reconciliation.
+- Pass B must cover every validated inventory ID and cannot add entities or unknown endpoints; `suspected_inventory_misses` remains a non-persisted diagnostic.
+- Inventory and rich operations are independently checkpointed and planned. Fresh `N` chunks report `N + N = 2N` extraction operations; rich identity depends on the validated inventory and its exact operation identity.
+- Server-only inventory/rich model overrides follow substage → extraction-stage → provider-wide fallback. Production OpenAI model choices are unchanged.
+- Deterministic dense/curated coverage passes and proves inventory breadth, ID grounding, corruption/restart semantics, and unchanged merge/distinctness behavior.
+- Controlled Ollama re-benchmark used the same `qwen3.5:9b` digest, 32K context, temperature 0, reasoning none, concurrency 1, source chunks, and frozen reference.
+- Result: scored run 1 inventory `0/3`, stress inventory `0/9`, scored run 2 inventory `0/3`; every inventory call failed as a transport disconnect after 302.442–304.968 seconds. Rich calls were correctly not run.
+- Recall, precision, F1, per-type recall, recovered misses, output size, and token usage are unavailable rather than zero because no valid inventory was returned.
+- Decision: `TWO_PASS_STILL_OVERLOADED`. The live result attributes the local overload to the compact inventory stage, before rich output pressure.
+- Safety: 0 OpenAI, reconciliation, enrichment, campaign, official cache, or official checkpoint writes/calls. Report: `docs/audits/two_pass_ollama_extraction_benchmark.md`.
+
+## Ollama 300-second transport diagnosis
+
+- One streamed and one request-scoped 900-second-timeout non-streaming inventory call used the exact frozen scored chunk 3, unchanged `qwen3.5:9b` digest/context/prompt/schema/temperature/reasoning/concurrency, and no persistence.
+- Both passed the historical 302–305 second boundary but terminated at 442.531 and 442.388 seconds with incomplete JSON; strict parsing and inventory validation failed closed.
+- The historical captures did not retain a nested fetch cause, so a historical Undici timeout code cannot be reconstructed. Future local transport failures now record bounded outer/nested cause metadata, Node/Undici runtime, elapsed time, and deterministic transport classification.
+- Decision: `MODEL_OR_SCHEMA_PRESSURE_CONFIRMED`. Avoiding the client boundary did not yield a completed strict inventory result; do not treat transport handling as the sufficient fix.
+- Safety: 0 OpenAI calls, 2 local calls, 0 campaign/reconciliation/enrichment/official benchmark writes. Report: `docs/audits/ollama_300s_transport_diagnosis.md`.
+
+## Ollama inventory chunk-pressure experiment
+
+- Frozen scored chunk 3 was subdivided at ordered page boundaries into two halves and four quarters with complete, no-overlap source coverage; all model, schema, prompt, validation, and long-timeout transport settings were unchanged.
+- Half-size calls: `0/2` valid; both reached the 32,768 total-token ceiling and returned incomplete JSON after 551.485s and 562.336s.
+- Quarter-size calls: `3/4` valid. Pages 42–45, 46–49, and 50–53 completed in 97.764s, 66.910s, and 63.536s; pages 38–41 exhausted 32,768 total tokens and failed after 614.668s.
+- Decision: `SMALLER_CHUNKS_PARTIALLY_HELP`. Smaller sources create a successful regime for three quarters but do not reliably cover the complete frozen interval, so union/recall quality is unavailable rather than zero.
+- Safety: 0 OpenAI calls, 6 local generation calls, 0 campaign/reconciliation/enrichment/official benchmark writes. Report: `docs/audits/ollama_inventory_chunk_pressure_experiment.md`.
+
+## Ollama inventory category-partition experiment
+
+- Exact frozen pages 38–41 were requested once per canonical entity type under the same model/digest/context/settings and long-timeout transport.
+- Event (`12`, 31.507s) and Quest (`20`, 62.166s) validated; NPC, Deity, Location, Faction, Item, and Other all saturated 32,768 total tokens and returned incomplete JSON after 587.864–616.382s.
+- Decision: `CATEGORY_PARTITION_DOES_NOT_SOLVE_PRESSURE`. Category breadth is not the sole source; six independent literal-type requests remain pathological. Full union and recall are unavailable rather than zero.
+- Safety: 0 OpenAI calls, 8 local generation calls, 0 campaign/reconciliation/enrichment/checkpoint/cache writes. Report: `docs/audits/ollama_inventory_category_partition_experiment.md`.
+
+## Ollama inventory generation-pathology diagnosis
+
+- Existing failed Deity output was not retained beyond bounded metrics: 109,651 characters, 29,423 completion tokens, and 32,768 total tokens before malformed JSON. A streamed recapture failed before any payload arrived, so repetition statistics are unavailable rather than invented.
+- On the same frozen pages and Deity target, strict names-only inventory validated with 5 names in 9.091s/3,689 tokens; strict name plus 240-character bounded evidence validated with 11 names in 17.647s/4,188 tokens.
+- Decision: `COMPACT_INVENTORY_CONTRACT_WORKS`. Current inventory metadata shape is implicated; compact source-grounded discovery is stable in this narrow control, but requires a separate recall benchmark before production design.
+- Safety: 0 OpenAI calls, 3 local calls, 0 campaign/reconciliation/enrichment/checkpoint/cache writes. Report: `docs/audits/ollama_inventory_generation_pathology.md`.
+
 ## Test 3 derived lean recovery
 
 - Usable recovery campaign: `Demonplague - Test 3 Recovery` (`1151fb31-876b-4277-9718-76313c1c8d98`), status `complete`.
@@ -128,17 +186,19 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Verification snapshot
 
-- Latest deterministic suite: 31 test files, 263 tests passed.
+- Latest deterministic suite: 32 test files, 272 tests passed at the live-inference phase gate.
 - Successfully run for the recall fix: lint, typecheck, test, build, replay, lean, extraction-workload, checkpoint, and recall evaluations.
 - The A/B verification passed lint, typecheck, 31 test files/262 tests, production build, recall evaluation, extraction-workload evaluation, and read-only A/B evaluation. Protected campaign timestamps/counts and the cached graph fingerprint remained unchanged.
-- Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, and `npm run evaluate:recall`.
+- Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, `npm run evaluate:recall`, and `npm run evaluate:two-pass-extraction`.
 - `npm run ai:preflight` performs no generation; `npm run smoke:local` needs an already running local model.
 - `npm run evaluate:extraction-local` summarizes the completed isolated capture without rerunning it; `--dry-run` verifies the 15-attempt local-only plan before an initial capture.
+- `npm run evaluate:extraction-local-two-pass` summarizes the completed isolated two-pass capture without rerunning it; its pre-capture `--dry-run` verified the local-only 15-inventory/maximum-15-rich plan.
 - Ollama-baseline verification passed lint, typecheck, 31 test files/263 tests, the production build, focused provider tests, recall evaluation, extraction-workload evaluation, and saved local-baseline summary evaluation.
+- Two-pass verification passed lint, typecheck, 32 test files/272 tests, production build, recall, historical extraction workload, checkpoint, deterministic two-pass evaluation, and local dry-run before inference. Final verification is recorded in the two-pass audit.
 
 ## Deferred work
 
-1. Two-pass extraction pipeline redesign and frozen-benchmark rerun.
+1. Design a compact, source-grounded Pass A contract with deterministic IDs, then run a small frozen recall benchmark.
 2. M6 local Test 3 rehearsal.
 3. Extraction schema/output economy optimization.
 4. Final v0.4 economics/quality benchmark.
@@ -149,12 +209,12 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Next milestone
 
-`Extraction redesign — Inventory Pass then Rich Fact/Relationship Pass`
+`Compact inventory-contract design and small recall validation`
 
-- Produce a compact, explicit entity inventory with category coverage before rich extraction.
-- Run rich facts and relationships against the retained inventory so breadth does not compete with record depth in one output.
-- Re-run the frozen three-chunk benchmark before choosing a permanent production extraction model.
-- Resume M6 after the extraction boundary is stable.
+- Preserve the validated two-pass boundary and frozen benchmark.
+- Preserve source grounding while designing the smallest proven reliable Pass A; do not integrate or run a full benchmark without a separately scoped prompt.
+- Prefer a no-cost local diagnostic before requesting any paid OpenAI validation.
+- Resume M6 only after the extraction boundary has usable live reliability evidence.
 
 ## Future workflow contract
 

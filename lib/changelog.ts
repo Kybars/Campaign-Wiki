@@ -12,11 +12,20 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
-    date: "2026-09-12",
-    title: "Recall audit and extraction guard",
+    date: "2026-09-14",
+    title: "Two-pass source extraction",
     changes: [
-      "Audited Test 2 and Test 3 entity recall with a complete deterministic crosswalk and stage attribution.",
-      "Added a source-backed named-entity recall guard and a zero-model-call recall regression evaluation.",
+      "Separated compact entity inventory from rich fact and relationship extraction so validated entity breadth cannot be silently removed.",
+      "Added independently durable substage checkpoints, model overrides, planning, workload diagnostics, and a frozen local Ollama re-benchmark.",
+    ],
+  },
+  {
+    version: "0.4.8",
+    date: "2026-09-13",
+    title: "Recall audit and local extraction baseline",
+    changes: [
+      "Audited Test 2 and Test 3 entity recall with a complete deterministic crosswalk and controlled Luna/Terra comparison.",
+      "Froze the qwen3.5:9b single-pass Ollama failure baseline and its isolated stress/variance harness.",
     ],
   },
   {

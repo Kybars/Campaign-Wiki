@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 
-export const EXTRACTION_BEHAVIOR_VERSION = "v0.4-m4-extraction-1";
+export const EXTRACTION_INVENTORY_BEHAVIOR_VERSION = "v0.4-two-pass-inventory-1";
+export const EXTRACTION_RICH_BEHAVIOR_VERSION = "v0.4-two-pass-rich-1";
+export const EXTRACTION_BEHAVIOR_VERSION = EXTRACTION_RICH_BEHAVIOR_VERSION;
 export const RECONCILIATION_BEHAVIOR_VERSION = "v0.4-m4-reconciliation-1";
 export const ENRICHMENT_BEHAVIOR_VERSION = "v0.4-m4-enrichment-1";
-export const EXTRACTION_CONTRACT_VERSION = 1;
+export const EXTRACTION_INVENTORY_CONTRACT_VERSION = 1;
+export const EXTRACTION_RICH_CONTRACT_VERSION = 1;
+export const EXTRACTION_CONTRACT_VERSION = EXTRACTION_RICH_CONTRACT_VERSION;
 export const RECONCILIATION_CONTRACT_VERSION = 1;
 export const ENRICHMENT_CONTRACT_VERSION = 1;
 
