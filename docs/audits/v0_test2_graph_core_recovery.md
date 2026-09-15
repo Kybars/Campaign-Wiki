@@ -438,3 +438,29 @@ Both graph stages use independent provider/model configuration and provider-awar
 The production graph adapter accepts only inventory-resolved endpoints, rejects unknown/ambiguous/self/page-invalid edges, applies the production inverse normalizer, and persists only the final canonical graph. It records no generated facts, descriptions, or summaries. Relationship provenance is an exact bounded excerpt of the cited source page, selected deterministically; no model-generated quote is created.
 
 Saved private WotBS verification remains deterministic and model-free: validated Qwen first pass `26` plus validated Terra completeness additions `23` produces the expected `49` canonical diagnostic edges. The validation suite uses only synthetic/public fixtures; private source, gold, and raw output artifacts remain ignored and untracked.
+
+## Relationship completeness benchmark — GPT-5.6 Luna
+
+This one-shot A/B/C benchmark kept the frozen `v0-test2-graph-completeness-1` contract unchanged: the private pages 10–12, verified 42-entity inventory (`c4e024d51d68ab54717842e4251d8accebd8b7b5baa556ee453df2d09812c081`), exact saved 26-edge Qwen first-pass graph, source / known-entities / already-found-relationships input, flat relationship schema, endpoint mapper, canonical normalizer, duplicate handling, and corrected scorer. Gold, prior Qwen/Terra completeness output, crosswalk, and known omissions were excluded from the Luna request. The only semantic change was OpenAI `gpt-5.6-luna`; SDK retries were disabled.
+
+One valid bounded Luna response completed in 30.083s with 3,915 input tokens, 2,704 output tokens, 6,619 total tokens, and 2,519 output characters. All 26 proposals were structurally accepted and novel under the canonical first-pass comparison: there were zero first-pass or within-sweep duplicates and zero unknown-endpoint, ambiguous-endpoint, self-edge, or invalid-page rejections. The diagnostic union contains 52 canonical edges, touches 40/42 entities, leaves two isolated, and has 24 normalized relationship labels.
+
+Manual page-by-page source audit found `26 supported / 0 unsupported / 0 ambiguous`, for 100% novel precision. In particular, p. 10 explicitly says that Shaaladel attempts to retrieve the Torch of the Burning Sky; that initially tentative edge is supported. No post-hoc validation heuristic was added. All 26 edges are explicitly source-backed, including the notable advisor and sibling relations and containment expressed through the production inverse normalizer.
+
+Corrected private-gold scoring improves from the Qwen first-pass 7/12 (58.3%) to 10/12 (83.3%), adding Leska advises Coaltongue, Longinus is Pilus's brother, and Aquiline Heart located at Heart of History. Luna does not recover Madness as a trillith / equivalent class relationship: it returns the Mad King's Banquet involving Madness, which is not the frozen scorer's class edge. The request therefore recovers two of the three notable prior omissions.
+
+| Metric | Qwen completeness | Luna completeness | Terra completeness |
+| --- | ---: | ---: | ---: |
+| Latency | 33.270s | 30.083s | 40.747s |
+| Input / output / total tokens | 4,010 / 843 / 4,853 | 3,915 / 2,704 / 6,619 | 3,915 / 2,736 / 6,651 |
+| Output characters | 1,714 | 2,519 | 2,110 |
+| Novel accepted | 3 | 26 | 23 |
+| Novel precision | 0.0% | 100.0% | 100.0% |
+| Final corrected gold recall | 7/12 (58.3%) | 10/12 (83.3%) | 10/12 (83.3%) |
+| Entities touched | 34/42 | 40/42 | 37/42 |
+
+Using the current public OpenAI list rates for uncached text tokens, Luna's measured call is approximately `$0.00403` (`3,915 × $0.20/M` input plus `2,704 × $1.20/M` output). Under the same rate basis, Terra's recorded call is approximately `$0.04066` (`3,915 × $2/M` input plus `2,736 × $12/M` output). This is a three-page fixture only, not a campaign-cost extrapolation.
+
+Decision: `LUNA_COMPLETENESS_TERRA_LIKE`. It meets the product floor with valid bounded output, 26 supported novel relationships, 100% precision, and 83.3% corrected recall. Production recommendation: `USE_LUNA`. Its quality matches Terra on scored recall and audited precision while being faster and approximately ten times cheaper on this benchmark. Do not form a two-model ensemble or tune the frozen contract further.
+
+Safety: Luna generations exactly 1; Terra generations 0; local generations 0; retries 0; repairs 0; Pass-A calls 0; first-pass graph reruns 0; production persistence writes 0; gold leakage 0. Private fixture, raw output, and gold remain ignored and untracked.

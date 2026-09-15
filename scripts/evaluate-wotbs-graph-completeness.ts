@@ -20,6 +20,7 @@ const passARoot = new URL("../artifacts/wotbs-stage1-pass-b/", import.meta.url);
 const firstPassRoot = new URL("../artifacts/wotbs-graph-proof/", import.meta.url);
 const localResultRoot = new URL("../artifacts/wotbs-graph-completeness/", import.meta.url);
 const terraResultRoot = new URL("../artifacts/wotbs-graph-completeness-terra/", import.meta.url);
+const lunaResultRoot = new URL("../artifacts/wotbs-graph-completeness-luna/", import.meta.url);
 const DEADLINE_MS = 300_000;
 
 function boundedHttpFetch(timeoutMs: number): typeof fetch {
@@ -78,10 +79,12 @@ function candidateRelationships(relationships: ValidatedGraphRelationship[]): Ca
 
 async function main() {
   const terraMode = process.argv.includes("--terra") || process.argv.includes("--terra-preflight") || process.argv.includes("--terra-live");
-  const resultRoot = terraMode ? terraResultRoot : localResultRoot;
+  const lunaMode = process.argv.includes("--luna") || process.argv.includes("--luna-preflight") || process.argv.includes("--luna-live");
+  if (terraMode && lunaMode) throw new Error("Choose at most one OpenAI comparison model");
+  const resultRoot = terraMode ? terraResultRoot : lunaMode ? lunaResultRoot : localResultRoot;
   const resultManifest = new URL("manifest.json", resultRoot);
-  const preflight = process.argv.includes("--preflight") || process.argv.includes("--terra-preflight");
-  const live = process.argv.includes("--live") || process.argv.includes("--terra-live");
+  const preflight = process.argv.includes("--preflight") || process.argv.includes("--terra-preflight") || process.argv.includes("--luna-preflight");
+  const live = process.argv.includes("--live") || process.argv.includes("--terra-live") || process.argv.includes("--luna-live");
   const auditArgument = process.argv.find((argument) => argument.startsWith("--finalize-manual-audit="));
   if (auditArgument) {
     if (preflight || live) throw new Error("Manual-audit finalization cannot be combined with preflight or live mode");
@@ -96,7 +99,7 @@ async function main() {
       manualAudit?: { required: boolean; classifications?: string[]; supported?: number; unsupported?: number; ambiguous?: number; precision?: number };
       decision?: string;
     };
-    const expectedGenerations = terraMode ? { local: 0, openAI: 1 } : { local: 1, openAI: 0 };
+    const expectedGenerations = terraMode || lunaMode ? { local: 0, openAI: 1 } : { local: 1, openAI: 0 };
     if (saved.status !== "needs_manual_source_audit" || saved.safety.localGenerations !== expectedGenerations.local || saved.safety.openAICalls !== expectedGenerations.openAI || saved.safety.retries !== 0 || saved.safety.repairCalls !== 0 || saved.safety.persistenceWrites !== 0) throw new Error("Saved graph completeness result is not eligible for manual-audit finalization");
     if (classifications.length !== saved.validation.novelAcceptedRelationships.length) throw new Error("Manual audit classification count does not match novel accepted edges");
     const supported = classifications.filter((classification) => classification === "SUPPORTED").length;
@@ -106,8 +109,8 @@ async function main() {
     saved.manualAudit = manualAudit;
     saved.status = "complete";
     saved.decision = supported >= 2 && manualAudit.precision >= 0.90 && saved.goldEvaluation.finalRecall >= 0.75
-      ? terraMode ? "TERRA_GRAPH_COMPLETENESS_VALIDATED" : "LOCAL_GRAPH_COMPLETENESS_VALIDATED"
-      : terraMode ? "TERRA_GRAPH_COMPLETENESS_LOW_VALUE" : "LOCAL_GRAPH_COMPLETENESS_LOW_VALUE";
+      ? terraMode ? "TERRA_GRAPH_COMPLETENESS_VALIDATED" : lunaMode ? "LUNA_GRAPH_COMPLETENESS_VALIDATED" : "LOCAL_GRAPH_COMPLETENESS_VALIDATED"
+      : terraMode ? "TERRA_GRAPH_COMPLETENESS_LOW_VALUE" : lunaMode ? "LUNA_GRAPH_COMPLETENESS_LOW_VALUE" : "LOCAL_GRAPH_COMPLETENESS_LOW_VALUE";
     writeFileSync(resultManifest, `${JSON.stringify(saved, null, 2)}\n`);
     console.log(JSON.stringify({ status: saved.status, decision: saved.decision, manualAudit: saved.manualAudit, modelCalls: 0 }, null, 2));
     return;
@@ -129,8 +132,9 @@ async function main() {
   assertGoldReferenceIsolation([GRAPH_COMPLETENESS_SYSTEM_PROMPT, input], []);
   const config = resolveAIProviderConfig(process.env, "extraction");
   let environment: { digest: string | null; loadedContext: number | null } = { digest: null, loadedContext: null };
-  if (terraMode) {
-    if (config.providerId !== "openai" || config.modelId !== "gpt-5.6-terra" || process.env.AI_PROVIDER !== "openai") throw new Error("Frozen OpenAI Terra provider/model configuration mismatch");
+  if (terraMode || lunaMode) {
+    const expectedModel = terraMode ? "gpt-5.6-terra" : "gpt-5.6-luna";
+    if (config.providerId !== "openai" || config.modelId !== expectedModel || process.env.AI_PROVIDER !== "openai") throw new Error(`Frozen OpenAI ${terraMode ? "Terra" : "Luna"} provider/model configuration mismatch`);
   } else {
     if (config.providerId !== "local" || config.modelId !== WOTBS_STAGE1_EXPECTED_MODEL || config.allowPersistence || process.env.AI_PROVIDER !== "local" || process.env.LOCAL_AI_MODEL !== WOTBS_STAGE1_EXPECTED_MODEL || process.env.LOCAL_AI_EXTRACTION_MODEL !== WOTBS_STAGE1_EXPECTED_MODEL || Number(process.env.LOCAL_AI_EXTRACTION_CONCURRENCY ?? "1") !== 1) throw new Error("Frozen local provider/model/concurrency configuration mismatch");
     environment = await runtime(config.baseUrl);
@@ -144,12 +148,12 @@ async function main() {
     runtime: { provider: config.providerId, model: config.modelId, digest: environment.digest, context: WOTBS_STAGE1_CONTEXT, loadedContext: environment.loadedContext, temperature: 0, reasoning: "none", concurrency: 1, deadlineMs: DEADLINE_MS },
   };
   if (preflight) {
-    console.log(JSON.stringify({ result: terraMode ? "TERRA_GRAPH_COMPLETENESS_READY" : "GRAPH_COMPLETENESS_READY", ...report, safety: { localGenerations: 0, openAICalls: 0, retries: 0, repairCalls: 0, persistenceWrites: 0, goldLeakage: 0 } }, null, 2));
+    console.log(JSON.stringify({ result: terraMode ? "TERRA_GRAPH_COMPLETENESS_READY" : lunaMode ? "LUNA_GRAPH_COMPLETENESS_READY" : "GRAPH_COMPLETENESS_READY", ...report, safety: { localGenerations: 0, openAICalls: 0, retries: 0, repairCalls: 0, persistenceWrites: 0, goldLeakage: 0 } }, null, 2));
     return;
   }
   if (existsSync(resultManifest)) throw new Error("Graph completeness result already exists; one-attempt guard refuses another call");
   mkdirSync(resultRoot, { recursive: true });
-  const manifest: Record<string, unknown> = { status: "started", ...report, safety: { localGenerations: terraMode ? 0 : 1, openAICalls: terraMode ? 1 : 0, retries: 0, repairCalls: 0, passAGenerations: 0, firstPassGraphGenerations: 0, reconciliationCalls: 0, enrichmentCalls: 0, persistenceWrites: 0, officialCheckpointWrites: 0, goldLeakage: 0 } };
+  const manifest: Record<string, unknown> = { status: "started", ...report, safety: { localGenerations: terraMode || lunaMode ? 0 : 1, openAICalls: terraMode || lunaMode ? 1 : 0, retries: 0, repairCalls: 0, passAGenerations: 0, firstPassGraphGenerations: 0, reconciliationCalls: 0, enrichmentCalls: 0, persistenceWrites: 0, officialCheckpointWrites: 0, goldLeakage: 0 } };
   writeFileSync(resultManifest, `${JSON.stringify(manifest, null, 2)}\n`);
   const provider = config.providerId === "openai"
     ? createOpenAIStructuredModelProvider(config.modelId, new OpenAI({ apiKey: getOpenAIEnv().OPENAI_API_KEY, maxRetries: 0, timeout: DEADLINE_MS }))
@@ -183,7 +187,7 @@ async function main() {
   } catch (error) {
     manifest.status = "model_failed";
     manifest.call = { valid: false, latencyMs: Math.round(performance.now() - started), error: errorSummary(error) };
-    manifest.decision = terraMode ? "TERRA_GRAPH_COMPLETENESS_MODEL_FAILED" : "LOCAL_GRAPH_COMPLETENESS_MODEL_FAILED";
+    manifest.decision = terraMode ? "TERRA_GRAPH_COMPLETENESS_MODEL_FAILED" : lunaMode ? "LUNA_GRAPH_COMPLETENESS_MODEL_FAILED" : "LOCAL_GRAPH_COMPLETENESS_MODEL_FAILED";
   }
   writeFileSync(resultManifest, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(JSON.stringify(manifest, null, 2));

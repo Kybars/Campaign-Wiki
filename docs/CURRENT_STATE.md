@@ -6,9 +6,9 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 - Package version: `0.4.9`
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: Terra relationship-completeness comparison
+- Latest completed milestone: Luna relationship-completeness benchmark
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: one frozen-contract Terra completeness pass validated the mechanism: 23/23 novel edges were source-supported and raised corrected Qwen-first-pass union recall from 7/12 to 10/12
+- Latest targeted work: one frozen-contract Luna completeness pass was Terra-like: 26/26 novel edges were source-supported and raised corrected Qwen-first-pass union recall from 7/12 to 10/12 at roughly one tenth of Terra's measured API cost
 - Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
 
 ## Experimental status — do not misread as production behavior
@@ -21,6 +21,7 @@ Update this disposable implementation snapshot after every completed milestone. 
 - Graph-core scorer decision: `GRAPH_SCORER_NORMALIZATION_FIXED`. The adapter passes canonical validated relationship types and scores through production inverse normalization; an exact evaluator-only layer handles conservative coarse label equivalence, including `leads` for broad organizational association and inverse `used by`. Saved outputs rescore at Qwen 7/12 (58.3%), Terra 8/12 (66.7%), and supported union 9/12 (75.0%): six both, one Qwen-only, two Terra-only, and three missed by both. Precision remains Qwen 26/26 and Terra 36/37; the sole unsupported Terra edge is `trillith created Torch of the Burning Sky`. Zero model/retry/repair/persistence/artifact writes occurred during rescore.
 - Graph completeness decision: `LOCAL_GRAPH_COMPLETENESS_LOW_VALUE`. One local Qwen `v0-test2-graph-completeness-1` call reused the frozen 42-entity inventory and exact 26-edge first pass, returned 18 bounded edges in 33.270s, and produced 3 structurally novel edges. Manual audit found 0 supported, 2 unsupported, and 1 ambiguous; 11 outputs repeated the first pass and 3 used unknown endpoints. The 29-edge diagnostic union touched 34/42 entities but retained 12 label types and corrected gold recall stayed 7/12. The current contract is not justified for integration. Do not redesign immediately; if separately authorized, compare one Terra call under this identical frozen contract.
 - Graph completeness final comparison: `TERRA_GRAPH_COMPLETENESS_VALIDATED`. Against the identical Qwen-first-pass baseline and frozen completeness contract, one Terra call returned 23/23 novel structurally valid edges, all source-supported on manual audit, with no endpoint or duplicate rejects. The 49-edge union touches 37/42 entities, has 29 label types, and raises corrected eligible-gold recall from 7/12 to 10/12 (83.3%). It recovers Leska’s advisor relation and the Longinus/Pilus brotherhood; Madness is returned as source-supported `member of trillith` but remains outside the frozen scorer’s `is_a` equivalence. Integrate first-pass graph + one completeness sweep behind current checkpoint/provider abstractions; do not add Rich facts/enrichment, then return to wiki rendering/dogfooding/manual correction.
+- Luna completeness benchmark: `LUNA_COMPLETENESS_TERRA_LIKE`. On the identical frozen input, one OpenAI `gpt-5.6-luna` call returned 26 structurally valid novel edges: 26 supported, 0 unsupported, and 0 ambiguous (100% novel precision). Its 52-edge union touches 40/42 entities and matches Terra's 10/12 (83.3%) corrected gold recovery, including advisor, sibling, and containment recoveries. At 30.083s and approximately $0.0040 versus Terra's 40.747s and approximately $0.0407 for this fixture, `USE_LUNA` is the recommended graph-completeness provider; retain the same frozen single-sweep contract and do not ensemble models.
 
 ## Current processing flow
 
@@ -245,7 +246,7 @@ Graph extraction and completeness each have independent server-side provider/mod
 
 Relationship provenance is a bounded, verbatim excerpt from the cited supplied page, selected deterministically around a resolved endpoint when possible. It is page-backed source text, never model-generated evidence.
 
-The validated WotBS development pairing is local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-terra` for completeness. It is a documented configuration, not a hard-coded product default. The private saved artifacts deterministically reproduce 26 first-pass edges plus 23 completeness additions, yielding a 49-edge diagnostic union without a model call.
+The validated WotBS development pairing is local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-luna` for completeness. It is a documented configuration, not a hard-coded product default. The private saved artifacts deterministically reproduce the prior Qwen-plus-Terra 26 + 23 diagnostic union without a model call; the Luna benchmark artifact remains local-only.
 
 ## Next milestone
 
