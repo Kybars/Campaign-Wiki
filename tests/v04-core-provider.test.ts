@@ -9,19 +9,23 @@ const provider = (parseStructured: unknown): StructuredModelProvider => ({ provi
 const chunk = { id: "chunk-1", characterCount: 17, pages: [{ pageNumber: 1, text: "Mira is a hunter." }] };
 const extraction = { entities: [{ temporary_id: "mira", name: "Mira", type: "npc" as const, roles: [], aliases: [], summary: "A hunter.", sources: [{ page_number: 1, supporting_text: "Mira is a hunter." }], facts: [{ temporary_id: "job", field_key: "occupation" as const, content: "Hunter", sources: [{ page_number: 1, supporting_text: "Mira is a hunter." }] }] }], relationships: [] };
 const inventory = { entities: extraction.entities.map(({ name, type, sources }) => ({ name, type, page: sources[0].page_number })) };
-const richFor = (validated: { entities: Array<{ temporary_id: string; type: "npc"; name: string }> }) => ({ entities: validated.entities.map(({ temporary_id, type, name }) => ({ inventory_id: temporary_id, type, aliases: [], roles: [], summary: `${name === "Mira" ? "A hunter" : name}.`, facts: [{ temporary_id: "job", field_key: "occupation" as const, content: "Hunter", sources: [{ page_number: 1, supporting_text: "Mira is a hunter." }] }] })), relationships: [], suspected_inventory_misses: [] });
-const twoPass = async ({ schemaName, payload }: { schemaName: string; payload: unknown }) => ({ output: schemaName === "extraction_inventory_output" ? inventory : richFor((payload as { validated_inventory: Parameters<typeof richFor>[0] }).validated_inventory), providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() });
+const twoPass = async ({ schemaName, payload }: { schemaName: string; payload: unknown }) => {
+  const ids = (payload as { authoritative_inventory?: Array<{ id: string }> }).authoritative_inventory ?? [];
+  return { output: schemaName === "extraction_inventory_output" ? inventory : schemaName === "extraction_inventory_completeness_output" ? { entities: [] } : schemaName === "compact_rich_facts_output" ? { aliases: [], facts: ids.map(({ id }) => ({ entity_id: id, fact_type: "occupation", value: "Hunter", support_span_ids: ["p1_s001"] })) } : { relationships: [] }, providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() };
+};
 
 describe("provider-independent core stages", () => {
   it("extracts and provenance-validates a local structured result while retaining local usage identity", async () => {
     const parseStructured = vi.fn(twoPass);
     const result = await extractChunk(chunk, provider(parseStructured));
     expect(result.extraction.entities[0].facts).toHaveLength(1);
-    expect(result.rawExtraction.entities[0]).toMatchObject({ name: "Mira", aliases: [], summary: "A hunter." });
+    expect(result.rawExtraction.entities[0]).toMatchObject({ name: "Mira", aliases: [], summary: "Mira" });
     expect(result.usage).toMatchObject({ model: "local-stage-model", inputTokens: null, estimatedCostUsd: null });
-    expect(parseStructured).toHaveBeenCalledTimes(2);
+    expect(parseStructured).toHaveBeenCalledTimes(4);
     expect(parseStructured).toHaveBeenNthCalledWith(1, expect.objectContaining({ payload: expect.stringContaining("Mira is a hunter."), schemaName: "extraction_inventory_output" }));
-    expect(parseStructured).toHaveBeenNthCalledWith(2, expect.objectContaining({ payload: expect.objectContaining({ validated_inventory: expect.objectContaining({ entities: [expect.objectContaining({ name: "Mira", temporary_id: expect.stringMatching(/^inv_/) })] }) }), schemaName: "extraction_rich_output" }));
+    expect(parseStructured).toHaveBeenNthCalledWith(2, expect.objectContaining({ payload: expect.stringContaining("Already extracted:"), schemaName: "extraction_inventory_completeness_output" }));
+    expect(parseStructured).toHaveBeenNthCalledWith(3, expect.objectContaining({ payload: expect.objectContaining({ authoritative_inventory: [expect.objectContaining({ name: "Mira", id: expect.stringMatching(/^inv_/) })] }), schemaName: "compact_rich_facts_output" }));
+    expect(parseStructured).toHaveBeenNthCalledWith(4, expect.objectContaining({ schemaName: "compact_rich_relationships_output" }));
   });
 
   it("preserves bounded multi-chunk concurrency and propagates local failures without fallback", async () => {
@@ -30,7 +34,8 @@ describe("provider-independent core stages", () => {
       active += 1; maximum = Math.max(maximum, active);
       await Promise.resolve();
       active -= 1;
-      return { output: schemaName === "extraction_inventory_output" ? inventory : richFor((payload as { validated_inventory: Parameters<typeof richFor>[0] }).validated_inventory), providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() };
+      const ids = (payload as { authoritative_inventory?: Array<{ id: string }> }).authoritative_inventory ?? [];
+      return { output: schemaName === "extraction_inventory_output" ? inventory : schemaName === "extraction_inventory_completeness_output" ? { entities: [] } : schemaName === "compact_rich_facts_output" ? { aliases: [], facts: ids.map(({ id }) => ({ entity_id: id, fact_type: "occupation", value: "Hunter", support_span_ids: ["p1_s001"] })) } : { relationships: [] }, providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() };
     });
     await extractChunksLimited([chunk, { ...chunk, id: "chunk-2" }, { ...chunk, id: "chunk-3" }], 2, undefined, provider(parseStructured));
     expect(maximum).toBe(2);
@@ -40,7 +45,7 @@ describe("provider-independent core stages", () => {
 
   it("keeps source validation strict for local output", async () => {
     const invalidInventory = { entities: [{ ...inventory.entities[0], page: 9 }] };
-    const result = await extractChunk(chunk, provider(vi.fn(async ({ schemaName }: { schemaName: string }) => ({ output: schemaName === "extraction_inventory_output" ? invalidInventory : { entities: [], relationships: [], suspected_inventory_misses: [] }, providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() }))));
+    const result = await extractChunk(chunk, provider(vi.fn(async ({ schemaName }: { schemaName: string }) => ({ output: schemaName === "extraction_inventory_output" ? invalidInventory : schemaName === "extraction_inventory_completeness_output" ? { entities: [] } : schemaName === "compact_rich_facts_output" ? { aliases: [], facts: [] } : { relationships: [] }, providerId: "local" as const, modelId: "local-stage-model", responseId: null, usage: usage() }))));
     expect(result.extraction.entities).toEqual([]);
     expect(result.diagnostics.length).toBeGreaterThan(0);
   });

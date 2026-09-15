@@ -21,18 +21,20 @@ async function main() {
   const provider: StructuredModelProvider = { providerId: "local", modelId: "fixture-local", parseStructured: unavailable };
   const store = memoryCheckpointStore();
   const plan = await planTwoPassExtraction([chunk], { inventory: provider, rich: provider }, { campaignId: "fixture", documentId: "fixture", processingMode: "lean", store });
-  assert.deepEqual(plan.map((item) => [item.operationType, item.status]), [["inventory", "RUN"], ["rich", "RUN"]]);
+  assert.deepEqual(plan.map((item) => [item.operationType, item.status]), [["inventory", "RUN"], ["inventory_completeness", "RUN"], ["rich_facts", "RUN"], ["rich_relationships", "RUN"]]);
   console.log(JSON.stringify({
-    evaluation: "deterministic two-pass extraction contract",
+    evaluation: "deterministic initial/completeness/compact-rich extraction contract",
     modelCalls: 0,
     databaseReads: 0,
     databaseWrites: 0,
     curatedInventoryEntities: validatedInventory.inventory.entities.length,
     assembledEntities: assembled.entities.length,
     passBCanDeleteInventoryEntities: false,
-    inventoryOperations: 1,
-    richOperations: 1,
-    totalExtractionOperations: 2,
+    initialInventoryOperations: 1,
+    completenessOperations: 1,
+    richFactsOperations: 1,
+    richRelationshipsOperations: 1,
+    totalExtractionOperations: 4,
     planner: plan,
     result: "PASS",
   }, null, 2));

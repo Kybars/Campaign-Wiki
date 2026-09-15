@@ -1,6 +1,6 @@
 import "server-only";
 
-import { extractChunksLimited, planTwoPassExtraction } from "@/lib/ai/extract";
+import { extractChunksLimited, extractInventoryChunksLimited, planInventoryExtraction, planTwoPassExtraction } from "@/lib/ai/extract";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
 import { EnrichmentFailure, enrichCanonicalGraphWithAI } from "@/lib/ai/enrich";
 import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
@@ -33,6 +33,61 @@ import { chunkPages } from "@/lib/pdf/chunk-pages";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 import { OpenAICallBudget, OpenAICallBudgetExceededError, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
+import { buildFinalGraphInventory, buildLeanGraphCore, graphAggregationCheckpointIdentity, planGraphChunks, runGraphChunksLimited } from "@/lib/processing/graph-core";
+import { semanticInputHash } from "@/lib/ai/operation-checkpoint";
+
+async function processLeanGraphCampaign(args: { campaignId: string; documentId: string; pages: import("@/lib/pdf/types").DocumentPage[]; startedAt: number }) {
+  const { campaignId, documentId, pages, startedAt } = args;
+  const checkpointStore = databaseCheckpointStore();
+  const processingMode = "lean" as const;
+  const budget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
+  const inventoryProvider = withOpenAICallBudget(getStructuredModelProvider("extraction_inventory"), budget);
+  const graphExtractionProvider = withOpenAICallBudget(getStructuredModelProvider("graph_extraction"), budget);
+  const graphCompletenessProvider = withOpenAICallBudget(getStructuredModelProvider("graph_completeness"), budget);
+  assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction_inventory"));
+  assertAIProviderPersistenceAllowed(getAIProviderConfig("graph_extraction"));
+  assertAIProviderPersistenceAllowed(getAIProviderConfig("graph_completeness"));
+  const chunking = { targetCharacters: getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS, overlapPages: 1 };
+  const chunks = chunkPages(pages, chunking);
+  const extractionContext = { campaignId, documentId, processingMode, store: checkpointStore };
+  const inventoryPlan = await planInventoryExtraction(chunks, { inventory: inventoryProvider }, extractionContext);
+  const plannedInventoryCalls = inventoryPlan.filter((item) => item.status !== "REUSE" && inventoryProvider.providerId === "openai").length;
+  // Until final inventory checkpoints are read, every graph operation is conservatively planned as new.
+  const plannedGraphCalls = (graphExtractionProvider.providerId === "openai" ? chunks.length : 0) + (graphCompletenessProvider.providerId === "openai" ? chunks.length : 0);
+  if (!budget.allowPlanned(plannedInventoryCalls + plannedGraphCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, plannedInventoryCalls + plannedGraphCalls);
+  await recordProcessingRun(campaignId, "graph_inventory", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length, checkpointPlan: inventoryPlan } as unknown as Json });
+  const inventories = await extractInventoryChunksLimited(chunks, undefined, { inventory: inventoryProvider }, extractionContext);
+  const finalInventory = buildFinalGraphInventory(inventories.map((item) => item.inventory));
+  const finalInventoryFingerprint = semanticInputHash(finalInventory);
+  const finalInventoryUpstreamFingerprint = semanticInputHash(inventories.map((item) => ({ chunkId: item.chunkId, inventory: item.inventory })));
+  const graphContext = { campaignId, documentId, processingMode, store: checkpointStore, finalInventoryFingerprint, finalInventoryUpstreamFingerprint };
+  const graphProviders = { extraction: graphExtractionProvider, completeness: graphCompletenessProvider };
+  const graphPlan = await planGraphChunks(chunks, finalInventory, graphProviders, graphContext);
+  const plannedRemainingGraphCalls = graphPlan.filter((item) => item.status !== "REUSE" && (item.operationType === "graph_extraction" ? graphExtractionProvider : graphCompletenessProvider).providerId === "openai").length;
+  if (!budget.allowPlanned(plannedRemainingGraphCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedRemainingGraphCalls);
+  await recordProcessingRun(campaignId, "graph_inventory", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, inventoryCacheHits: inventories.filter((item) => item.inventoryCheckpointStatus === "REUSE" && item.completenessCheckpointStatus === "REUSE").length } as unknown as Json });
+  await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Extracting campaign relationships" });
+  await recordProcessingRun(campaignId, "graph_extraction", "started", { input: { chunkCount: chunks.length, finalInventoryFingerprint, checkpointPlan: graphPlan } as unknown as Json });
+  const graphConcurrency = graphExtractionProvider.providerId === "local" || graphCompletenessProvider.providerId === "local" ? getProcessingEnv().LOCAL_AI_EXTRACTION_CONCURRENCY : getProcessingEnv().AI_EXTRACTION_CONCURRENCY;
+  const graphChunks = await runGraphChunksLimited(chunks, finalInventory, graphProviders, graphContext, graphConcurrency);
+  const canonicalGraph = buildLeanGraphCore(finalInventory, chunks, graphChunks);
+  const aggregationIdentity = graphAggregationCheckpointIdentity(canonicalGraph, graphChunks, graphContext);
+  const expectedKeys = canonicalGraph.relationships.map((relationship) => relationship.normalization.semanticType + ":" + relationship.sourceEntityKey + ":" + relationship.targetEntityKey).sort();
+  const aggregation = await checkpointStore.load<{ relationshipKeys: string[] }>(aggregationIdentity);
+  if (aggregation && JSON.stringify([...aggregation.output.relationshipKeys].sort()) !== JSON.stringify(expectedKeys)) await checkpointStore.saveFailed(aggregationIdentity, aggregation.usage, "Stored graph aggregation does not match deterministic graph", aggregation.attemptCount);
+  if (!aggregation || JSON.stringify([...aggregation.output.relationshipKeys].sort()) !== JSON.stringify(expectedKeys)) await checkpointStore.saveValidated({ identity: aggregationIdentity, output: { relationshipKeys: expectedKeys }, usage: [], attemptCount: 1 });
+  const graph = applyLeanGraphDefaults(canonicalGraph);
+  const inventoryCalls = inventories.flatMap((item) => [item.inventoryCheckpointStatus === "RUN" ? item.initialInventoryUsage : null, item.completenessCheckpointStatus === "RUN" ? item.completenessUsage : null].filter((usage): usage is ModelCallUsage => usage !== null));
+  const graphCalls = graphChunks.flatMap((item) => [item.firstPassUsage, item.completenessUsage].filter((usage): usage is ModelCallUsage => usage !== null));
+  await recordProcessingRun(campaignId, "graph_extraction", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, graphExtractionCacheHits: graphChunks.filter((item) => item.firstPassCheckpointStatus === "REUSE").length, graphCompletenessCacheHits: graphChunks.filter((item) => item.completenessCheckpointStatus === "REUSE").length, firstPassRelationships: graphChunks.reduce((count, item) => count + item.firstPass.length, 0), completenessRelationships: graphChunks.reduce((count, item) => count + item.completeness.length, 0), canonicalRelationships: graph.relationships.length, graphExtractionProvider: graphExtractionProvider.providerId, graphExtractionModel: graphExtractionProvider.modelId, graphCompletenessProvider: graphCompletenessProvider.providerId, graphCompletenessModel: graphCompletenessProvider.modelId } as unknown as Json });
+  await recordProcessingRun(campaignId, "enrichment", "complete", { output: { ...buildLeanDiagnostics(graph), mode: "not_part_of_graph_core", modelUsage: summarizeModelUsage("enrichment", []) } as unknown as Json });
+  await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki" });
+  await persistCanonicalGraph(campaignId, documentId, graph);
+  const durationMs = Date.now() - startedAt;
+  const diagnostics = { processingMode, pageCount: pages.length, chunkCount: chunks.length, finalInventoryEntities: finalInventory.entities.length, canonicalEntityCount: graph.entities.length, relationshipCount: graph.relationships.length, factCandidateCount: 0, canonicalFactCount: 0, graphExtractionCalls: graphChunks.filter((item) => item.firstPassCheckpointStatus === "RUN").length, graphCompletenessCalls: graphChunks.filter((item) => item.completenessCheckpointStatus === "RUN").length, graphExtractionProvider: `${graphExtractionProvider.providerId}:${graphExtractionProvider.modelId}`, graphCompletenessProvider: `${graphCompletenessProvider.providerId}:${graphCompletenessProvider.modelId}`, modelUsage: [summarizeModelUsage("candidate_extraction", inventoryCalls), summarizeModelUsage("candidate_extraction", graphCalls)], durationMs };
+  await updateCampaign(campaignId, { status: "complete", processing_stage: "Wiki generated", processing_diagnostics: diagnostics as unknown as Json });
+  return diagnostics;
+}
 
 export async function processCampaign(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
@@ -48,6 +103,7 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     if (!(await claimCampaignForProcessing(campaignId))) throw new Error("Campaign was claimed by another processing request");
     ownsProcessing = true;
+    if (Boolean(processingMode === "lean")) return await processLeanGraphCampaign({ campaignId, documentId: document.id, pages, startedAt });
     const checkpointStore = databaseCheckpointStore();
     const openAIBudget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
     const inventoryProvider = withOpenAICallBudget(getStructuredModelProvider("extraction_inventory"), openAIBudget);

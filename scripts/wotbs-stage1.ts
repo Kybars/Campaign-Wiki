@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { buildInventoryInput, buildRichExtractionInput } from "../lib/ai/prompts";
 import type { CandidateRelationship, ChunkExtraction, ValidatedExtractionInventoryOutput } from "../lib/ai/schemas";
-import { normalizeName, normalizeRelationshipType } from "../lib/graph/normalize";
+import { normalizeName } from "../lib/graph/normalize";
+import { normalizeRelationshipFact, type NormalizedRelationshipFact } from "../lib/relationships/normalize";
 import { chunkPages } from "../lib/pdf/chunk-pages";
 import { extractPdfPages } from "../lib/pdf/extract-text";
 import type { DocumentPage, PageChunk } from "../lib/pdf/types";
@@ -176,21 +177,114 @@ export function scoreWotbsInventory(inventory: ValidatedExtractionInventoryOutpu
   };
 }
 
-const relationTerms: Record<string, string[]> = {
-  commands: ["command", "lead", "control", "order"],
-  advisor_to: ["advisor", "advise"],
-  rules: ["rule", "ruler", "govern", "lead"],
-  child_of: ["child", "daughter", "son"],
-  associated_with: ["associate", "head", "member", "based", "located"],
-  brother_of: ["brother", "sibling"],
-  located_in: ["located in", "lies in", "within", "contained in"],
-  rules_or_ruled: ["rule", "emperor", "govern"],
-  wielded_or_acquired: ["wield", "acquir", "possess", "own", "used"],
-  slain_at: ["slain", "killed", "died", "assassinat"],
-  knows_weaknesses_of: ["weakness", "knows"],
-  located_at: ["located", "lies", "within", "at"],
-  is_a: ["is a", "kind", "type"],
+type RelationshipScoringFamily =
+  | "advisory"
+  | "association"
+  | "classification"
+  | "command"
+  | "knowledge"
+  | "location"
+  | "membership"
+  | "ownership"
+  | "parenthood"
+  | "possession_or_use"
+  | "rule"
+  | "sibling"
+  | "slain_location";
+
+const exactScoringFamilies: Record<string, RelationshipScoringFamily[]> = {
+  command: ["command"],
+  commands: ["command"],
+  "advisor to": ["advisory"],
+  advises: ["advisory"],
+  "is advisor to": ["advisory"],
+  rules: ["rule"],
+  ruled: ["rule"],
+  "rules or ruled": ["rule"],
+  "ruler of": ["rule"],
+  governs: ["rule"],
+  "is emperor of": ["rule"],
+  "associated with": ["association"],
+  leads: ["association"],
+  "head of": ["association"],
+  "based in": ["association"],
+  "brother of": ["sibling"],
+  "wielded or acquired": ["possession_or_use"],
+  wielded: ["possession_or_use"],
+  acquired: ["possession_or_use"],
+  possesses: ["possession_or_use"],
+  uses: ["possession_or_use"],
+  "slain at": ["slain_location"],
+  "was slain in": ["slain_location"],
+  "knows weaknesses of": ["knowledge"],
+  "located at": ["location"],
+  "lies in": ["location", "association"],
+  within: ["location", "association"],
+  "is a": ["classification"],
 };
+
+const productionSemanticFamilies: Record<string, RelationshipScoringFamily[]> = {
+  "parent of": ["parenthood"],
+  owns: ["ownership", "possession_or_use"],
+  membership: ["membership", "association"],
+  "located in": ["location", "association"],
+  "sibling of": ["sibling"],
+};
+
+export interface CanonicalScoringRelationship {
+  sourceId: string;
+  targetId: string;
+  primaryFamily: string;
+  acceptedFamilies: string[];
+  productionSemanticType: string;
+  normalizedInputType: string;
+}
+
+function scoringFamilies(fact: NormalizedRelationshipFact): string[] {
+  return productionSemanticFamilies[fact.semanticType]
+    ?? exactScoringFamilies[fact.normalizedInputType]
+    ?? [fact.semanticType];
+}
+
+/**
+ * Canonicalizes evaluator edges through the production relationship normalizer first.
+ * The only extra inverse is the generic surface label `used by`, which production does
+ * not currently model. Exact label families are deliberately small: they preserve the
+ * benchmark's coarse gold categories without fuzzy or campaign-specific matching.
+ */
+export function canonicalizeRelationshipForScoring(
+  sourceId: string,
+  targetId: string,
+  relationshipType: string,
+): CanonicalScoringRelationship {
+  const initiallyNormalized = normalizeRelationshipFact(sourceId, targetId, relationshipType);
+  const fact = !initiallyNormalized.knownInverse && initiallyNormalized.normalizedInputType === "used by"
+    ? normalizeRelationshipFact(targetId, sourceId, "uses")
+    : initiallyNormalized;
+  const acceptedFamilies = scoringFamilies(fact);
+  const [canonicalSource, canonicalTarget] = acceptedFamilies.includes("sibling")
+    ? [fact.sourceId, fact.targetId].sort()
+    : [fact.sourceId, fact.targetId];
+  return {
+    sourceId: canonicalSource,
+    targetId: canonicalTarget,
+    primaryFamily: acceptedFamilies[0],
+    acceptedFamilies,
+    productionSemanticType: fact.semanticType,
+    normalizedInputType: fact.normalizedInputType,
+  };
+}
+
+export function relationshipsMatchForScoring(
+  actual: { sourceId: string; targetId: string; relationshipType: string },
+  expected: { sourceId: string; targetId: string; relationshipType: string },
+): boolean {
+  const candidate = canonicalizeRelationshipForScoring(actual.sourceId, actual.targetId, actual.relationshipType);
+  const gold = canonicalizeRelationshipForScoring(expected.sourceId, expected.targetId, expected.relationshipType);
+  return candidate.sourceId === gold.sourceId
+    && candidate.targetId === gold.targetId
+    && candidate.acceptedFamilies.includes(gold.primaryFamily);
+}
 
 function resolveGoldName(name: string, reference: WotbsGoldReference): string | null {
   const normalized = normalizeName(name);
@@ -207,12 +301,11 @@ export function scoreWotbsRelationships(
   const recovered = reference.core_relationships.filter((gold) => relationships.some((relationship) => {
     const source = names.get(relationship.source_temporary_id);
     const target = names.get(relationship.target_temporary_id);
-    const symmetric = gold.relation === "brother_of";
-    const endpointsMatch = (source === gold.source && target === gold.target) || (symmetric && source === gold.target && target === gold.source);
-    if (!endpointsMatch) return false;
-    const type = normalizeRelationshipType(relationship.relationship_type);
-    const description = normalizeRelationshipType(relationship.description);
-    return (relationTerms[gold.relation] ?? [gold.relation]).some((term) => type.includes(normalizeRelationshipType(term)) || description.includes(normalizeRelationshipType(term)));
+    if (!source || !target) return false;
+    return relationshipsMatchForScoring(
+      { sourceId: normalizeName(source), targetId: normalizeName(target), relationshipType: relationship.relationship_type },
+      { sourceId: normalizeName(gold.source), targetId: normalizeName(gold.target), relationshipType: gold.relation },
+    );
   }));
   return { recovered: recovered.map((relationship) => `${relationship.source} -> ${relationship.relation} -> ${relationship.target}`), missed: reference.core_relationships.filter((relationship) => !recovered.includes(relationship)).map((relationship) => `${relationship.source} -> ${relationship.relation} -> ${relationship.target}`) };
 }

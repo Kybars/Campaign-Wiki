@@ -6,10 +6,12 @@ const mocks = vi.hoisted(() => ({
   finishExtractionCacheRun: vi.fn(), finishEnrichmentCacheRun: vi.fn(), loadCampaignForProcessing: vi.fn(),
   loadCompleteEnrichmentCache: vi.fn(), persistCanonicalGraph: vi.fn(), recordProcessingRun: vi.fn(),
   saveExtractionCacheChunk: vi.fn(), saveReconciliationCacheResult: vi.fn(), updateCampaign: vi.fn(),
-  extractChunksLimited: vi.fn(), planTwoPassExtraction: vi.fn(), reconcileGroupsWithAI: vi.fn(), enrichCanonicalGraphWithAI: vi.fn(),
+  extractChunksLimited: vi.fn(), extractInventoryChunksLimited: vi.fn(), planInventoryExtraction: vi.fn(), planTwoPassExtraction: vi.fn(), reconcileGroupsWithAI: vi.fn(), enrichCanonicalGraphWithAI: vi.fn(),
   aggregateCandidates: vi.fn(), buildCanonicalGraph: vi.fn(), buildDeterministicGroups: vi.fn(),
   getAIProviderConfig: vi.fn(), assertAIProviderPersistenceAllowed: vi.fn(),
   getStructuredModelProvider: vi.fn(),
+  buildFinalGraphInventory: vi.fn(), buildLeanGraphCore: vi.fn(), graphAggregationCheckpointIdentity: vi.fn(), planGraphChunks: vi.fn(), runGraphChunksLimited: vi.fn(),
+  checkpointStore: { load: vi.fn(), saveValidated: vi.fn(), saveFailed: vi.fn(), inspect: vi.fn() },
 }));
 
 vi.mock("server-only", () => ({}));
@@ -21,7 +23,9 @@ vi.mock("@/lib/db/repository", () => ({
   recordProcessingRun: mocks.recordProcessingRun, saveExtractionCacheChunk: mocks.saveExtractionCacheChunk,
   saveReconciliationCacheResult: mocks.saveReconciliationCacheResult, updateCampaign: mocks.updateCampaign,
 }));
-vi.mock("@/lib/ai/extract", () => ({ extractChunksLimited: mocks.extractChunksLimited, planTwoPassExtraction: mocks.planTwoPassExtraction }));
+vi.mock("@/lib/ai/extract", () => ({ extractChunksLimited: mocks.extractChunksLimited, extractInventoryChunksLimited: mocks.extractInventoryChunksLimited, planInventoryExtraction: mocks.planInventoryExtraction, planTwoPassExtraction: mocks.planTwoPassExtraction }));
+vi.mock("@/lib/processing/graph-core", () => ({ buildFinalGraphInventory: mocks.buildFinalGraphInventory, buildLeanGraphCore: mocks.buildLeanGraphCore, graphAggregationCheckpointIdentity: mocks.graphAggregationCheckpointIdentity, planGraphChunks: mocks.planGraphChunks, runGraphChunksLimited: mocks.runGraphChunksLimited }));
+vi.mock("@/lib/processing/checkpoint-store", () => ({ databaseCheckpointStore: () => mocks.checkpointStore }));
 vi.mock("@/lib/ai/reconcile", () => ({ reconcileGroupsWithAI: mocks.reconcileGroupsWithAI }));
 vi.mock("@/lib/ai/enrich", () => ({ EnrichmentFailure: class EnrichmentFailure extends Error { usage = []; }, enrichCanonicalGraphWithAI: mocks.enrichCanonicalGraphWithAI }));
 vi.mock("@/lib/ai/enrichment-input", () => ({ enrichmentGraphFingerprint: () => "fixture-fingerprint" }));
@@ -63,6 +67,16 @@ beforeEach(() => {
   mocks.planTwoPassExtraction.mockResolvedValue([{ chunkId: "chunk", operationType: "inventory", status: "RUN", reason: "new" }, { chunkId: "chunk", operationType: "rich", status: "RUN", reason: "new" }]);
   mocks.createEnrichmentCacheRun.mockResolvedValue("enrichment-cache");
   mocks.extractChunksLimited.mockResolvedValue([{ chunkId: "chunk", inventory: { entities: [] }, rawInventory: { entities: [] }, richExtraction: { entities: [], relationships: [], suspected_inventory_misses: [] }, rawRichExtraction: { entities: [], relationships: [], suspected_inventory_misses: [] }, extraction: { entities: [], relationships: [] }, diagnostics: [], usage, inventoryUsage: usage, richUsage: usage, inventoryCheckpointStatus: "RUN", richCheckpointStatus: "RUN", checkpointStatus: "RUN" }]);
+  mocks.extractInventoryChunksLimited.mockResolvedValue([{ chunkId: "chunk", inventory: { entities: [{ temporary_id: "inventory", name: "Mira", type: "npc", sources: [source] }] }, initialInventoryUsage: usage, completenessUsage: usage, inventoryCheckpointStatus: "RUN", completenessCheckpointStatus: "RUN" }]);
+  mocks.planInventoryExtraction.mockResolvedValue([]);
+  mocks.buildFinalGraphInventory.mockReturnValue({ entities: [{ temporary_id: "inventory", name: "Mira", type: "npc", sources: [source] }] });
+  mocks.planGraphChunks.mockResolvedValue([]);
+  mocks.runGraphChunksLimited.mockResolvedValue([]);
+  mocks.buildLeanGraphCore.mockReturnValue({ ...canonicalGraph, entities: [{ ...canonicalGraph.entities[0], summary: "" }], facts: [], factAggregationDiagnostics: { candidateFactCount: 0, canonicalFactCount: 0, deduplicatedFactCount: 0, factEvidenceCount: 0 } });
+  mocks.graphAggregationCheckpointIdentity.mockReturnValue({});
+  mocks.checkpointStore.load.mockResolvedValue(null);
+  mocks.checkpointStore.saveValidated.mockResolvedValue(undefined);
+  mocks.checkpointStore.saveFailed.mockResolvedValue(undefined);
   mocks.aggregateCandidates.mockReturnValue({ entities: [], relationships: [] });
   mocks.buildDeterministicGroups.mockReturnValue([]);
   mocks.reconcileGroupsWithAI.mockResolvedValue({ decision: undefined, usage });
@@ -77,13 +91,15 @@ describe("v0.4 processing orchestration", () => {
   it("uses lean by default, persists safe canonical data, and completes without resolving enrichment", async () => {
     const result = await processCampaign("campaign");
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction_inventory");
-    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction_rich");
-    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("reconciliation");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("graph_extraction");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("graph_completeness");
+    expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("extraction_rich");
+    expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("reconciliation");
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
     expect(mocks.createEnrichmentCacheRun).not.toHaveBeenCalled();
     expect(mocks.persistCanonicalGraph).toHaveBeenCalledWith("campaign", "document", expect.objectContaining({ entities: [expect.objectContaining({ visibility: "dm_only", prominence: null, playerSummary: null })] }));
-    expect(result).toMatchObject({ processingMode: "lean", enrichmentRequired: false, enrichmentCalls: 0, openAIGenerationCallsAfterReconciliation: 0, graphFingerprint: "fixture-fingerprint" });
+    expect(result).toMatchObject({ processingMode: "lean", finalInventoryEntities: 1, relationshipCount: 0 });
     const completeCall = mocks.updateCampaign.mock.calls.find(([, values]) => values.status === "complete");
     expect(completeCall).toBeDefined();
     expect(mocks.persistCanonicalGraph.mock.invocationCallOrder[0]).toBeLessThan(mocks.updateCampaign.mock.invocationCallOrder.at(-1)!);
@@ -102,11 +118,11 @@ describe("v0.4 processing orchestration", () => {
     mocks.getAIProviderConfig.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, baseUrl: "http://localhost:11434/v1", allowPersistence: true }));
     mocks.getStructuredModelProvider.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, parseStructured: vi.fn() }));
     const result = await processCampaign("campaign");
-    expect(mocks.extractChunksLimited.mock.calls[0][3]).toMatchObject({ inventory: { providerId: "local", modelId: "extraction_inventory-local" }, rich: { providerId: "local", modelId: "extraction_rich-local" } });
-    expect(mocks.reconcileGroupsWithAI.mock.calls[0][1]).toMatchObject({ providerId: "local", modelId: "reconciliation-local" });
+    expect(mocks.extractInventoryChunksLimited.mock.calls[0][2]).toMatchObject({ inventory: { providerId: "local", modelId: "extraction_inventory-local" } });
+    expect(mocks.runGraphChunksLimited.mock.calls[0][2]).toMatchObject({ extraction: { providerId: "local", modelId: "graph_extraction-local" }, completeness: { providerId: "local", modelId: "graph_completeness-local" } });
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ processingMode: "lean", enrichmentCalls: 0, openAIGenerationCallsAfterReconciliation: 0 });
+    expect(result).toMatchObject({ processingMode: "lean", finalInventoryEntities: 1 });
   });
 
   it("marks persistence failures failed and never marks the campaign complete", async () => {

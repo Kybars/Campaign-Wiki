@@ -6,17 +6,21 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 - Package version: `0.4.9`
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: WotBS Stage-1 Pass-A identity/page grounding repair
+- Latest completed milestone: Terra relationship-completeness comparison
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: production Pass A now emits identity plus a supporting page; application code derives bounded evidence and deterministic IDs, with v3 checkpoint invalidation and frozen WotBS live validation
-- Commit status: all v0.4.9, compact-Pass-A, and WotBS work remains intentionally uncommitted. Generated local model artifacts remain ignored.
+- Latest targeted work: one frozen-contract Terra completeness pass validated the mechanism: 23/23 novel edges were source-supported and raised corrected Qwen-first-pass union recall from 7/12 to 10/12
+- Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
 
 ## Experimental status — do not misread as production behavior
 
 - The two-pass architecture is implemented and covered by deterministic tests.
-- Pass A is now production code with an identity/page model contract: the LLM emits only name, canonical type, and one supporting page. Application code derives a bounded source excerpt, excludes failed groundings, and assigns deterministic chunk-local IDs; aliases remain Pass-B data.
-- On frozen WotBS pages 10-12, the repaired production contract validated in 29.919s with 39 authoritative entities, 0 grounding failures, 12/12 Quests, 2/2 Items, and 86.0% frozen-reference recall. The earlier v2 full historical chunks have not been rerun under v3.
-- Decision: `WOTBS_PASS_A_RELIABLE_RECALL_LOW`. Do not run paid validation or resume broad benchmarks; repair focused NPC/Event recall on the small fixture first.
+- The v3-compatible initial identity/page inventory remains independently reusable. Production's uncommitted v4 wrapper adds a dependent completeness substage and deterministic final-union identity; the rejected candidate harvester remains standalone experimental code and is not imported by production.
+- V4 harvesting covered 42/42 literal hard references, but final authoritative recall fell to 72.1% with 80.5% bounded precision, 11/12 Quests, 1/2 Items, and 16,667 total model tokens. Both calls were valid and compact; the failure is semantic classification quality and workload, not structured-output reliability.
+- A second compact semantic read over the same source plus a 330-token deterministic existing-inventory summary recovered Innenotdar and The Scourge. The final union reached 39/43 recall (90.7%), 93.2% bounded precision, 12/12 Quests, 2/2 Items, and 9,205 total tokens. NPC recall remained 8/11; Etinifi failed unchanged deterministic grounding; three obvious short/type variants survived as source-backed duplicate candidates.
+- Current decision: `WOTBS_COMPACT_RELATIONSHIPS_FAILED`. Pass A was cryptographically tied to the frozen source and reused at 39/43 recall, 95.2% precision, 12/12 Quests, and 2/2 Items. The facts/aliases kernel returned valid JSON in 139.813 seconds, but manual audit found only canonical-name restatements; the relationships kernel truncated after 554.198 seconds at more than 50,152 characters. Exactly two local calls and no retry occurred. Keep all Rich repair work uncommitted pending a focused finite-relationship-output repair.
+- Graph-core scorer decision: `GRAPH_SCORER_NORMALIZATION_FIXED`. The adapter passes canonical validated relationship types and scores through production inverse normalization; an exact evaluator-only layer handles conservative coarse label equivalence, including `leads` for broad organizational association and inverse `used by`. Saved outputs rescore at Qwen 7/12 (58.3%), Terra 8/12 (66.7%), and supported union 9/12 (75.0%): six both, one Qwen-only, two Terra-only, and three missed by both. Precision remains Qwen 26/26 and Terra 36/37; the sole unsupported Terra edge is `trillith created Torch of the Burning Sky`. Zero model/retry/repair/persistence/artifact writes occurred during rescore.
+- Graph completeness decision: `LOCAL_GRAPH_COMPLETENESS_LOW_VALUE`. One local Qwen `v0-test2-graph-completeness-1` call reused the frozen 42-entity inventory and exact 26-edge first pass, returned 18 bounded edges in 33.270s, and produced 3 structurally novel edges. Manual audit found 0 supported, 2 unsupported, and 1 ambiguous; 11 outputs repeated the first pass and 3 used unknown endpoints. The 29-edge diagnostic union touched 34/42 entities but retained 12 label types and corrected gold recall stayed 7/12. The current contract is not justified for integration. Do not redesign immediately; if separately authorized, compare one Terra call under this identical frozen contract.
+- Graph completeness final comparison: `TERRA_GRAPH_COMPLETENESS_VALIDATED`. Against the identical Qwen-first-pass baseline and frozen completeness contract, one Terra call returned 23/23 novel structurally valid edges, all source-supported on manual audit, with no endpoint or duplicate rejects. The 49-edge union touches 37/42 entities, has 29 label types, and raises corrected eligible-gold recall from 7/12 to 10/12 (83.3%). It recovers Leska’s advisor relation and the Longinus/Pilus brotherhood; Madness is returned as source-supported `member of trillith` but remains outside the frozen scorer’s `is_a` equivalence. Integrate first-pass graph + one completeness sweep behind current checkpoint/provider abstractions; do not add Rich facts/enrichment, then return to wiki rendering/dogfooding/manual correction.
 
 ## Current processing flow
 
@@ -25,17 +29,17 @@ source chunk
   ↓
 compact entity inventory
   ↓
-validated authoritative inventory
+Pass A completeness
   ↓
-rich facts and relationships grounded to inventory IDs
+final canonical entity inventory
   ↓
-existing candidate representation
+minimal graph extraction
   ↓
-reconciliation
+one missing-relationships completeness sweep
   ↓
-canonical graph
+deterministic normalization, provenance, and dedupe
   ↓
-lean projection
+canonical relationship graph
   ↓
 transactional persistence
   ↓
@@ -44,13 +48,13 @@ Wiki Ready
 
 - Default mode: `lean`.
 - Optional/reference mode: `full`.
-- Lean post-reconciliation enrichment calls: `0`.
+- Lean Rich/reconciliation/enrichment calls: `0`.
 
 ## Provider coverage
 
-- OpenAI supports inventory extraction, rich extraction, reconciliation, and full enrichment through the shared structured-output boundary.
-- A local OpenAI-compatible endpoint supports those same three stages for development/rehearsal.
-- Inventory/rich overrides fall back to the existing extraction override and then the provider-wide model; reconciliation and enrichment retain their existing fallbacks.
+- OpenAI supports inventory extraction, independent graph extraction/completeness, reconciliation, and full enrichment through the shared structured-output boundary.
+- A local OpenAI-compatible endpoint supports those same stages for development/rehearsal.
+- Graph extraction and completeness may select independent providers/models; inventory/rich overrides retain their existing extraction fallback.
 - Local extraction concurrency is independently configured and defaults to `1`; OpenAI extraction defaults to `3`.
 - No local failure falls back to OpenAI. Local canonical persistence requires an explicit server-only acknowledgement and is only for a disposable rehearsal.
 
@@ -58,7 +62,7 @@ Wiki Ready
 
 M4 private `ai_operation_checkpoints` now store validated, reusable operation output for:
 
-- extraction inventory and dependent rich operations per chunk;
+- extraction inventory and dependent graph operations per chunk;
 - reconciliation decisions;
 - full-enrichment operations and batches.
 
@@ -231,14 +235,21 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 7. Later multi-source/incremental ingestion.
 8. Later authentication and secure player sharing.
 
+## Active lean graph core
+
+New lean imports now use the required graph-first path: Pass A initial inventory → Pass A completeness → final deterministic inventory → minimal graph extraction for each source chunk → one minimal graph-completeness sweep → deterministic canonical normalization, source-page provenance, global dedupe, and persistence. A graph-stage failure fails the import; an entity-only campaign is not published as complete.
+
+The active lean path does not call Rich facts, Rich relationships, reconciliation, or enrichment. It persists no atomic rich facts and no generated summaries. The legacy Rich/enrichment path remains available only for explicit `full` compatibility/reference runs, and existing stored campaigns remain readable.
+
+Graph extraction and completeness each have independent server-side provider/model selection, provider-aware operation checkpoints, and OpenAI call-budget accounting. First-pass checkpoints depend on the finalized Pass-A inventory and source chunk; completeness checkpoints additionally depend on the canonical first-pass graph. Deterministic graph aggregation is also checkpointed. Local stages retain the existing `LOCAL_AI_ALLOW_PERSISTENCE` guard and never fall back to OpenAI.
+
+Relationship provenance is a bounded, verbatim excerpt from the cited supplied page, selected deterministically around a resolved endpoint when possible. It is page-backed source text, never model-generated evidence.
+
+The validated WotBS development pairing is local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-terra` for completeness. It is a documented configuration, not a hard-coded product default. The private saved artifacts deterministically reproduce 26 first-pass edges plus 23 completeness additions, yielding a 49-edge diagnostic union without a model call.
+
 ## Next milestone
 
-`Focused WotBS Stage-1 Pass-A recall repair`
-
-- Preserve the new compact production contract, deterministic IDs, validated two-pass boundary, and frozen benchmark.
-- Keep the successful `name + type + page` model contract, deterministic grounding, ID identity, one-chunk WotBS source, and hidden evaluator frozen.
-- Focus on source-driven NPC/Event omissions without gold-fed prompt tuning or weakening validation. Any new live generation needs separately bounded authorization.
-- Resume M6 only after the extraction boundary has usable live reliability evidence.
+Freeze backend extraction. Move to wiki rendering + dogfooding + manual correction.
 
 ## Future workflow contract
 

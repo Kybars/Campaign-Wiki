@@ -23,6 +23,8 @@
     "evaluate:compact-pass-a-source-size": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-compact-pass-a-source-size.ts",
     "evaluate:wotbs-stage1": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-wotbs-stage1.ts",
     "evaluate:wotbs-pass-a-repair": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-wotbs-pass-a-repair.ts",
+    "evaluate:wotbs-graph-proof": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-wotbs-graph-proof.ts",
+    "evaluate:wotbs-graph-completeness": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-wotbs-graph-completeness.ts",
     "evaluate:recall": "node --conditions=react-server --import tsx scripts/evaluate-recall.ts",
     "evaluate:checkpoints": "node --conditions=react-server --import tsx scripts/evaluate-checkpoint-resume.ts",
     "evaluate:failure-resume": "tsx scripts/evaluate-failure-resume.ts",

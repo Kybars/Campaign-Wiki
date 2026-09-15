@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildInventoryInput, buildRichExtractionInput, EXTRACTION_INVENTORY_SYSTEM_PROMPT, EXTRACTION_RICH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
+import { buildCompactRichInput, COMPACT_RICH_FACTS_SYSTEM_PROMPT, COMPACT_RICH_RELATIONSHIPS_SYSTEM_PROMPT, createDeterministicSourceSpans } from "@/lib/ai/rich-kernel";
 import type { ExtractionRichOutput, ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
 import { assembleChunkExtraction, validateExtractionRich } from "@/lib/ai/source-validation";
 import {
@@ -32,7 +33,8 @@ describe("WotBS Stage 1 deterministic fixture", () => {
     const syntheticChunk = { id: "synthetic", pages: [{ pageNumber: 1, text: "Mira Vale guards the Moon Gate." }], characterCount: 31 };
     const inventory: ValidatedExtractionInventoryOutput = { entities: [] };
     const artifacts = [{ path: "private-gold.json", raw: "synthetic evaluator-only marker" }];
-    expect(() => assertGoldReferenceIsolation([EXTRACTION_INVENTORY_SYSTEM_PROMPT, buildInventoryInput(syntheticChunk), EXTRACTION_RICH_SYSTEM_PROMPT, buildRichExtractionInput(syntheticChunk, inventory)], artifacts)).not.toThrow();
+    const compactInput = buildCompactRichInput(inventory, createDeterministicSourceSpans(syntheticChunk));
+    expect(() => assertGoldReferenceIsolation([EXTRACTION_INVENTORY_SYSTEM_PROMPT, buildInventoryInput(syntheticChunk), EXTRACTION_RICH_SYSTEM_PROMPT, buildRichExtractionInput(syntheticChunk, inventory), COMPACT_RICH_FACTS_SYSTEM_PROMPT, COMPACT_RICH_RELATIONSHIPS_SYSTEM_PROMPT, compactInput], artifacts)).not.toThrow();
     expect(() => assertGoldReferenceIsolation(["synthetic evaluator-only marker"], artifacts)).toThrow(/Gold reference leaked/);
   });
 
@@ -69,7 +71,7 @@ describe("WotBS Stage 1 deterministic fixture", () => {
   });
 
   it("has no campaign persistence surface", () => {
-    const script = readFileSync(new URL("../scripts/evaluate-wotbs-stage1.ts", import.meta.url), "utf8");
-    expect(script).not.toMatch(/createAdminClient|lib\/db|\.from\(["'`]campaigns/);
+    const scripts = ["evaluate-wotbs-stage1.ts", "evaluate-wotbs-graph-proof.ts", "evaluate-wotbs-graph-completeness.ts"].map((name) => readFileSync(new URL(`../scripts/${name}`, import.meta.url), "utf8"));
+    expect(scripts.join("\n")).not.toMatch(/createAdminClient|lib\/db|\.from\(["'`]campaigns/);
   });
 });

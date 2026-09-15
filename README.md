@@ -39,7 +39,7 @@ Important design properties:
 - Every successful future import stores raw parsed chunk output, provenance-validated chunk output, validation diagnostics, and the reconciliation decision for cost-safe replay.
 - Every newly validated model operation is also stored as a private provider/model/input/version-aware checkpoint before dependent work continues. Interrupted extraction, reconciliation, and explicit full enrichment can reuse compatible operations without counting them as new calls.
 
-All three model stages use one provider-independent structured-output boundary. The OpenAI adapter follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`); the local adapter uses an OpenAI-compatible Chat Completions endpoint and applies the same schemas and domain validation. Stage-specific OpenAI models fall back to `OPENAI_MODEL`, while stage-specific local models fall back to `LOCAL_AI_MODEL`. See [`docs/local_ai.md`](./docs/local_ai.md).
+Pass A, graph extraction, graph completeness, reconciliation, and optional enrichment use one provider-independent structured-output boundary. The OpenAI adapter follows the official Structured Outputs pattern (`responses.parse` plus `zodTextFormat`); the local adapter uses an OpenAI-compatible Chat Completions endpoint and applies the same schemas and domain validation. Stage-specific models fall back to their existing provider defaults. See [`docs/local_ai.md`](./docs/local_ai.md).
 
 ## Key directories
 
@@ -73,13 +73,20 @@ Copy `.env.example` to `.env.local` and fill in:
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5.6-terra
 OPENAI_EXTRACTION_MODEL=gpt-5.6-terra
+OPENAI_GRAPH_EXTRACTION_MODEL=
+OPENAI_GRAPH_COMPLETENESS_MODEL=gpt-5.6-terra
 OPENAI_RECONCILIATION_MODEL=gpt-5.6-terra
 OPENAI_ENRICHMENT_MODEL=gpt-5.6-terra
 AI_PROVIDER=openai
+# Optional independent graph-stage provider overrides; otherwise AI_PROVIDER applies.
+GRAPH_EXTRACTION_PROVIDER=
+GRAPH_COMPLETENESS_PROVIDER=
 CAMPAIGN_PROCESSING_MODE=lean
 # Local mode only; optional stage overrides fall back to LOCAL_AI_MODEL.
 LOCAL_AI_MODEL=
 LOCAL_AI_EXTRACTION_MODEL=
+LOCAL_AI_GRAPH_EXTRACTION_MODEL=
+LOCAL_AI_GRAPH_COMPLETENESS_MODEL=
 LOCAL_AI_RECONCILIATION_MODEL=
 LOCAL_AI_ENRICHMENT_MODEL=
 
@@ -97,9 +104,9 @@ PDF_CHUNK_TARGET_CHARACTERS=45000
 
 Run `npm run ai:preflight` to validate the configured enrichment provider without making a paid generation call. For local Ollama/LM Studio configuration, see [`docs/local_ai.md`](./docs/local_ai.md).
 
-Extraction, reconciliation, and enrichment all use the provider-independent boundary. Provider selection is server-side, local failure never falls back to OpenAI, and existing OpenAI stage-model fallbacks remain unchanged.
+Pass A inventory, graph extraction, graph completeness, reconciliation, and enrichment use the provider-independent boundary. Graph extraction and completeness may select independent providers/models; provider selection is server-side and local failure never falls back to OpenAI.
 
-`CAMPAIGN_PROCESSING_MODE` is server-only and accepts `lean` or `full`. It defaults to `lean`: normal imports persist the rich canonical graph with DM-only visibility, nullable/unclassified prominence, source-backed canonical summaries, and no post-reconciliation model calls. Set `CAMPAIGN_PROCESSING_MODE=full` only to run the strict v0.3 enrichment/reference workflow. The browser cannot select or override this mode.
+`CAMPAIGN_PROCESSING_MODE` is server-only and accepts `lean` or `full`. It defaults to `lean`: normal imports require a source-backed relationship graph after Pass A, persist entities/types/canonical relationships with DM-only visibility, and do not invoke Rich facts, Rich summaries, reconciliation, or enrichment. Set `CAMPAIGN_PROCESSING_MODE=full` only for the legacy enrichment/reference workflow. The browser cannot select or override this mode.
 
 `AI_PROVIDER=local` is safe for preflight, non-persisting fixture smoke, and recovery dry-runs. A live local run fails before replacing canonical campaign data unless `LOCAL_AI_ALLOW_PERSISTENCE=true` is explicitly set for a disposable rehearsal campaign. Local cache identity is separate from OpenAI cache identity.
 

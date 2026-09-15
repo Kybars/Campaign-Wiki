@@ -24,6 +24,13 @@
 /artifacts/compact-pass-a-source-size/
 /artifacts/wotbs-stage1/
 /artifacts/wotbs-pass-a-repair/
+/artifacts/wotbs-candidate-repair/
+/artifacts/wotbs-v3-completeness-sweep/
+/artifacts/wotbs-stage1-pass-b/
+/artifacts/wotbs-compact-rich/
+/artifacts/wotbs-graph-proof/
+/artifacts/wotbs-graph-completeness/
+/artifacts/wotbs-graph-completeness-terra/
 
 # Private / copyrighted benchmark material
 # Commercial campaign books, extracted source text, and source-derived
