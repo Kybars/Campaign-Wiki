@@ -13,10 +13,11 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-14",
-    title: "Two-pass source extraction",
+    title: "Compact two-pass source extraction",
     changes: [
       "Separated compact entity inventory from rich fact and relationship extraction so validated entity breadth cannot be silently removed.",
       "Added independently durable substage checkpoints, model overrides, planning, workload diagnostics, and a frozen local Ollama re-benchmark.",
+      "Reduced Pass A to source-grounded identity fields, assigned stable chunk-local IDs in application code, and moved alias discovery to inventory-grounded Pass B.",
     ],
   },
   {

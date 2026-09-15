@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import type { ExtractionInventoryOutput } from "../lib/ai/schemas";
 import { normalizeName } from "../lib/graph/normalize";
 import type { PageChunk } from "../lib/pdf/types";
 
@@ -20,6 +19,8 @@ export interface BoundaryAggregate {
   unionPerType: Record<string, number>;
   provenance: Array<{ name: string; type: string; subchunkIds: string[] }>;
 }
+
+export interface LegacyExperimentInventory { entities: Array<{ temporary_id?: string; name: string; type: string; aliases?: string[]; sources?: Array<{ page_number: number; supporting_text: string }> }> }
 
 export function summarizeInventoryPressureCalls(calls: Array<{ status: "success" | "failed"; latencyMs: number; outputBytes: number | null }>) {
   const validCalls = calls.filter((call) => call.status === "success").length;
@@ -62,11 +63,11 @@ export function subdivideInventorySource(chunk: PageChunk, parts: number): Inven
 
 function increment(target: Record<string, number>, type: string) { target[type] = (target[type] ?? 0) + 1; }
 
-function identityTokens(entity: ExtractionInventoryOutput["entities"][number]) {
-  return new Set([entity.name, ...entity.aliases].map(normalizeName).filter(Boolean));
+function identityTokens(entity: LegacyExperimentInventory["entities"][number]) {
+  return new Set([entity.name, ...(entity.aliases ?? [])].map(normalizeName).filter(Boolean));
 }
 
-export function aggregateBoundaryInventories(items: Array<{ subchunkId: string; inventory: ExtractionInventoryOutput }>): BoundaryAggregate {
+export function aggregateBoundaryInventories(items: Array<{ subchunkId: string; inventory: LegacyExperimentInventory }>): BoundaryAggregate {
   const entities = items.flatMap(({ subchunkId, inventory }) => inventory.entities.map((entity) => ({ entity, subchunkId })));
   const groups: Array<{ entities: typeof entities }> = [];
   for (const candidate of entities) {

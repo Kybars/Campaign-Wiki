@@ -89,6 +89,15 @@ Old implementation plans are historical unless the active plan references them. 
 - Deterministic reads, dry-runs, and evaluations are allowed.
 - Current Test 3 counts and fingerprint belong in `docs/CURRENT_STATE.md`, not here.
 
+### Copyrighted / private benchmark sources
+
+- Never commit or push copyrighted commercial campaign books, extracted source text, or source-derived private gold-reference fixtures unless redistribution rights are explicitly documented.
+- Keep private material under a gitignored path, preferably `fixtures/private/`.
+- Public tests must not depend on private fixture bytes being present in CI.
+- Source hashes, page ranges, counts, metrics, audit reports, evaluator code/schemas, synthetic fixtures, and fixtures with documented redistribution rights may be committed.
+- Classify every new real-world benchmark source as redistributable/public or private/local-only before adding it.
+- Do not use Git LFS to publish copyrighted material; LFS changes storage, not redistribution rights.
+
 ## Costs
 
 - Do not make paid model calls without explicit authorization.

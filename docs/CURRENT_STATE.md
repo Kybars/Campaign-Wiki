@@ -6,17 +6,17 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 - Package version: `0.4.9`
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: v0.4.9 two-pass extraction architecture and controlled local diagnostics
+- Latest completed milestone: WotBS Stage-1 Pass-A identity/page grounding repair
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: compact inventory pass → inventory-grounded rich pass, separate durable checkpoints/planning, controlled Ollama re-benchmark, and local inventory-pathology diagnostics
-- Commit status: v0.4.9 architecture and diagnostic code/audits are ready to commit. Generated local model artifacts remain ignored.
+- Latest targeted work: production Pass A now emits identity plus a supporting page; application code derives bounded evidence and deterministic IDs, with v3 checkpoint invalidation and frozen WotBS live validation
+- Commit status: all v0.4.9, compact-Pass-A, and WotBS work remains intentionally uncommitted. Generated local model artifacts remain ignored.
 
 ## Experimental status — do not misread as production behavior
 
 - The two-pass architecture is implemented and covered by deterministic tests.
-- The compact names-plus-bounded-evidence inventory result is **diagnostic evidence only**. It is not integrated into the production Pass A schema, prompts, checkpoint identity, planner, or persistence path.
-- The existing full metadata local-Qwen inventory contract is not reliable for the frozen benchmark: transport avoidance, smaller source chunks, and category partitioning did not yield complete coverage.
-- Do not run the unchanged full 3+9+3 local benchmark or paid OpenAI validation from these findings. The next authorized design task is compact Pass A plus a small frozen recall validation.
+- Pass A is now production code with an identity/page model contract: the LLM emits only name, canonical type, and one supporting page. Application code derives a bounded source excerpt, excludes failed groundings, and assigns deterministic chunk-local IDs; aliases remain Pass-B data.
+- On frozen WotBS pages 10-12, the repaired production contract validated in 29.919s with 39 authoritative entities, 0 grounding failures, 12/12 Quests, 2/2 Items, and 86.0% frozen-reference recall. The earlier v2 full historical chunks have not been rerun under v3.
+- Decision: `WOTBS_PASS_A_RELIABLE_RECALL_LOW`. Do not run paid validation or resume broad benchmarks; repair focused NPC/Event recall on the small fixture first.
 
 ## Current processing flow
 
@@ -166,6 +166,30 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 - Decision: `COMPACT_INVENTORY_CONTRACT_WORKS`. Current inventory metadata shape is implicated; compact source-grounded discovery is stable in this narrow control, but requires a separate recall benchmark before production design.
 - Safety: 0 OpenAI calls, 3 local calls, 0 campaign/reconciliation/enrichment/checkpoint/cache writes. Report: `docs/audits/ollama_inventory_generation_pathology.md`.
 
+## Compact production Pass A and frozen inventory benchmark
+
+- Production inventory output is now `name`, `type`, and one source-resolving evidence record (240-character maximum). Temporary IDs are deterministic application output, not model output; aliases moved to inventory-ID-grounded Pass B.
+- Inventory/rich behavior and schema versions advanced to v2. Stored raw inventory is revalidated and must reproduce the stored authoritative inventory exactly; inventory fingerprint changes invalidate rich output.
+- Frozen Ollama scored chunks: chunk 3 invalid after 439.191s, chunk 5 invalid after 428.733s, chunk 4 valid after 394.015s. Chunk 4 returned 99 validated entities, 0 ID collisions, 73.5% recall, 36.4% reference-bounded precision, 48.6% F1, and 8/12 historical misses recovered.
+- Decision: `COMPACT_PASS_A_PARTIALLY_RELIABLE`. Full-chunk pressure remains; overall recall is unavailable because only 1/3 intervals validated.
+- Safety: 0 OpenAI, 3 local inventory calls, 0 rich/reconciliation/enrichment calls, and 0 campaign/checkpoint/official-cache writes. Report: `docs/audits/compact_pass_a_inventory_benchmark.md`.
+
+## WotBS Stage 1 small correctness fixture
+
+- Frozen real-document fixture: `War of the Burning Sky Campaign Guide` PDF pages 10-12, 3 pages, 11,083 extracted characters, one production chunk, PDF SHA-256 `509f81457b95b03a5871ee1ff4faa0e0216da3790c4d57e3a2d7fcf653a8b990`, normalized-text SHA-256 `b55c21c75accc6a3c0fba563d5eba4f0396ddc23cf3dce14c59150f283273281`.
+- The sole compact Pass-A attempt at the frozen `qwen3.5:9b` digest and 32,768 context returned malformed inner JSON: an unterminated string at character 108,215. No retry, Pass B, candidate assembly, reconciliation, or persistence ran.
+- Decision: `WOTBS_STAGE1_PASS_A_FAILED`. This proves the compact local Pass A is not yet reliable even on the small Stage-1 correctness fixture; it is not a production-scale conclusion.
+- Safety: 0 OpenAI calls, 1 local generation, 0 campaign/checkpoint/cache writes, and no gold-reference exposure. Report: `docs/audits/wotbs_stage1_end_to_end.md`.
+
+## WotBS Stage 1 Pass-A identity/page grounding repair
+
+- Diagnostic identity-only (`name`, `type`) was compact and valid in 17.569s but had only 53.5% frozen-reference recall, including 0/12 Quests. Adding one supporting page locator remained compact and valid in 29.504s with 90.7% recall, 12/12 Quests, 2/2 Items, and 43/43 exact deterministic page groundings.
+- Production Pass A now emits only `name`, `type`, and `page`. Application code resolves the page, prefers an exact normalized name match, permits a tightly bounded deterministic token-anchor fallback only for inferred Event/Quest labels, selects one source-derived excerpt capped at 240 characters, excludes failed groundings, and assigns IDs from source fingerprint + normalized type/name + page. Model-generated excerpts are removed from the production contract.
+- Inventory behavior/schema identity is v3 (`v0.4-identity-page-grounding-3`, contract 3); prior v2 excerpt checkpoints invalidate. Grounded validated inventory remains in the rich dependency fingerprint, and rich-model-only changes still preserve inventory reuse.
+- The sole repaired production Pass-A call validated in 29.919s with 39 authoritative entities, 39 deterministic IDs, 0 collisions, 0 grounding exclusions, and 0 diagnostics. Frozen-reference recall was 86.0%, with 12/12 Quests and 2/2 Items but weak NPC/Event recall.
+- Decision: `WOTBS_PASS_A_RELIABLE_RECALL_LOW`. The output contract degeneration is repaired on this fixture, but the >=90% supported-entity recall target is not met. Pass B was intentionally not run.
+- Safety: 0 OpenAI, exactly 3 new local calls, 0 Pass-B/reconciliation/enrichment calls, 0 campaign/checkpoint/cache writes, and 0 gold leakage. Report: `docs/audits/wotbs_stage1_pass_a_identity_grounding_repair.md`.
+
 ## Test 3 derived lean recovery
 
 - Usable recovery campaign: `Demonplague - Test 3 Recovery` (`1151fb31-876b-4277-9718-76313c1c8d98`), status `complete`.
@@ -186,7 +210,7 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Verification snapshot
 
-- Latest deterministic suite: 32 test files, 272 tests passed at the live-inference phase gate.
+- Latest deterministic suite: 38 test files, 299 tests passed before the repaired production WotBS call; lint, typecheck, and production build also passed.
 - Successfully run for the recall fix: lint, typecheck, test, build, replay, lean, extraction-workload, checkpoint, and recall evaluations.
 - The A/B verification passed lint, typecheck, 31 test files/262 tests, production build, recall evaluation, extraction-workload evaluation, and read-only A/B evaluation. Protected campaign timestamps/counts and the cached graph fingerprint remained unchanged.
 - Available deterministic evaluations: `npm run evaluate:replay`, `npm run evaluate:enrichment`, `npm run evaluate:lean`, `npm run evaluate:enrichment-workload`, `npm run evaluate:extraction-workload`, `npm run evaluate:checkpoints`, `npm run evaluate:recall`, and `npm run evaluate:two-pass-extraction`.
@@ -198,7 +222,7 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Deferred work
 
-1. Design a compact, source-grounded Pass A contract with deterministic IDs, then run a small frozen recall benchmark.
+1. Repair focused WotBS NPC/Event recall while preserving the validated identity/page grounding contract.
 2. M6 local Test 3 rehearsal.
 3. Extraction schema/output economy optimization.
 4. Final v0.4 economics/quality benchmark.
@@ -209,11 +233,11 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Next milestone
 
-`Compact inventory-contract design and small recall validation`
+`Focused WotBS Stage-1 Pass-A recall repair`
 
-- Preserve the validated two-pass boundary and frozen benchmark.
-- Preserve source grounding while designing the smallest proven reliable Pass A; do not integrate or run a full benchmark without a separately scoped prompt.
-- Prefer a no-cost local diagnostic before requesting any paid OpenAI validation.
+- Preserve the new compact production contract, deterministic IDs, validated two-pass boundary, and frozen benchmark.
+- Keep the successful `name + type + page` model contract, deterministic grounding, ID identity, one-chunk WotBS source, and hidden evaluator frozen.
+- Focus on source-driven NPC/Event omissions without gold-fed prompt tuning or weakening validation. Any new live generation needs separately bounded authorization.
 - Resume M6 only after the extraction boundary has usable live reliability evidence.
 
 ## Future workflow contract

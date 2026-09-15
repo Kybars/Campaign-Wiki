@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { extractChunk, inventoryCheckpointIdentity, planTwoPassExtraction, richCheckpointIdentity, type ExtractionProviders } from "@/lib/ai/extract";
-import { assembleChunkExtraction, validateExtractionInventory, validateExtractionRich } from "@/lib/ai/source-validation";
+import { EXTRACTION_INVENTORY_BEHAVIOR_VERSION, EXTRACTION_INVENTORY_CONTRACT_VERSION } from "@/lib/ai/operation-checkpoint";
+import { assembleChunkExtraction, deterministicInventoryId, groundInventoryIdentity, validateExtractionInventory, validateExtractionRich } from "@/lib/ai/source-validation";
 import { memoryCheckpointStore, type ValidatedCheckpoint } from "@/lib/ai/operation-checkpoint";
-import type { ExtractionInventoryOutput, ExtractionRichOutput } from "@/lib/ai/schemas";
+import { extractionInventoryOutputSchema, type ExtractionInventoryOutput, type ExtractionRichOutput } from "@/lib/ai/schemas";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { aggregateCandidates } from "@/lib/graph/aggregate";
 import { buildCanonicalGraph } from "@/lib/graph/build";
@@ -17,19 +18,17 @@ const sentences = [
 const chunk = { id: "dense", pages: [{ pageNumber: 1, text: sentences.join(" ") }], characterCount: sentences.join(" ").length };
 const source = (supporting_text: string) => [{ page_number: 1, supporting_text }];
 const inventory: ExtractionInventoryOutput = { entities: [
-  ["mira", "Mira Vale", "npc", sentences[0]], ["tomas", "Tomas Reed", "npc", sentences[1]], ["ashfall", "Ashfall", "location", sentences[2]],
-  ["gate", "Moon Gate", "location", sentences[3]], ["compact", "Dawn Compact", "faction", sentences[4]], ["key", "Ember Key", "item", sentences[5]],
-  ["quest", "Recover the Ember Key", "quest", sentences[6]], ["siege", "Moon Gate Siege", "event", sentences[7]], ["salu", "Salu", "deity", sentences[8]],
-  ["charter", "Ashfall Compact", "other", sentences[9]],
-].map(([temporary_id, name, type, evidence]) => ({ temporary_id, name, type: type as ExtractionInventoryOutput["entities"][number]["type"], aliases: [], sources: source(evidence) })) };
+  ["Mira Vale", "npc", sentences[0]], ["Tomas Reed", "npc", sentences[1]], ["Ashfall", "location", sentences[2]],
+  ["Moon Gate", "location", sentences[3]], ["Dawn Compact", "faction", sentences[4]], ["Ember Key", "item", sentences[5]],
+  ["Recover the Ember Key", "quest", sentences[6]], ["Moon Gate Siege", "event", sentences[7]], ["Salu", "deity", sentences[8]],
+  ["Ashfall Compact", "other", sentences[9]],
+].map(([name, type]) => ({ name, type: type as ExtractionInventoryOutput["entities"][number]["type"], page: 1 })) };
+const validatedInventory = validateExtractionInventory(inventory, chunk).inventory;
 const fieldByType = { npc: "occupation", location: "place_kind", faction: "purpose", item: "item_type", quest: "objective", event: "what_happened", deity: "domain", other: "detail" } as const;
 const rich: ExtractionRichOutput = {
-  entities: inventory.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, roles: [], summary: `${entity.name} is source-backed.`, facts: [{ temporary_id: `${entity.temporary_id}-fact`, field_key: fieldByType[entity.type], content: entity.name, sources: entity.sources }] })),
+  entities: validatedInventory.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, aliases: [], roles: [], summary: `${entity.name} is source-backed.`, facts: [{ temporary_id: `${entity.temporary_id}-fact`, field_key: fieldByType[entity.type], content: entity.name, sources: entity.sources }] })),
   relationships: [
-    { source_temporary_id: "gate", target_temporary_id: "ashfall", relationship_type: "located_in", description: "The gate is in Ashfall.", confidence: 1, sources: source(sentences[3]) },
-    { source_temporary_id: "compact", target_temporary_id: "ashfall", relationship_type: "protects", description: "The compact protects Ashfall.", confidence: 1, sources: source(sentences[4]) },
-    { source_temporary_id: "key", target_temporary_id: "gate", relationship_type: "opens", description: "The key opens the gate.", confidence: 1, sources: source(sentences[5]) },
-    { source_temporary_id: "quest", target_temporary_id: "mira", relationship_type: "questgiver", description: "Mira gives the quest.", confidence: 1, sources: source(sentences[6]) },
+    { source_temporary_id: validatedInventory.entities.find((entity) => entity.name === "Moon Gate")!.temporary_id, target_temporary_id: validatedInventory.entities.find((entity) => entity.name === "Ashfall")!.temporary_id, relationship_type: "located_in", description: "The gate is in Ashfall.", confidence: 1, sources: source(sentences[3]) },
   ],
   suspected_inventory_misses: [],
 };
@@ -41,18 +40,18 @@ const checkpoint = (store: ReturnType<typeof memoryCheckpointStore>, operationTy
 
 describe("v0.4 two-pass extraction contract", () => {
   it("preserves dense inventory breadth independently of rich volume", () => {
-    const validatedInventory = validateExtractionInventory(inventory, chunk.pages).inventory;
+    const validatedInventory = validateExtractionInventory(inventory, chunk).inventory;
     const sparseRich = { ...rich, entities: rich.entities.map((entity) => ({ ...entity, facts: [] })), relationships: [] };
     const validatedRich = validateExtractionRich(sparseRich, validatedInventory, chunk.pages).rich;
     const assembled = assembleChunkExtraction(validatedInventory, validatedRich);
     expect(assembled.entities).toHaveLength(inventory.entities.length);
-    expect(assembled.entities.map((entity) => entity.name)).toEqual(inventory.entities.map((entity) => entity.name));
+    expect(assembled.entities.map((entity) => entity.name).sort()).toEqual(inventory.entities.map((entity) => entity.name).sort());
   });
 
-  it("fails closed for duplicate/unknown IDs and omitted inventory coverage", () => {
-    expect(() => validateExtractionInventory({ entities: [inventory.entities[0], inventory.entities[0]] }, chunk.pages)).toThrow(/Duplicate inventory ID/);
-    expect(() => validateExtractionRich({ ...rich, entities: rich.entities.slice(1) }, inventory, chunk.pages)).toThrow(/omitted inventory IDs/);
-    expect(() => validateExtractionRich({ ...rich, relationships: [{ ...rich.relationships[0], target_temporary_id: "unknown" }] }, inventory, chunk.pages)).toThrow(/Unknown relationship endpoint/);
+  it("deduplicates compact identities, preserves omitted rich entities, and rejects unknown endpoints", () => {
+    expect(validateExtractionInventory({ entities: [inventory.entities[0], inventory.entities[0]] }, chunk).inventory.entities).toHaveLength(1);
+    expect(assembleChunkExtraction(validatedInventory, validateExtractionRich({ ...rich, entities: rich.entities.slice(1) }, validatedInventory, chunk.pages).rich).entities).toHaveLength(inventory.entities.length);
+    expect(() => validateExtractionRich({ ...rich, relationships: [{ ...rich.relationships[0], target_temporary_id: "unknown" }] }, validatedInventory, chunk.pages)).toThrow(/Unknown relationship endpoint/);
   });
 
   it("A: reuses inventory and reruns rich after a rich-pass failure", async () => {
@@ -72,12 +71,12 @@ describe("v0.4 two-pass extraction contract", () => {
   it("B/C: corrupt inventory invalidates both passes; corrupt rich reuses inventory", async () => {
     const store = memoryCheckpointStore();
     await extractChunk(chunk, provider("model", responder() as never), context(store));
-    const inventoryEntry = checkpoint(store, "inventory") as ValidatedCheckpoint<{ rawInventory: ExtractionInventoryOutput }>;
-    inventoryEntry.output.rawInventory = { entities: [inventory.entities[0], inventory.entities[0]] };
+    const inventoryEntry = checkpoint(store, "inventory") as ValidatedCheckpoint<{ rawInventory: ExtractionInventoryOutput; inventory: typeof validatedInventory }>;
+    inventoryEntry.output.rawInventory = { entities: [{ ...inventory.entities[0], page: 99 }] };
     const rerunBoth = await extractChunk(chunk, provider("model", responder() as never), context(store));
     expect(rerunBoth).toMatchObject({ inventoryCheckpointStatus: "RUN", richCheckpointStatus: "RUN" });
     const richEntry = checkpoint(store, "rich") as ValidatedCheckpoint<{ rawRichExtraction: ExtractionRichOutput }>;
-    richEntry.output.rawRichExtraction = { ...rich, entities: [] };
+    richEntry.output.rawRichExtraction = { ...rich, entities: [{ ...rich.entities[0], inventory_id: "unknown" }] };
     const rerunRich = await extractChunk(chunk, provider("model", responder() as never), context(store));
     expect(rerunRich).toMatchObject({ inventoryCheckpointStatus: "REUSE", richCheckpointStatus: "RUN" });
   });
@@ -95,9 +94,9 @@ describe("v0.4 two-pass extraction contract", () => {
     await expect(extractChunk(chunk, richModelChanged, context(secondStore))).resolves.toMatchObject({ inventoryCheckpointStatus: "REUSE", richCheckpointStatus: "RUN" });
 
     const baseIdentity = inventoryCheckpointIdentity(chunk, firstProviders.inventory, context(store));
-    const baseRich = richCheckpointIdentity(chunk, inventory, baseIdentity, firstProviders.rich, context(store));
+    const baseRich = richCheckpointIdentity(chunk, validatedInventory, baseIdentity, firstProviders.rich, context(store));
     for (const changed of [{ behaviorVersion: "changed" }, { schemaVersion: 99 }, { inputHash: "changed" }]) {
-      expect(richCheckpointIdentity(chunk, inventory, { ...baseIdentity, ...changed }, firstProviders.rich, context(store)).upstreamFingerprint).not.toBe(baseRich.upstreamFingerprint);
+      expect(richCheckpointIdentity(chunk, validatedInventory, { ...baseIdentity, ...changed }, firstProviders.rich, context(store)).upstreamFingerprint).not.toBe(baseRich.upstreamFingerprint);
     }
   });
 
@@ -125,11 +124,13 @@ describe("v0.4 two-pass extraction contract", () => {
 
 describe("two-pass curated recall regression", () => {
   it("retains every curated identity through assembly and preserves merge/distinctness semantics", () => {
-    const pages = [...new Set(recallReferenceEntities.map((item) => item.sourcePage))].map((pageNumber) => ({ pageNumber, text: recallReferenceEntities.filter((item) => item.sourcePage === pageNumber).map((item) => item.supportingText).join(" ") }));
-    const curatedInventory: ExtractionInventoryOutput = { entities: recallReferenceEntities.map((item, index) => ({ temporary_id: `ref-${index}`, name: item.name, type: item.expectedType, aliases: [], sources: [{ page_number: item.sourcePage, supporting_text: item.supportingText }] })) };
-    curatedInventory.entities.push({ temporary_id: "cay-other", name: "Cay Naja", type: "other", aliases: [], sources: [{ page_number: 94, supporting_text: "their god of death, Cay Naja" }] });
-    const curatedRich: ExtractionRichOutput = { entities: curatedInventory.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, roles: [], summary: `${entity.name}.`, facts: [] })), relationships: [], suspected_inventory_misses: [] };
-    const assembled = assembleChunkExtraction(validateExtractionInventory(curatedInventory, pages).inventory, validateExtractionRich(curatedRich, curatedInventory, pages).rich);
+    const pages = [...new Set(recallReferenceEntities.map((item) => item.sourcePage))].map((pageNumber) => ({ pageNumber, text: recallReferenceEntities.filter((item) => item.sourcePage === pageNumber).map((item) => `${item.name}. ${item.supportingText}`).join(" ") }));
+    const curatedInventory: ExtractionInventoryOutput = { entities: recallReferenceEntities.map((item) => ({ name: item.name, type: item.expectedType, page: item.sourcePage })) };
+    curatedInventory.entities.push({ name: "Cay Naja", type: "other", page: 94 });
+    const curatedChunk = { id: "curated", pages, characterCount: pages.reduce((sum, page) => sum + page.text.length, 0) };
+    const authoritative = validateExtractionInventory(curatedInventory, curatedChunk).inventory;
+    const curatedRich: ExtractionRichOutput = { entities: authoritative.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, aliases: [], roles: [], summary: `${entity.name}.`, facts: [] })), relationships: [], suspected_inventory_misses: [] };
+    const assembled = assembleChunkExtraction(authoritative, validateExtractionRich(curatedRich, authoritative, pages).rich);
     expect(assembled.entities).toHaveLength(curatedInventory.entities.length);
     const aggregate = aggregateCandidates([{ chunkId: "curated", ...assembled }]);
     const groups = buildDeterministicGroups(aggregate);
@@ -137,8 +138,43 @@ describe("two-pass curated recall regression", () => {
     const jesper = groups.find((group) => group.candidates.some((candidate) => candidate.name === "Jesper Clocker"))!;
     expect(jeanas.id).not.toBe(jesper.id);
     const cayGroups = groups.filter((group) => group.candidates.some((candidate) => candidate.name === "Cay Naja"));
-    const graph = buildCanonicalGraph(aggregate, { canonical_entities: [{ canonical_id: "cay", name: "Cay Naja", group_ids: cayGroups.map((group) => group.id), type: "deity", roles: [], aliases: [], summary: "God of death.", identity_evidence: [{ page_number: 94, supporting_text: "their god of death, Cay Naja" }] }] });
+    const graph = buildCanonicalGraph(aggregate, { canonical_entities: [{ canonical_id: "cay", name: "Cay Naja", group_ids: cayGroups.map((group) => group.id), type: "deity", roles: [], aliases: [], summary: "God of death.", identity_evidence: [authoritative.entities.find((entity) => entity.name === "Cay Naja")!.sources[0]] }] });
     expect(graph.entities.filter((entity) => entity.name === "Cay Naja")).toHaveLength(1);
     expect(graph.entities.filter((entity) => ["Jeanas Clocker", "Jesper Clocker"].includes(entity.name))).toHaveLength(2);
+  });
+
+  it("enforces the identity-page schema and deterministic location-sensitive IDs", () => {
+    expect(() => extractionInventoryOutputSchema.parse({ entities: [{ name: "Mira", type: "npc" }] })).toThrow();
+    expect(() => extractionInventoryOutputSchema.parse({ entities: [{ name: "Mira", type: "enemy", page: 1 }] })).toThrow();
+    expect(() => extractionInventoryOutputSchema.parse({ entities: [{ name: "Mira", type: "npc", page: 0 }] })).toThrow();
+    expect(() => extractionInventoryOutputSchema.parse({ entities: [{ ...inventory.entities[0], temporary_id: "model-id", aliases: ["Alias"], roles: [], summary: "prose" }] })).toThrow();
+    const reversed = validateExtractionInventory({ entities: [...inventory.entities].reverse() }, chunk).inventory;
+    expect(reversed).toEqual(validatedInventory);
+    expect(JSON.parse(JSON.stringify(reversed))).toEqual(reversed);
+    const repeated = { id: "repeated", pages: [{ pageNumber: 1, text: "Echo appears here in one scene." }, { pageNumber: 2, text: "Echo appears here in another scene." }], characterCount: 65 };
+    const occurrences = validateExtractionInventory({ entities: [{ name: "Echo", type: "npc", page: 1 }, { name: "Echo", type: "npc", page: 2 }] }, repeated).inventory;
+    expect(new Set(occurrences.entities.map((entity) => entity.temporary_id)).size).toBe(2);
+  });
+
+  it("grounds evidence deterministically and keeps IDs independent from excerpt formatting", () => {
+    const exact = groundInventoryIdentity({ name: "Moon Gate", type: "location", page: 1 }, chunk.pages);
+    expect(exact).toMatchObject({ strategy: "exact_normalized_name", source: { page_number: 1 } });
+    expect(exact.source?.supporting_text).toContain("Moon Gate");
+    const inferred = groundInventoryIdentity({ name: "Assassination of Mira Vale", type: "event", page: 1 }, [{ pageNumber: 1, text: "Mira Vale was assassinated during the Ashfall uprising." }]);
+    expect(inferred).toMatchObject({ strategy: "inferred_event_or_quest_tokens", source: { page_number: 1 } });
+    expect(groundInventoryIdentity({ name: "Invented Stranger", type: "npc", page: 1 }, chunk.pages)).toMatchObject({ source: null, strategy: null });
+    const fingerprint = "f".repeat(64);
+    expect(deterministicInventoryId(fingerprint, "npc", "Mira Vale", 1)).toBe(deterministicInventoryId(fingerprint, "npc", "Mira Vale", 1));
+    expect(deterministicInventoryId(fingerprint, "npc", "Echo", 1)).not.toBe(deterministicInventoryId(fingerprint, "quest", "Echo", 1));
+  });
+
+  it("uses the v3 identity-page checkpoint contract and invalidates v2 inventory identity", async () => {
+    expect(EXTRACTION_INVENTORY_CONTRACT_VERSION).toBe(3);
+    expect(EXTRACTION_INVENTORY_BEHAVIOR_VERSION).toBe("v0.4-identity-page-grounding-3");
+    const store = memoryCheckpointStore();
+    const current = inventoryCheckpointIdentity(chunk, provider("model", responder() as never), context(store));
+    const v2 = { ...current, behaviorVersion: "v0.4-compact-inventory-2", schemaVersion: 2 };
+    await store.saveValidated({ identity: v2, output: {}, usage: [], attemptCount: 1 });
+    await expect(store.inspect!(current)).resolves.toMatchObject({ status: "INVALIDATED" });
   });
 });

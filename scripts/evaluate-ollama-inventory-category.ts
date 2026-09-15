@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import { z } from "zod";
 import { buildInventoryInput, EXTRACTION_INVENTORY_SYSTEM_PROMPT } from "../lib/ai/prompts";
-import type { ExtractionInventoryOutput } from "../lib/ai/schemas";
+import type { ValidatedExtractionInventoryOutput as ExtractionInventoryOutput } from "../lib/ai/schemas";
 import { validateExtractionInventory } from "../lib/ai/source-validation";
 import { resolveAIProviderConfig } from "../lib/env";
 import { aggregateBoundaryInventories } from "./ollama-inventory-pressure";

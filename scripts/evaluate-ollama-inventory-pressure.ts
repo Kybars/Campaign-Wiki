@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import { z } from "zod";
 import { buildExtractionInput, buildInventoryInput, EXTRACTION_INVENTORY_SYSTEM_PROMPT } from "../lib/ai/prompts";
-import { extractionInventoryOutputSchema, type ExtractionInventoryOutput } from "../lib/ai/schemas";
+import { extractionInventoryOutputSchema, type ValidatedExtractionInventoryOutput } from "../lib/ai/schemas";
 import { validateExtractionInventory } from "../lib/ai/source-validation";
 import { resolveAIProviderConfig } from "../lib/env";
 import { aggregateBoundaryInventories, subdivideInventorySource, summarizeInventoryPressureCalls, type InventoryPressureSubchunk } from "./ollama-inventory-pressure";
@@ -37,20 +37,20 @@ interface Attempt {
   failureClass: string | null;
   suspectedIncompleteJson: boolean;
   error: string | null;
-  inventory?: ExtractionInventoryOutput;
+  inventory?: ValidatedExtractionInventoryOutput;
 }
 interface LevelResult { label: "2 x ~50%" | "4 x ~25%"; calls: Attempt[]; aggregate: ReturnType<typeof aggregateBoundaryInventories> | null; quality: ReturnType<typeof qualityMetrics> | null }
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 const normalizedSourceHash = (chunk: PageChunk) => { const input = buildExtractionInput(chunk); return sha256(input.slice(input.indexOf("<campaign-page")).replace(/\s+/g, " ").trim()); };
-const typeCounts = (inventory: ExtractionInventoryOutput) => Object.fromEntries([...new Set(inventory.entities.map((entity) => entity.type))].sort().map((type) => [type, inventory.entities.filter((entity) => entity.type === type).length]));
+const typeCounts = (inventory: ValidatedExtractionInventoryOutput) => Object.fromEntries([...new Set(inventory.entities.map((entity) => entity.type))].sort().map((type) => [type, inventory.entities.filter((entity) => entity.type === type).length]));
 const identities = (name: string, aliases: string[]) => new Set([name, ...aliases].map(normalizeName).filter(Boolean));
 
-function qualityMetrics(inventory: ExtractionInventoryOutput[], reference: ReferenceChunk) {
+function qualityMetrics(inventory: ValidatedExtractionInventoryOutput[], reference: ReferenceChunk) {
   const entities = inventory.flatMap((item) => item.entities);
   const matched = new Set<number>();
   for (const entity of entities) {
-    const candidate = identities(entity.name, entity.aliases);
+    const candidate = identities(entity.name, []);
     const possible = reference.expected_identities.map((item, index) => ({ item, index })).filter(({ item }) => item.reference_type === entity.type && [...candidate].some((value) => identities(item.name, item.acceptable_aliases).has(value)));
     if (possible.length === 1) matched.add(possible[0].index);
   }
@@ -102,7 +102,7 @@ async function runAttempt(config: Extract<ReturnType<typeof resolveAIProviderCon
     if (!content) throw new Error("Local AI returned no extraction_inventory_output content");
     base.outputCharacters = content.length; base.outputBytes = Buffer.byteLength(content, "utf8"); base.usage = { inputTokens: envelope.usage?.prompt_tokens ?? null, outputTokens: envelope.usage?.completion_tokens ?? null, totalTokens: envelope.usage?.total_tokens ?? null };
     const parsed = extractionInventoryOutputSchema.parse(JSON.parse(content));
-    const validated = validateExtractionInventory(parsed, subchunk.pages);
+    const validated = validateExtractionInventory(parsed, { id: subchunk.id, pages: subchunk.pages, characterCount: subchunk.characterCount });
     return { ...base, status: "success", latencyMs: Math.round(performance.now() - startedAt), entityCount: validated.inventory.entities.length, perType: typeCounts(validated.inventory), inventory: validated.inventory };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

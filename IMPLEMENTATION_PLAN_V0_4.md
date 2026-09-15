@@ -819,7 +819,15 @@ The controlled `qwen3.5:9b` Ollama re-benchmark held model digest, 32K context, 
 
 Report: `docs/audits/two_pass_ollama_extraction_benchmark.md`.
 
-The next extraction action is a separately scoped, no-cost inventory-pressure diagnosis. Do not infer that a paid OpenAI validation or production model switch is authorized.
+Subsequent no-cost diagnostics isolated pathological v1 inventory metadata. Production Pass A now emits only name, type, and one bounded source-evidence record; application code assigns deterministic chunk-local IDs, while aliases moved to Pass B. Inventory/rich checkpoint contracts advanced to v2.
+
+The frozen three-chunk inventory benchmark returned 1/3 valid: chunks 3 and 5 remained incomplete after about 439s/429s, while chunk 4 validated with 99 entities and 73.5% reference recall. Decision: `COMPACT_PASS_A_PARTIALLY_RELIABLE`. The next extraction action is a compact-Pass-A source-size reliability experiment; rich validation, full 3+9+3 benchmarking, and paid validation remain premature.
+
+Report: `docs/audits/compact_pass_a_inventory_benchmark.md`.
+
+The subsequent frozen WotBS Stage-1 correctness fixture showed that model-generated excerpts could still produce a 108k-character malformed response on only 11,083 source characters. A focused repair changed production Pass A to `name`, `type`, and one supporting `page`; application code now derives bounded source evidence and deterministic IDs. The repaired production attempt validated compactly with 39 authoritative identities, 12/12 Quests, 2/2 Items, zero grounding failures, and 86.0% frozen-reference recall. Decision: `WOTBS_PASS_A_RELIABLE_RECALL_LOW`. Pass B was not run; the next extraction action is focused NPC/Event recall repair on the frozen small fixture.
+
+Report: `docs/audits/wotbs_stage1_pass_a_identity_grounding_repair.md`.
 
 ---
 

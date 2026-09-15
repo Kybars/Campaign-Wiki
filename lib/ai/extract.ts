@@ -1,6 +1,6 @@
 import { buildInventoryInput, buildRichExtractionInput, EXTRACTION_INVENTORY_SYSTEM_PROMPT, EXTRACTION_RICH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
-import { chunkExtractionSchema, extractionInventoryOutputSchema, extractionRichOutputSchema, type ChunkExtraction, type ExtractionInventoryOutput, type ExtractionRichOutput } from "@/lib/ai/schemas";
-import { assembleChunkExtraction, validateExtractionInventory, validateExtractionRich, type ValidationDiagnostic } from "@/lib/ai/source-validation";
+import { chunkExtractionSchema, extractionInventoryOutputSchema, extractionRichOutputSchema, validatedExtractionInventoryOutputSchema, type ChunkExtraction, type ExtractionInventoryOutput, type ExtractionRichOutput, type ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
+import { assembleChunkExtraction, validateExtractionInventory, validatedInventoryFingerprint, validateExtractionRich, type ValidationDiagnostic } from "@/lib/ai/source-validation";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import { getProcessingEnv } from "@/lib/env";
@@ -12,7 +12,7 @@ export interface ExtractionProviders { inventory: StructuredModelProvider; rich:
 export interface ExtractedChunk {
   chunkId: string;
   rawInventory: ExtractionInventoryOutput;
-  inventory: ExtractionInventoryOutput;
+  inventory: ValidatedExtractionInventoryOutput;
   rawRichExtraction: ExtractionRichOutput;
   richExtraction: ExtractionRichOutput;
   rawExtraction: ChunkExtraction;
@@ -72,11 +72,11 @@ export function inventoryCheckpointIdentity(chunk: PageChunk, provider: Structur
   };
 }
 
-export function inventoryDependencyFingerprint(inventory: ExtractionInventoryOutput, identity: AIOperationIdentity): string {
+export function inventoryDependencyFingerprint(inventory: ValidatedExtractionInventoryOutput, identity: AIOperationIdentity): string {
   return semanticInputHash({ inventory, inventoryIdentity: identity });
 }
 
-export function richCheckpointIdentity(chunk: PageChunk, inventory: ExtractionInventoryOutput, inventoryIdentity: AIOperationIdentity, provider: StructuredModelProvider, checkpoint: ExtractionCheckpointContext): AIOperationIdentity {
+export function richCheckpointIdentity(chunk: PageChunk, inventory: ValidatedExtractionInventoryOutput, inventoryIdentity: AIOperationIdentity, provider: StructuredModelProvider, checkpoint: ExtractionCheckpointContext): AIOperationIdentity {
   const payload = buildRichExtractionInput(chunk, inventory);
   return {
     campaignId: checkpoint.campaignId, documentId: checkpoint.documentId, sourceExtractionCacheId: null,
@@ -100,18 +100,20 @@ export async function extractChunk(chunk: PageChunk, provider?: StructuredModelP
   const providers = await resolveProviders(provider);
   const inventoryIdentity = checkpoint ? inventoryCheckpointIdentity(chunk, providers.inventory, checkpoint) : undefined;
   let rawInventory: ExtractionInventoryOutput | undefined;
-  let inventory: ExtractionInventoryOutput | undefined;
+  let inventory: ValidatedExtractionInventoryOutput | undefined;
   let inventoryDiagnostics: ValidationDiagnostic[] = [];
   let inventoryUsage = emptyUsage(providers.inventory.modelId);
   let inventoryCheckpointStatus: "REUSE" | "RUN" = "RUN";
   let forceRichRun = false;
 
   if (inventoryIdentity) {
-    const cached = await checkpoint!.store.load<{ rawInventory: ExtractionInventoryOutput }>(inventoryIdentity);
+    const cached = await checkpoint!.store.load<{ rawInventory: ExtractionInventoryOutput; inventory: ValidatedExtractionInventoryOutput }>(inventoryIdentity);
     if (cached) {
       try {
         rawInventory = extractionInventoryOutputSchema.parse(cached.output.rawInventory);
-        const validated = validateExtractionInventory(rawInventory, chunk.pages);
+        const validated = validateExtractionInventory(rawInventory, chunk);
+        const storedInventory = validatedExtractionInventoryOutputSchema.parse(cached.output.inventory);
+        if (validatedInventoryFingerprint(validated.inventory) !== validatedInventoryFingerprint(storedInventory)) throw new Error("stored validated inventory does not match compact model output");
         inventory = validated.inventory;
         inventoryDiagnostics = validated.diagnostics;
         inventoryUsage = cached.usage[0] ?? inventoryUsage;
@@ -130,7 +132,7 @@ export async function extractChunk(chunk: PageChunk, provider?: StructuredModelP
     });
     rawInventory = response.output;
     try {
-      const validated = validateExtractionInventory(response.output, chunk.pages);
+      const validated = validateExtractionInventory(response.output, chunk);
       inventory = validated.inventory;
       inventoryDiagnostics = validated.diagnostics;
     } catch (error) {
@@ -202,12 +204,14 @@ export async function planTwoPassExtraction(chunks: PageChunk[], provider: Struc
   for (const chunk of chunks) {
     const inventoryIdentity = inventoryCheckpointIdentity(chunk, providers.inventory, checkpoint);
     let inventoryStatus = checkpoint.store.inspect ? await checkpoint.store.inspect(inventoryIdentity) : await checkpoint.store.load(inventoryIdentity) ? { status: "REUSE" as const, reason: "exact validated identity" } : { status: "RUN" as const, reason: "no compatible validated checkpoint" };
-    let inventory: ExtractionInventoryOutput | undefined;
+    let inventory: ValidatedExtractionInventoryOutput | undefined;
     if (inventoryStatus.status === "REUSE") {
       try {
-        const cached = await checkpoint.store.load<{ rawInventory: ExtractionInventoryOutput }>(inventoryIdentity);
+        const cached = await checkpoint.store.load<{ rawInventory: ExtractionInventoryOutput; inventory: ValidatedExtractionInventoryOutput }>(inventoryIdentity);
         if (!cached) throw new Error("validated checkpoint disappeared during planning");
-        inventory = validateExtractionInventory(extractionInventoryOutputSchema.parse(cached.output.rawInventory), chunk.pages).inventory;
+        inventory = validateExtractionInventory(extractionInventoryOutputSchema.parse(cached.output.rawInventory), chunk).inventory;
+        const storedInventory = validatedExtractionInventoryOutputSchema.parse(cached.output.inventory);
+        if (validatedInventoryFingerprint(inventory) !== validatedInventoryFingerprint(storedInventory)) throw new Error("stored validated inventory does not match compact model output");
       } catch (error) {
         inventoryStatus = { status: "INVALIDATED", reason: `stored inventory checkpoint invalid: ${error instanceof Error ? error.message : "unknown validation failure"}` };
       }

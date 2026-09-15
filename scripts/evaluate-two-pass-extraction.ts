@@ -8,11 +8,11 @@ import type { StructuredModelProvider } from "../lib/ai/structured-model-provide
 
 async function main() {
   const pageNumbers = [...new Set(recallReferenceEntities.map((item) => item.sourcePage))];
-  const pages = pageNumbers.map((pageNumber) => ({ pageNumber, text: recallReferenceEntities.filter((item) => item.sourcePage === pageNumber).map((item) => item.supportingText).join(" ") }));
+  const pages = pageNumbers.map((pageNumber) => ({ pageNumber, text: recallReferenceEntities.filter((item) => item.sourcePage === pageNumber).map((item) => `${item.name}. ${item.supportingText}`).join(" ") }));
   const chunk = { id: "curated-recall", pages, characterCount: pages.reduce((sum, page) => sum + page.text.length, 0) };
-  const inventory: ExtractionInventoryOutput = { entities: recallReferenceEntities.map((item, index) => ({ temporary_id: `entity-${index}`, name: item.name, type: item.expectedType, aliases: [], sources: [{ page_number: item.sourcePage, supporting_text: item.supportingText }] })) };
-  const rich: ExtractionRichOutput = { entities: inventory.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, roles: [], summary: `${entity.name}.`, facts: [] })), relationships: [], suspected_inventory_misses: [] };
-  const validatedInventory = validateExtractionInventory(inventory, pages);
+  const inventory: ExtractionInventoryOutput = { entities: recallReferenceEntities.map((item) => ({ name: item.name, type: item.expectedType, page: item.sourcePage })) };
+  const validatedInventory = validateExtractionInventory(inventory, chunk);
+  const rich: ExtractionRichOutput = { entities: validatedInventory.inventory.entities.map((entity) => ({ inventory_id: entity.temporary_id, type: entity.type, aliases: [], roles: [], summary: `${entity.name}.`, facts: [] })), relationships: [], suspected_inventory_misses: [] };
   const validatedRich = validateExtractionRich(rich, validatedInventory.inventory, pages);
   const assembled = assembleChunkExtraction(validatedInventory.inventory, validatedRich.rich);
   assert.equal(assembled.entities.length, recallReferenceEntities.length);

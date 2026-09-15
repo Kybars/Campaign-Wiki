@@ -20,6 +20,16 @@
 /artifacts/ollama-inventory-pressure/
 /artifacts/ollama-inventory-category/
 /artifacts/ollama-inventory-pathology/
+/artifacts/compact-pass-a/
+/artifacts/compact-pass-a-source-size/
+/artifacts/wotbs-stage1/
+/artifacts/wotbs-pass-a-repair/
+
+# Private / copyrighted benchmark material
+# Commercial campaign books, extracted source text, and source-derived
+# gold references are local-only and must not be published.
+fixtures/private/
+fixtures/wotbs-stage1/
 
 # Supabase local project-link metadata
 /supabase/.temp/

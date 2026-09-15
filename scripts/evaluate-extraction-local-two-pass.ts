@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { buildExtractionInput, buildInventoryInput, buildRichExtractionInput, EXTRACTION_INVENTORY_SYSTEM_PROMPT, EXTRACTION_RICH_SYSTEM_PROMPT } from "../lib/ai/prompts";
 import { EXTRACTION_INVENTORY_BEHAVIOR_VERSION, EXTRACTION_INVENTORY_CONTRACT_VERSION, EXTRACTION_RICH_BEHAVIOR_VERSION, EXTRACTION_RICH_CONTRACT_VERSION } from "../lib/ai/operation-checkpoint";
-import { extractionInventoryOutputSchema, extractionRichOutputSchema, type ChunkExtraction, type ExtractionInventoryOutput, type ExtractionRichOutput } from "../lib/ai/schemas";
+import { extractionInventoryOutputSchema, extractionRichOutputSchema, type ChunkExtraction, type ExtractionInventoryOutput, type ExtractionRichOutput, type ValidatedExtractionInventoryOutput } from "../lib/ai/schemas";
 import { assembleChunkExtraction, validateExtractionInventory, validateExtractionRich } from "../lib/ai/source-validation";
 import { createLocalStructuredModelProvider, LocalStructuredModelError, type LocalStructuredFailureClass, type LocalTransportDiagnostics } from "../lib/ai/structured-model-provider";
 import { resolveAIProviderConfig } from "../lib/env";
@@ -216,11 +216,11 @@ async function main() {
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   for (const [index, { phase, item }] of plan.entries()) {
     const fileName = artifactName(phase, item.chunkNumber); const startedInventory = performance.now();
-    let rawInventory: ExtractionInventoryOutput | undefined; let validatedInventory: ExtractionInventoryOutput | undefined; let inventoryResult: Attempt["inventory"];
+    let rawInventory: ExtractionInventoryOutput | undefined; let validatedInventory: ValidatedExtractionInventoryOutput | undefined; let inventoryResult: Attempt["inventory"];
     console.log(JSON.stringify({ event: "inventory_started", attempt: index + 1, phase, chunk: item.chunkNumber }));
     try {
       const response = await inventoryProvider.parseStructured({ system: EXTRACTION_INVENTORY_SYSTEM_PROMPT, payload: buildInventoryInput(item.chunk), schema: extractionInventoryOutputSchema, schemaName: "extraction_inventory_output" });
-      rawInventory = response.output; const validated = validateExtractionInventory(response.output, item.chunk.pages); validatedInventory = validated.inventory; const outputSize = size(response.output);
+      rawInventory = response.output; const validated = validateExtractionInventory(response.output, item.chunk); validatedInventory = validated.inventory; const outputSize = size(response.output);
       inventoryResult = { status: "success", latencyMs: Math.round(performance.now() - startedInventory), responseModel: response.modelId, responseId: response.responseId, usage: { inputTokens: response.usage.inputTokens, outputTokens: response.usage.outputTokens, totalTokens: response.usage.totalTokens }, outputCharacters: outputSize.characters, outputBytes: outputSize.bytes, entityCount: validated.inventory.entities.length, diagnosticCount: validated.diagnostics.length };
     } catch (error) { inventoryResult = passFailure(error, Math.round(performance.now() - startedInventory)); }
     let rawRich: ExtractionRichOutput | undefined; let validatedRich: ExtractionRichOutput | undefined; let richResult: Attempt["rich"] = { status: "not_run", latencyMs: null };

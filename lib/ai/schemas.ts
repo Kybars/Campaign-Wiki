@@ -8,6 +8,11 @@ export const sourceEvidenceSchema = z.object({
   supporting_text: z.string().min(8).max(1200),
 });
 
+export const INVENTORY_EVIDENCE_MAX_CHARACTERS = 240;
+export const inventoryExistenceEvidenceSchema = sourceEvidenceSchema.extend({
+  supporting_text: z.string().min(8).max(INVENTORY_EVIDENCE_MAX_CHARACTERS),
+});
+
 const candidateFactIdentitySchema = z.object({
   temporary_id: z.string().min(1).max(100),
   content: z.string().min(1).max(1600),
@@ -52,15 +57,24 @@ export const candidateRelationshipSchema = z.object({
 });
 
 export const extractionInventoryEntitySchema = z.object({
-  temporary_id: z.string().min(1).max(100),
   name: z.string().min(1).max(200),
   type: entityTypeSchema,
-  aliases: z.array(z.string().min(1).max(200)).max(20),
-  sources: z.array(sourceEvidenceSchema).min(1).max(20),
-});
+  page: z.number().int().positive(),
+}).strict();
 
 export const extractionInventoryOutputSchema = z.object({
   entities: z.array(extractionInventoryEntitySchema),
+}).strict();
+
+export const validatedExtractionInventoryEntitySchema = z.object({
+  temporary_id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  type: entityTypeSchema,
+  sources: z.tuple([inventoryExistenceEvidenceSchema]),
+});
+
+export const validatedExtractionInventoryOutputSchema = z.object({
+  entities: z.array(validatedExtractionInventoryEntitySchema),
 });
 
 const extractionRichFactSchema = candidateFactIdentitySchema.extend({
@@ -70,6 +84,7 @@ const extractionRichFactSchema = candidateFactIdentitySchema.extend({
 export const extractionRichEntitySchema = z.object({
   inventory_id: z.string().min(1).max(100),
   type: entityTypeSchema,
+  aliases: z.array(z.string().min(1).max(200)).max(20),
   roles: z.array(entityRoleSchema).max(10),
   summary: z.string().min(1).max(1200),
   facts: z.array(extractionRichFactSchema).max(80),
@@ -115,5 +130,7 @@ export type CandidateRelationship = z.infer<typeof candidateRelationshipSchema>;
 export type ChunkExtraction = z.infer<typeof chunkExtractionSchema>;
 export type ExtractionInventoryEntity = z.infer<typeof extractionInventoryEntitySchema>;
 export type ExtractionInventoryOutput = z.infer<typeof extractionInventoryOutputSchema>;
+export type ValidatedExtractionInventoryEntity = z.infer<typeof validatedExtractionInventoryEntitySchema>;
+export type ValidatedExtractionInventoryOutput = z.infer<typeof validatedExtractionInventoryOutputSchema>;
 export type ExtractionRichOutput = z.infer<typeof extractionRichOutputSchema>;
 export type ReconciliationDecision = z.infer<typeof reconciliationDecisionSchema>;

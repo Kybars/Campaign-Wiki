@@ -1,11 +1,17 @@
 import { z } from "zod";
-import { extractionInventoryEntitySchema, entityTypeSchema } from "../lib/ai/schemas";
+import { entityTypeSchema, sourceEvidenceSchema } from "../lib/ai/schemas";
 
 export const INVENTORY_CATEGORIES = entityTypeSchema.options;
 export type InventoryCategory = typeof INVENTORY_CATEGORIES[number];
 
 export function categoryInventorySchema(category: InventoryCategory) {
-  return z.object({ entities: z.array(extractionInventoryEntitySchema.extend({ type: z.literal(category) })) });
+  return z.object({ entities: z.array(z.object({ temporary_id: z.string().min(1), name: z.string().min(1), type: z.literal(category), aliases: z.array(z.string()), sources: z.array(sourceEvidenceSchema).min(1) })) }).superRefine((value, context) => {
+    const ids = new Set<string>();
+    value.entities.forEach((entity, index) => {
+      if (ids.has(entity.temporary_id)) context.addIssue({ code: "custom", message: "Duplicate inventory ID", path: ["entities", index, "temporary_id"] });
+      ids.add(entity.temporary_id);
+    });
+  });
 }
 
 export function categoryInventoryPrompt(category: InventoryCategory) {

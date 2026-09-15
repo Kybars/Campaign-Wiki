@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateExtractionInventory } from "@/lib/ai/source-validation";
 import { categoryInventoryPrompt, categoryInventorySchema } from "../scripts/ollama-inventory-category";
 
-const pages = [{ pageNumber: 38, text: "Named evidence appears here." }];
 const entity = { temporary_id: "id-1", name: "Named", type: "npc", aliases: [], sources: [{ page_number: 38, supporting_text: "Named evidence appears here." }] };
 
 describe("inventory category experiment contract", () => {
@@ -13,8 +11,7 @@ describe("inventory category experiment contract", () => {
   });
 
   it("keeps duplicate-id rejection in the existing evidence validator", () => {
-    const output = categoryInventorySchema("npc").parse({ entities: [entity, { ...entity, name: "Different" }] });
-    expect(() => validateExtractionInventory(output, pages)).toThrow(/Duplicate inventory ID/);
+    expect(() => categoryInventorySchema("npc").parse({ entities: [entity, { ...entity, name: "Different" }] })).toThrow(/Duplicate inventory ID/);
   });
 
   it("creates deterministic category-specific prompts", () => {
