@@ -10,11 +10,32 @@ import type { DocumentPage } from "@/lib/pdf/types";
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
 import { ENRICHMENT_CACHE_SCHEMA_VERSION, ENRICHMENT_PROMPT_VERSION, RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
 import type { CampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
+import { entityCurationUpdate, type EntityCurationPatch } from "@/lib/curation";
+import type { KnowledgeVisibility } from "@/lib/knowledge/types";
 
 export async function updateCampaign(campaignId: string, values: Database["public"]["Tables"]["campaigns"]["Update"]) {
   const client = createAdminClient();
   const { error } = await client.from("campaigns").update(values).eq("id", campaignId);
   if (error) throw new Error(`Update campaign: ${error.message}`);
+}
+
+export async function updateEntityCuration(campaignId: string, entityId: string, patch: EntityCurationPatch) {
+  const client = createAdminClient();
+  const values: Database["public"]["Tables"]["entities"]["Update"] = entityCurationUpdate(patch);
+  const result = await client.from("entities").update(values).eq("campaign_id", campaignId).eq("id", entityId).select("id,type,prominence,visibility,quest_status").maybeSingle();
+  return requireData(result.data, result.error, "Update entity curation");
+}
+
+export async function updateRelationshipVisibility(campaignId: string, relationshipIds: string[], visibility: KnowledgeVisibility) {
+  const client = createAdminClient();
+  const result = await client.from("relationships")
+    .update({ visibility, visibility_is_manual: true })
+    .eq("campaign_id", campaignId)
+    .in("id", relationshipIds)
+    .select("id,source_entity_id,target_entity_id,visibility");
+  const rows = requireData(result.data, result.error, "Update relationship visibility");
+  if (rows.length !== relationshipIds.length) throw new Error("One or more relationships were not found");
+  return rows;
 }
 
 export async function claimCampaignForProcessing(campaignId: string): Promise<boolean> {

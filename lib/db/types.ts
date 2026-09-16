@@ -3,6 +3,7 @@ import type {
   KnowledgeSummaryKind,
   KnowledgeVisibility,
   ProvenanceOrigin,
+  QuestStatus,
 } from "@/lib/knowledge/types";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -40,16 +41,16 @@ export interface Database {
         { id?: string; document_id: string; page_number: number; text: string }
       >;
       entities: Table<
-        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles: EntityRole[]; aliases: string[]; summary: string; gm_summary: string | null; player_summary: string | null; visibility: KnowledgeVisibility; prominence: EntityProminence | null; prominence_reason: string | null; reconciliation_metadata: Json; created_at: string; updated_at: string },
-        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles?: EntityRole[]; aliases?: string[]; summary?: string; gm_summary?: string | null; player_summary?: string | null; visibility?: KnowledgeVisibility; prominence?: EntityProminence | null; prominence_reason?: string | null; reconciliation_metadata?: Json }
+        { id: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles: EntityRole[]; aliases: string[]; summary: string; gm_summary: string | null; player_summary: string | null; visibility: KnowledgeVisibility; prominence: EntityProminence | null; prominence_reason: string | null; quest_status: QuestStatus | null; type_is_manual: boolean; prominence_is_manual: boolean; visibility_is_manual: boolean; quest_status_is_manual: boolean; reconciliation_metadata: Json; created_at: string; updated_at: string },
+        { id?: string; campaign_id: string; name: string; normalized_name: string; type: EntityType; roles?: EntityRole[]; aliases?: string[]; summary?: string; gm_summary?: string | null; player_summary?: string | null; visibility?: KnowledgeVisibility; prominence?: EntityProminence | null; prominence_reason?: string | null; quest_status?: QuestStatus | null; type_is_manual?: boolean; prominence_is_manual?: boolean; visibility_is_manual?: boolean; quest_status_is_manual?: boolean; reconciliation_metadata?: Json }
       >;
       entity_sources: Table<
         { id: string; entity_id: string; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
         { id?: string; entity_id: string; origin?: ProvenanceOrigin; document_id?: string | null; page_number?: number | null; supporting_text?: string | null; source_location?: Json; origin_metadata?: Json }
       >;
       relationships: Table<
-        { id: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility: KnowledgeVisibility; origin: ProvenanceOrigin; resolution_metadata: Json; created_at: string; updated_at: string },
-        { id?: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility?: KnowledgeVisibility; origin?: ProvenanceOrigin; resolution_metadata?: Json }
+        { id: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility: KnowledgeVisibility; visibility_is_manual: boolean; origin: ProvenanceOrigin; resolution_metadata: Json; created_at: string; updated_at: string },
+        { id?: string; campaign_id: string; source_entity_id: string; target_entity_id: string; relationship_type: string; description: string; confidence: number; visibility?: KnowledgeVisibility; visibility_is_manual?: boolean; origin?: ProvenanceOrigin; resolution_metadata?: Json }
       >;
       relationship_sources: Table<
         { id: string; relationship_id: string; origin: ProvenanceOrigin; document_id: string | null; page_number: number | null; supporting_text: string | null; source_location: Json; origin_metadata: Json; created_at: string },
@@ -117,7 +118,7 @@ export interface Database {
         Returns: Json;
       };
     };
-    Enums: { campaign_status: CampaignStatus; entity_type: EntityType; knowledge_visibility: KnowledgeVisibility; entity_prominence: EntityProminence; provenance_origin: ProvenanceOrigin; knowledge_summary_kind: KnowledgeSummaryKind };
+    Enums: { campaign_status: CampaignStatus; entity_type: EntityType; knowledge_visibility: KnowledgeVisibility; entity_prominence: EntityProminence; quest_status: QuestStatus; provenance_origin: ProvenanceOrigin; knowledge_summary_kind: KnowledgeSummaryKind };
     CompositeTypes: Record<string, never>;
   };
 }

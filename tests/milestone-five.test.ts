@@ -55,7 +55,7 @@ describe("Milestone 5 compact entity presentation", () => {
 
   it("uses a compact relationship description and preserves a clickable target", () => {
     const page = render();
-    expect(page).toContain("Colinus Birthwitch is the uncle of <a");
+    expect(page).toContain("Colinus Birthwitch is the uncle of Kylar Birthwitch.");
     expect(page).toContain(`href="/campaigns/${campaignId}/entities/kylar"`);
     expect(page).not.toContain("relationship source");
   });
@@ -63,7 +63,7 @@ describe("Milestone 5 compact entity presentation", () => {
   it("falls back to relationship label plus a linked target when no description exists", () => {
     const view = detail({ relationships: [{ ...detail().relationships[0], description: "", displayLabel: "uncle of" }] });
     const page = render(view);
-    expect(page).toContain("uncle of</span> <a");
+    expect(page).toContain("Uncle of</span>");
     expect(page).toContain("Kylar Birthwitch</a>");
   });
 
@@ -75,11 +75,11 @@ describe("Milestone 5 compact entity presentation", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("renders compact source references that expose full evidence with native disclosure", () => {
+  it("renders compact source references with an accessible controlled popover", () => {
     const page = render();
     expect(page).toContain("[p. 45]");
-    expect(page).toContain("<details");
-    expect(page).toContain("Colinus is Kylar&#x27;s uncle.");
+    expect(page).toContain('aria-haspopup="dialog"');
+    expect(page).toContain("Show evidence for uncle of");
   });
 
   it("deduplicates source pages without losing multiple excerpts on that page", () => {
@@ -116,7 +116,7 @@ describe("Milestone 5 compact entity presentation", () => {
       sources: [],
     }));
     const page = render(detail({ relationships }));
-    expect((page.match(/<li class="py-3 leading-7">/g) ?? [])).toHaveLength(12);
+    expect((page.match(/Colinus knows Person \d+\./g) ?? [])).toHaveLength(12);
   });
 
   it("keeps location parent and immediate sublocations available", () => {

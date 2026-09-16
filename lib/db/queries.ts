@@ -5,7 +5,7 @@ import type { Database, EntityRole, EntityType } from "@/lib/db/types";
 import { filterEntitiesBySearchTerm } from "@/lib/entities";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipsForEntity } from "@/lib/relationships/view";
-import { visibleEntities, visibleFacts, visibleRelationships, visibleSummary, type CampaignViewMode } from "@/lib/campaign-view";
+import { playerVisibleCategoryKeys, visibleEntities, visibleFacts, visibleRelationships, visibleSummary, type CampaignViewMode } from "@/lib/campaign-view";
 
 type EntitySourceRow = Database["public"]["Tables"]["entity_sources"]["Row"];
 type RelationshipSourceRow = Database["public"]["Tables"]["relationship_sources"]["Row"];
@@ -82,7 +82,7 @@ export async function getCampaigns() {
 
 export async function getCampaignEntities(campaignId: string, type?: EntityType, role?: EntityRole, viewMode: CampaignViewMode = "dm") {
   const client = createAdminClient();
-  let query = client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility,prominence").eq("campaign_id", campaignId);
+  let query = client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility,prominence,quest_status").eq("campaign_id", campaignId);
   if (type) query = query.eq("type", type);
   if (role) query = query.contains("roles", [role]);
   if (viewMode === "player") query = query.eq("visibility", "player_visible");
@@ -92,6 +92,25 @@ export async function getCampaignEntities(campaignId: string, type?: EntityType,
       const { gm_summary, player_summary, summary: legacySummary, ...safeEntity } = entity;
       return { ...safeEntity, summary: visibleSummary({ ...safeEntity, gm_summary, player_summary, summary: legacySummary }, viewMode) };
     });
+}
+
+export async function campaignEntityExists(campaignId: string, entityId: string) {
+  const client = createAdminClient();
+  const result = await client.from("entities").select("id,visibility").eq("campaign_id", campaignId).eq("id", entityId).maybeSingle();
+  if (result.error) throw new Error(`Check entity: ${result.error.message}`);
+  return result.data;
+}
+
+export async function getCampaignNavigation(campaignId: string, viewMode: CampaignViewMode = "dm") {
+  const client = createAdminClient();
+  let query = client.from("entities").select("type,roles,visibility").eq("campaign_id", campaignId);
+  if (viewMode === "player") query = query.eq("visibility", "player_visible");
+  const result = await query;
+  const entities = requireData(result.data, result.error, "Load campaign navigation");
+  if (viewMode === "player") return playerVisibleCategoryKeys(entities);
+  const keys = new Set<string>(entities.map((entity) => entity.type));
+  if (entities.some((entity) => entity.roles.includes("enemy"))) keys.add("enemies");
+  return [...keys];
 }
 
 export async function getEventChronologyEntries(campaignId: string, viewMode: CampaignViewMode = "dm") {

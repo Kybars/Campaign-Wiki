@@ -18,6 +18,17 @@ export function campaignHref(path: string, viewMode: CampaignViewMode): string {
   return `${path}${separator}view=player`;
 }
 
+export function shouldRedirectHiddenPlayerPage(viewMode: CampaignViewMode, exists: boolean, visible: boolean): boolean {
+  return viewMode === "player" && exists && !visible;
+}
+
+export function playerVisibleCategoryKeys(entities: readonly Pick<ReadEntity, "type" | "roles" | "visibility">[]): string[] {
+  const visible = entities.filter((entity) => entity.visibility === "player_visible");
+  const keys = new Set<string>(visible.map((entity) => entity.type));
+  if (visible.some((entity) => entity.roles.includes("enemy"))) keys.add("enemies");
+  return [...keys];
+}
+
 export interface ReadEntity {
   id: string;
   name: string;

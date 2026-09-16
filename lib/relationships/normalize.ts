@@ -28,6 +28,17 @@ const inverseDefinitions: Record<string, InverseDefinition> = {
   needs: { semanticType: "needs", canonicalType: "needs", canonicalLabel: "needs", inverseLabel: "needed by", reverse: false },
   kills: { semanticType: "kills", canonicalType: "kills", canonicalLabel: "kills", inverseLabel: "killed by", reverse: false },
   teaches: { semanticType: "teaches", canonicalType: "teaches", canonicalLabel: "teaches", inverseLabel: "taught by", reverse: false },
+  advises: { semanticType: "advises", canonicalType: "advises", canonicalLabel: "advises", inverseLabel: "advised by", reverse: false },
+  "bodyguard of": { semanticType: "bodyguard of", canonicalType: "bodyguard of", canonicalLabel: "bodyguard of", inverseLabel: "guarded by", reverse: false },
+  "personal guard of": { semanticType: "personal guard of", canonicalType: "personal guard of", canonicalLabel: "personal guard of", inverseLabel: "has personal guard", reverse: false },
+  "emperor of": { semanticType: "emperor of", canonicalType: "emperor of", canonicalLabel: "emperor of", inverseLabel: "has emperor", reverse: false },
+  "is emperor of": { semanticType: "emperor of", canonicalType: "emperor of", canonicalLabel: "emperor of", inverseLabel: "has emperor", reverse: false },
+  rules: { semanticType: "rules", canonicalType: "rules", canonicalLabel: "rules", inverseLabel: "ruled by", reverse: false },
+  conquered: { semanticType: "conquered", canonicalType: "conquered", canonicalLabel: "conquered", inverseLabel: "conquered by", reverse: false },
+  commands: { semanticType: "commands", canonicalType: "commands", canonicalLabel: "commands", inverseLabel: "commanded by", reverse: false },
+  leads: { semanticType: "leads", canonicalType: "leads", canonicalLabel: "leads", inverseLabel: "led by", reverse: false },
+  attacks: { semanticType: "attacks", canonicalType: "attacks", canonicalLabel: "attacks", inverseLabel: "attacked by", reverse: false },
+  created: { semanticType: "created", canonicalType: "created", canonicalLabel: "created", inverseLabel: "created by", reverse: false },
 };
 
 const obviousGrammarVariants: Record<string, string> = {
@@ -66,7 +77,7 @@ export function normalizeRelationshipFact(sourceId: string, targetId: string, re
       semanticType: `freeform:${normalizedInputType}`,
       canonicalType: trimmedType,
       forwardLabel: trimmedType,
-      inverseLabel: `connected via ${trimmedType}`,
+      inverseLabel: trimmedType,
       normalizedInputType,
       knownInverse: false,
       reversed: false,

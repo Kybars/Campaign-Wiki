@@ -6,6 +6,9 @@ export type KnowledgeVisibility = (typeof KNOWLEDGE_VISIBILITIES)[number];
 export const ENTITY_PROMINENCES = ["major", "supporting", "minor"] as const;
 export type EntityProminence = (typeof ENTITY_PROMINENCES)[number];
 
+export const QUEST_STATUSES = ["ongoing", "not_started", "finished"] as const;
+export type QuestStatus = (typeof QUEST_STATUSES)[number];
+
 export const PROVENANCE_ORIGINS = ["document", "manual", "session"] as const;
 export type ProvenanceOrigin = (typeof PROVENANCE_ORIGINS)[number];
 
@@ -71,4 +74,8 @@ export function isKnowledgeVisibility(value: unknown): value is KnowledgeVisibil
 
 export function isEntityProminence(value: unknown): value is EntityProminence {
   return ENTITY_PROMINENCES.includes(value as EntityProminence);
+}
+
+export function isQuestStatus(value: unknown): value is QuestStatus {
+  return QUEST_STATUSES.includes(value as QuestStatus);
 }

@@ -9,7 +9,7 @@ const categoryLinks = [
 
 export type CampaignNavKey = EntityType | "enemies" | "home" | "search";
 
-export function WikiHeader({ campaignId, campaignName, viewMode = "dm", currentPath, active }: { campaignId: string; campaignName: string; viewMode?: CampaignViewMode; currentPath?: string; active?: CampaignNavKey }) {
+export function WikiHeader({ campaignId, campaignName, viewMode = "dm", currentPath, active, availableCategories }: { campaignId: string; campaignName: string; viewMode?: CampaignViewMode; currentPath?: string; active?: CampaignNavKey; availableCategories?: string[] }) {
   const href = (path: string) => campaignHref(path, viewMode);
   const modePath = currentPath ?? `/campaigns/${campaignId}`;
   const navClass = (key: CampaignNavKey) => `rounded-md px-2 py-1 text-sm font-semibold transition-colors ${active === key ? "bg-white text-[var(--accent)] shadow-sm ring-1 ring-[var(--line)]" : "text-[var(--muted)] hover:bg-white hover:text-[var(--accent)]"}`;
@@ -26,7 +26,7 @@ export function WikiHeader({ campaignId, campaignName, viewMode = "dm", currentP
           </span>
         </div>
         <nav className="mt-3 flex gap-1 overflow-x-auto pb-1" aria-label="Campaign navigation">
-          {categoryLinks.map(([label, type]) => <Link aria-current={active === type ? "page" : undefined} className={navClass(type)} href={href(`/campaigns/${campaignId}/categories/${type}`)} key={type}>{label}</Link>)}
+          {categoryLinks.filter(([, type]) => viewMode === "dm" || availableCategories?.includes(type)).map(([label, type]) => <Link aria-current={active === type ? "page" : undefined} className={navClass(type)} href={href(`/campaigns/${campaignId}/categories/${type}`)} key={type}>{label}</Link>)}
         </nav>
       </div>
     </header>

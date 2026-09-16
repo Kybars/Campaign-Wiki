@@ -26,16 +26,17 @@ function ProminenceGroups({ campaignId, entries, viewMode, categoryPath, categor
   </div>;
 }
 
-export default async function CampaignPage({ params, searchParams }: { params: Promise<{ campaignId: string }>; searchParams: Promise<{ view?: string }> }) {
-  const { campaignId } = await params; const viewMode = campaignViewMode((await searchParams).view);
+export default async function CampaignPage({ params, searchParams }: { params: Promise<{ campaignId: string }>; searchParams: Promise<{ view?: string; notice?: string }> }) {
+  const { campaignId } = await params; const query = await searchParams; const viewMode = campaignViewMode(query.view);
   let campaign; try { campaign = await getCampaign(campaignId, viewMode); } catch { notFound(); }
   if (campaign.status !== "complete") redirect(`/campaigns/${campaignId}/processing`);
   const [entries, overviewEvidence] = await Promise.all([getCampaignEntities(campaignId, undefined, undefined, viewMode), getCampaignOverviewEvidence(campaignId, viewMode)]);
   const grouped = Object.fromEntries(ENTITY_TYPES.map((type) => [type, entries.filter((entry) => entry.type === type)])) as Record<EntityType, CampaignEntry[]>;
   const enemies = entries.filter((entry) => hasEntityRole(entry, "enemy"));
   return <>
-    <WikiHeader campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} active="home" />
+    <WikiHeader availableCategories={[...categoryOrder.filter((type) => grouped[type].length > 0), ...(enemies.length ? ["enemies"] : []), ...(grouped.other.length ? ["other"] : [])]} campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} active="home" />
     <main className="mx-auto max-w-6xl px-6 py-10 sm:py-16">
+      {viewMode === "player" && query.notice === "not-visible" ? <p className="mb-6 rounded-lg border border-[var(--line)] bg-white/60 px-4 py-3 text-sm text-[var(--muted)]" role="status">This page isn&apos;t visible in Player View.</p> : null}
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--accent)]">Campaign wiki</p>
       <h1 className="mt-2 font-serif text-5xl font-semibold tracking-tight">{campaign.name} <span className="font-sans text-lg font-normal text-[var(--muted)]">({entries.length} {entries.length === 1 ? "entry" : "entries"})</span></h1>
       {viewMode === "player" && entries.length === 0 ? <p className="mt-4 rounded-lg border border-[var(--line)] bg-white/60 px-4 py-3 text-sm text-[var(--muted)]">This campaign does not currently have player-visible entries. Switch to DM View to see the full wiki.</p> : null}

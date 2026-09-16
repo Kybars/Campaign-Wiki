@@ -13,10 +13,11 @@ export const changelog = [
   {
     version: packageMetadata.version,
     date: "2026-09-16",
-    title: "Main-site redesign",
+    title: "Durable GM curation",
     changes: [
-      "Redesigned the home experience around a clear campaign library, campaign status, and an obvious import path.",
-      "Added a responsive product shell and dedicated campaign-library route while preserving existing campaign, processing, and DM/Player views.",
+      "Added replay-safe entity type, prominence, visibility, quest status, and relationship visibility controls without changing extraction behavior.",
+      "Reworked category and entity pages around accessible GM organization, fail-closed Player View navigation, source evidence, and grouped relationship presentation.",
+      "Made the campaign library the homepage focus once campaigns exist while retaining focused first-run onboarding.",
     ],
   },
   {

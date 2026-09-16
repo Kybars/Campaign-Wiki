@@ -160,7 +160,7 @@ describe("Milestone 3 relationship normalization", () => {
     ]));
     expect(graph.relationships).toHaveLength(2);
     const row = { id: "r1", source_entity_id: "a", target_entity_id: "b", relationship_type: "mentors", description: "A mentors B.", confidence: 0.9 };
-    expect(relationshipsForEntity([row], "b")[0].displayLabel).toBe("connected via mentors");
+    expect(relationshipsForEntity([row], "b")[0].displayLabel).toBe("mentors");
   });
 
   it("normalizes after cross-type candidate-to-canonical remapping", () => {
