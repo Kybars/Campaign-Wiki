@@ -12,6 +12,15 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-16",
+    title: "Main-site redesign",
+    changes: [
+      "Redesigned the home experience around a clear campaign library, campaign status, and an obvious import path.",
+      "Added a responsive product shell and dedicated campaign-library route while preserving existing campaign, processing, and DM/Player views.",
+    ],
+  },
+  {
+    version: "0.4.9",
     date: "2026-09-14",
     title: "Compact two-pass source extraction",
     changes: [

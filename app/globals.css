@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f7f3e8;
-  --ink: #28251f;
-  --muted: #706a5f;
-  --line: #d9d1bf;
-  --accent: #8a3f2c;
+  --paper: #f4f0e7;
+  --ink: #27251f;
+  --muted: #68645c;
+  --line: #d8d0c0;
+  --accent: #8b4633;
+  --night: #1e2524;
+  --gold: #e4b65f;
 }
 
 * { box-sizing: border-box; }
@@ -18,3 +20,7 @@ body {
 }
 a { color: inherit; }
 button, input { font: inherit; }
+.eyebrow { color: var(--accent); font-size: .75rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.button-primary { border-radius: .5rem; background: var(--accent); color: white; font-weight: 700; padding: .75rem 1rem; transition: background-color .15s ease; }
+.button-primary:hover { background: #703626; }
+.button-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

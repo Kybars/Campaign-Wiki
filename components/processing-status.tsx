@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { campaignProgress, isCampaignProcessingActive, keepProgressMonotonic, processingMessages } from "@/lib/campaign-progress";
 
 export function ProcessingStatus({ campaignId, initialStatus, initialStage, initialError }: {
   campaignId: string;
@@ -11,14 +12,29 @@ export function ProcessingStatus({ campaignId, initialStatus, initialStage, init
 }) {
   const router = useRouter();
   const started = useRef(false);
+  const stageRef = useRef(initialStage ?? "Preparing campaign");
+  const [status, setStatus] = useState(initialStatus);
   const [stage, setStage] = useState(initialStage ?? "Preparing campaign");
   const [error, setError] = useState(initialError);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState(() => campaignProgress(initialStatus, initialStage).value);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const currentProgress = campaignProgress(status, stage);
+  const active = isCampaignProcessingActive(status) && !error;
+
+  useEffect(() => {
+    if (!active) return;
+    const interval = window.setInterval(() => setMessageIndex((index) => (index + 1) % processingMessages.length), 8000);
+    return () => window.clearInterval(interval);
+  }, [active]);
 
   const run = useCallback(async () => {
     if (running) return;
     setRunning(true);
     setError(null);
+    setStatus("uploaded");
+    setStage("Preparing campaign");
+    stageRef.current = "Preparing campaign";
     try {
       const response = await fetch(`/api/campaigns/${campaignId}/process`, { method: "POST" });
       if (!response.ok) {
@@ -49,7 +65,13 @@ export function ProcessingStatus({ campaignId, initialStatus, initialStage, init
         .then(async (response) => response.ok ? response.json() as Promise<{ status: string; stage?: string; error?: string }> : undefined)
         .then((status) => {
           if (!status) return;
-          if (status.stage) setStage(status.stage);
+          const nextProgress = campaignProgress(status.status, status.stage ?? stageRef.current);
+          setStatus(status.status);
+          if (status.stage) {
+            stageRef.current = status.stage;
+            setStage(status.stage);
+          }
+          setProgress((current) => keepProgressMonotonic(current, nextProgress.value, status.status));
           if (status.status === "complete") {
             router.replace(`/campaigns/${campaignId}`);
             router.refresh();
@@ -65,10 +87,15 @@ export function ProcessingStatus({ campaignId, initialStatus, initialStage, init
 
   return (
     <div className="mt-8">
-      <div className="h-2 overflow-hidden rounded-full bg-[var(--line)]">
-        <div className="h-full w-1/2 animate-pulse rounded-full bg-[var(--accent)]" />
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="font-semibold">{currentProgress.label}</p>
+        <p className="text-sm font-semibold text-[var(--accent)]">{progress}%</p>
       </div>
-      <p className="mt-4 text-[var(--muted)]">{stage}</p>
+      <div aria-label={`${currentProgress.label}: ${progress}% complete`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={progress} className="mt-3 h-2.5 overflow-hidden rounded-full bg-[var(--line)]" role="progressbar">
+        <div className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+      </div>
+      <p aria-live="polite" className="mt-4 text-sm text-[var(--muted)]">{stage}</p>
+      {active ? <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{processingMessages[messageIndex]}</p> : null}
       {error ? (
         <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900">
           <p>{error}</p>

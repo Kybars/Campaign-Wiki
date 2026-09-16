@@ -62,7 +62,7 @@ export async function getCampaigns() {
   const [campaignResult, entityResult] = await Promise.all([
     client
       .from("campaigns")
-      .select("id,name,status,error_message,processing_stage,created_at")
+      .select("id,name,status,error_message,processing_stage,created_at,updated_at")
       .order("created_at", { ascending: false }),
     client.from("entities").select("campaign_id"),
   ]);

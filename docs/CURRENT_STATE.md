@@ -4,7 +4,9 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.4.9`
+- Package version: `0.5.0`
+- v0.4 backend/extraction work is complete. v0.5 product/UI work has started with M1: main-site redesign.
+- M1 refreshes the global product shell, campaign library, import entry, empty/error/status states, and responsive main-site layout. It does not change extraction, provider, checkpoint, or database behavior.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
 - Latest completed milestone: Luna relationship-completeness benchmark
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
