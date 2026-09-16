@@ -30,6 +30,11 @@ describe("graph completeness isolation", () => {
     expect(validatedInventoryFingerprint(inventory)).toBe(fingerprint);
   });
 
+  it("exposes approved aliases compactly with the cleaned inventory", () => {
+    const input = buildGraphCompletenessInput(chunk, { entities: inventory.entities.map((entity) => entity.temporary_id === "captain" ? { ...entity, aliases: ["The Commander"] } : entity) }, firstPass.relationships);
+    expect(input).toContain("Captain | npc | aliases: The Commander");
+  });
+
   it("classifies an inverse of the first pass as a duplicate and keeps a new edge novel", () => {
     const sweep = validateGraphCompletenessSweep({ relationships: [
       { source: "Vault", relationship: "contains", target: "Relic", page: 1 },

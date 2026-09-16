@@ -59,8 +59,13 @@ describe("graph core production adapter", () => {
     const changedInventory = graphExtractionCheckpointIdentity(chunk, inventory, extraction, { ...context, finalInventoryFingerprint: "b" });
     expect(first.upstreamFingerprint).not.toBe(changedInventory.upstreamFingerprint);
     const edge = { sourceInventoryId: inventory.entities[0].temporary_id, targetInventoryId: inventory.entities[1].temporary_id, sourceName: "Mira", targetName: "Sword", relationship: "owns", relationshipType: "owns", forwardLabel: "owns", inverseLabel: "owned by", page: 1, semanticKey: `${inventory.entities[0].temporary_id}|${inventory.entities[1].temporary_id}|owns`, knownInverse: true };
-    const complete = graphCompletenessCheckpointIdentity(chunk, inventory, [edge], first, completeness, context);
-    const changedFirst = graphCompletenessCheckpointIdentity(chunk, inventory, [], first, completeness, context);
+    const complete = graphCompletenessCheckpointIdentity(chunk, inventory, [edge], completeness, context);
+    const changedFirst = graphCompletenessCheckpointIdentity(chunk, inventory, [], completeness, context);
     expect(complete.upstreamFingerprint).not.toBe(changedFirst.upstreamFingerprint);
+    const unchanged = graphCompletenessCheckpointIdentity(chunk, inventory, [edge], completeness, context);
+    expect(complete).toEqual(unchanged);
+    const reconciledInventory = { entities: inventory.entities.map((entity, index) => index === 0 ? { ...entity, aliases: ["Lady Mira"] } : entity) };
+    const changedMerge = graphCompletenessCheckpointIdentity(chunk, reconciledInventory, [edge], completeness, { ...context, finalInventoryFingerprint: "merged-b" });
+    expect(complete.upstreamFingerprint).not.toBe(changedMerge.upstreamFingerprint);
   });
 });

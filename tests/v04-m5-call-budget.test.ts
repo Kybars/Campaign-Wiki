@@ -4,6 +4,7 @@ import { OpenAICallBudget, OpenAICallBudgetExceededError, summarizePaidCallPlan,
 import { memoryCheckpointStore } from "@/lib/ai/operation-checkpoint";
 import { reconcileGroupsWithAI } from "@/lib/ai/reconcile";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
+import { adjudicateDuplicateCandidates, buildDuplicateCandidates, type GraphInventory } from "@/lib/ai/entity-reconciliation";
 
 const usage = { model: "model-a", responseId: "response", inputTokens: 1, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 1, totalTokens: 2, estimatedCostUsd: null };
 
@@ -49,5 +50,20 @@ describe("v0.4 M5 paid-call guards", () => {
     expect(resumed.checkpointStatus).toBe("RUN");
     expect(store.failures).toHaveLength(1);
     expect(provider.parseStructured).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts a needed duplicate-adjudication call and excludes checkpoint reuse", async () => {
+    const inventory: GraphInventory = { entities: [
+      { temporary_id: "a", name: "The Chasm", type: "location", sources: [{ page_number: 1, supporting_text: "The Chasm appears." }] },
+      { temporary_id: "b", name: "Chasm", type: "location", sources: [{ page_number: 1, supporting_text: "Chasm appears here." }] },
+    ] };
+    const candidates = buildDuplicateCandidates(inventory, []);
+    const parseStructured = vi.fn(async () => ({ output: { merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b" }], review_pairs: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage }));
+    const provider = withOpenAICallBudget({ providerId: "openai", modelId: "model-a", parseStructured: parseStructured as never }, new OpenAICallBudget(1));
+    const store = memoryCheckpointStore();
+    const context = { campaignId: "c", documentId: "d", processingMode: "lean", sourceIdentity: "source", store };
+    await adjudicateDuplicateCandidates(inventory, candidates, [], provider, context);
+    await adjudicateDuplicateCandidates(inventory, candidates, [], provider, context);
+    expect(parseStructured).toHaveBeenCalledOnce();
   });
 });

@@ -26,6 +26,15 @@ const inverseDefinitions: Record<string, InverseDefinition> = {
   "created by": { semanticType: "created by", canonicalType: "created by", canonicalLabel: "created by", inverseLabel: "created", reverse: false },
   serves: { semanticType: "serves", canonicalType: "serves", canonicalLabel: "serves", inverseLabel: "served by", reverse: false },
   needs: { semanticType: "needs", canonicalType: "needs", canonicalLabel: "needs", inverseLabel: "needed by", reverse: false },
+  kills: { semanticType: "kills", canonicalType: "kills", canonicalLabel: "kills", inverseLabel: "killed by", reverse: false },
+  teaches: { semanticType: "teaches", canonicalType: "teaches", canonicalLabel: "teaches", inverseLabel: "taught by", reverse: false },
+};
+
+const obviousGrammarVariants: Record<string, string> = {
+  kill: "kills",
+  killed: "kills",
+  teach: "teaches",
+  taught: "teaches",
 };
 
 export interface NormalizedRelationshipFact {
@@ -48,7 +57,7 @@ export interface RelationshipPresentation {
 
 export function normalizeRelationshipFact(sourceId: string, targetId: string, relationshipType: string): NormalizedRelationshipFact {
   const normalizedInputType = normalizeRelationshipType(relationshipType);
-  const definition = inverseDefinitions[normalizedInputType];
+  const definition = inverseDefinitions[obviousGrammarVariants[normalizedInputType] ?? normalizedInputType];
   if (!definition) {
     const trimmedType = relationshipType.trim();
     return {

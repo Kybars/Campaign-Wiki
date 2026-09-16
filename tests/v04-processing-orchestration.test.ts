@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
   aggregateCandidates: vi.fn(), buildCanonicalGraph: vi.fn(), buildDeterministicGroups: vi.fn(),
   getAIProviderConfig: vi.fn(), assertAIProviderPersistenceAllowed: vi.fn(),
   getStructuredModelProvider: vi.fn(),
-  buildFinalGraphInventory: vi.fn(), buildLeanGraphCore: vi.fn(), graphAggregationCheckpointIdentity: vi.fn(), planGraphChunks: vi.fn(), runGraphChunksLimited: vi.fn(),
+  buildFinalGraphInventory: vi.fn(), buildLeanGraphCore: vi.fn(), graphAggregationCheckpointIdentity: vi.fn(), planGraphFirstPass: vi.fn(), runGraphFirstPassLimited: vi.fn(), reResolveGraphFirstPass: vi.fn(), planGraphCompleteness: vi.fn(), runGraphCompletenessLimited: vi.fn(), combineGraphPasses: vi.fn(),
+  buildDuplicateCandidates: vi.fn(), planDuplicateAdjudication: vi.fn(), adjudicateDuplicateCandidates: vi.fn(), applyEntityMerges: vi.fn(),
   checkpointStore: { load: vi.fn(), saveValidated: vi.fn(), saveFailed: vi.fn(), inspect: vi.fn() },
 }));
 
@@ -24,7 +25,8 @@ vi.mock("@/lib/db/repository", () => ({
   saveReconciliationCacheResult: mocks.saveReconciliationCacheResult, updateCampaign: mocks.updateCampaign,
 }));
 vi.mock("@/lib/ai/extract", () => ({ extractChunksLimited: mocks.extractChunksLimited, extractInventoryChunksLimited: mocks.extractInventoryChunksLimited, planInventoryExtraction: mocks.planInventoryExtraction, planTwoPassExtraction: mocks.planTwoPassExtraction }));
-vi.mock("@/lib/processing/graph-core", () => ({ buildFinalGraphInventory: mocks.buildFinalGraphInventory, buildLeanGraphCore: mocks.buildLeanGraphCore, graphAggregationCheckpointIdentity: mocks.graphAggregationCheckpointIdentity, planGraphChunks: mocks.planGraphChunks, runGraphChunksLimited: mocks.runGraphChunksLimited }));
+vi.mock("@/lib/processing/graph-core", () => ({ buildFinalGraphInventory: mocks.buildFinalGraphInventory, buildLeanGraphCore: mocks.buildLeanGraphCore, graphAggregationCheckpointIdentity: mocks.graphAggregationCheckpointIdentity, planGraphFirstPass: mocks.planGraphFirstPass, runGraphFirstPassLimited: mocks.runGraphFirstPassLimited, reResolveGraphFirstPass: mocks.reResolveGraphFirstPass, planGraphCompleteness: mocks.planGraphCompleteness, runGraphCompletenessLimited: mocks.runGraphCompletenessLimited, combineGraphPasses: mocks.combineGraphPasses }));
+vi.mock("@/lib/ai/entity-reconciliation", () => ({ buildDuplicateCandidates: mocks.buildDuplicateCandidates, planDuplicateAdjudication: mocks.planDuplicateAdjudication, adjudicateDuplicateCandidates: mocks.adjudicateDuplicateCandidates, applyEntityMerges: mocks.applyEntityMerges }));
 vi.mock("@/lib/processing/checkpoint-store", () => ({ databaseCheckpointStore: () => mocks.checkpointStore }));
 vi.mock("@/lib/ai/reconcile", () => ({ reconcileGroupsWithAI: mocks.reconcileGroupsWithAI }));
 vi.mock("@/lib/ai/enrich", () => ({ EnrichmentFailure: class EnrichmentFailure extends Error { usage = []; }, enrichCanonicalGraphWithAI: mocks.enrichCanonicalGraphWithAI }));
@@ -70,8 +72,16 @@ beforeEach(() => {
   mocks.extractInventoryChunksLimited.mockResolvedValue([{ chunkId: "chunk", inventory: { entities: [{ temporary_id: "inventory", name: "Mira", type: "npc", sources: [source] }] }, initialInventoryUsage: usage, completenessUsage: usage, inventoryCheckpointStatus: "RUN", completenessCheckpointStatus: "RUN" }]);
   mocks.planInventoryExtraction.mockResolvedValue([]);
   mocks.buildFinalGraphInventory.mockReturnValue({ entities: [{ temporary_id: "inventory", name: "Mira", type: "npc", sources: [source] }] });
-  mocks.planGraphChunks.mockResolvedValue([]);
-  mocks.runGraphChunksLimited.mockResolvedValue([]);
+  mocks.planGraphFirstPass.mockResolvedValue([]);
+  mocks.runGraphFirstPassLimited.mockResolvedValue([]);
+  mocks.buildDuplicateCandidates.mockReturnValue({ pairs: [], components: [] });
+  mocks.planDuplicateAdjudication.mockResolvedValue({ status: "REUSE", reason: "no candidates" });
+  mocks.adjudicateDuplicateCandidates.mockResolvedValue({ decision: { merge_groups: [], review_pairs: [] }, usage: null, checkpointStatus: "REUSE" });
+  mocks.applyEntityMerges.mockImplementation((inventory) => ({ inventory, memberToCanonicalId: new Map(), resolutionKeys: new Map(), reviewPairs: [], fingerprint: "merged" }));
+  mocks.reResolveGraphFirstPass.mockReturnValue([]);
+  mocks.planGraphCompleteness.mockResolvedValue([]);
+  mocks.runGraphCompletenessLimited.mockResolvedValue([]);
+  mocks.combineGraphPasses.mockReturnValue([]);
   mocks.buildLeanGraphCore.mockReturnValue({ ...canonicalGraph, entities: [{ ...canonicalGraph.entities[0], summary: "" }], facts: [], factAggregationDiagnostics: { candidateFactCount: 0, canonicalFactCount: 0, deduplicatedFactCount: 0, factEvidenceCount: 0 } });
   mocks.graphAggregationCheckpointIdentity.mockReturnValue({});
   mocks.checkpointStore.load.mockResolvedValue(null);
@@ -92,6 +102,7 @@ describe("v0.4 processing orchestration", () => {
     const result = await processCampaign("campaign");
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("extraction_inventory");
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("graph_extraction");
+    expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("entity_reconciliation");
     expect(mocks.getAIProviderConfig).toHaveBeenCalledWith("graph_completeness");
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("extraction_rich");
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("reconciliation");
@@ -119,7 +130,8 @@ describe("v0.4 processing orchestration", () => {
     mocks.getStructuredModelProvider.mockImplementation((stage: string) => ({ providerId: "local", modelId: `${stage}-local`, parseStructured: vi.fn() }));
     const result = await processCampaign("campaign");
     expect(mocks.extractInventoryChunksLimited.mock.calls[0][2]).toMatchObject({ inventory: { providerId: "local", modelId: "extraction_inventory-local" } });
-    expect(mocks.runGraphChunksLimited.mock.calls[0][2]).toMatchObject({ extraction: { providerId: "local", modelId: "graph_extraction-local" }, completeness: { providerId: "local", modelId: "graph_completeness-local" } });
+    expect(mocks.runGraphFirstPassLimited.mock.calls[0][2]).toMatchObject({ providerId: "local", modelId: "graph_extraction-local" });
+    expect(mocks.runGraphCompletenessLimited.mock.calls[0][3]).toMatchObject({ providerId: "local", modelId: "graph_completeness-local" });
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
     expect(result).toMatchObject({ processingMode: "lean", finalInventoryEntities: 1 });

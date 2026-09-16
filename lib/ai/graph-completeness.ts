@@ -1,4 +1,4 @@
-import type { ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
+import type { GraphInventory } from "@/lib/ai/entity-reconciliation";
 import { graphExtractionOutputSchema, validateGraphExtraction, type GraphExtractionOutput, type ValidatedGraphExtraction, type ValidatedGraphRelationship } from "@/lib/ai/graph-extraction";
 import type { PageChunk } from "@/lib/pdf/types";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
@@ -51,19 +51,19 @@ export function serializeExistingGraphRelationships(relationships: ValidatedGrap
 
 export function buildGraphCompletenessInput(
   chunk: PageChunk,
-  inventory: ValidatedExtractionInventoryOutput,
+  inventory: GraphInventory,
   firstPassRelationships: ValidatedGraphRelationship[],
 ): string {
   const entities = [...inventory.entities]
     .sort((left, right) => left.name.localeCompare(right.name) || left.temporary_id.localeCompare(right.temporary_id))
-    .map((entity) => `${entity.name} | ${entity.type}`)
+    .map((entity) => `${entity.name} | ${entity.type}${entity.aliases?.length ? ` | aliases: ${entity.aliases.join(", ")}` : ""}`)
     .join("\n");
   return `SOURCE PAGES\n\n${sourcePages(chunk)}\n\nKNOWN ENTITIES\n${entities || "(none)"}\n\nRELATIONSHIPS ALREADY FOUND\n${serializeExistingGraphRelationships(firstPassRelationships) || "(none)"}`;
 }
 
 export function runGraphCompletenessSweep(
   chunk: PageChunk,
-  inventory: ValidatedExtractionInventoryOutput,
+  inventory: GraphInventory,
   firstPassRelationships: ValidatedGraphRelationship[],
   provider: StructuredModelProvider,
 ) {
@@ -85,7 +85,7 @@ function rejectionClassification(reason: string): CompletenessClassification {
 
 export function validateGraphCompletenessSweep(
   raw: GraphExtractionOutput,
-  inventory: ValidatedExtractionInventoryOutput,
+  inventory: GraphInventory,
   chunk: PageChunk,
   firstPassSemanticKeys: Set<string>,
 ): { validation: ValidatedGraphExtraction; classifications: CompletenessClassificationRecord[]; novelRelationships: ValidatedGraphRelationship[] } {

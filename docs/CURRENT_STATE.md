@@ -8,9 +8,9 @@ Update this disposable implementation snapshot after every completed milestone. 
 - v0.4 backend/extraction work is complete. v0.5 product/UI work has started with M1: main-site redesign.
 - M1 refreshes the global product shell, campaign library, import entry, empty/error/status states, and responsive main-site layout. It does not change extraction, provider, checkpoint, or database behavior.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: Luna relationship-completeness benchmark
+- Latest completed milestone: v0.5 lean entity reconciliation correction
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
-- Latest targeted work: one frozen-contract Luna completeness pass was Terra-like: 26/26 novel edges were source-supported and raised corrected Qwen-first-pass union recall from 7/12 to 10/12 at roughly one tenth of Terra's measured API cost
+- Latest targeted work: dogfooding showed that duplicate entity names could make otherwise valid first-pass relationship endpoints ambiguous and discard those edges. Lean processing now reconciles only high-confidence duplicate candidates after graph first pass, preserves the raw first-pass output, re-resolves it through canonical names and approved aliases, and runs completeness against the reconciled inventory. Uncertain candidates remain separate for later manual review; duplicate detection is intentionally conservative, not complete.
 - Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
 
 ## Experimental status — do not misread as production behavior
@@ -36,9 +36,15 @@ Pass A completeness
   ↓
 final canonical entity inventory
   ↓
-minimal graph extraction
+minimal graph first pass (raw output retained)
   ↓
-one missing-relationships completeness sweep
+deterministic duplicate candidates
+  ↓
+one conservative duplicate-identity adjudication when candidates exist
+  ↓
+deterministic merge + exact canonical-name/alias re-resolution
+  ↓
+one missing-relationships completeness sweep against the reconciled inventory
   ↓
 deterministic normalization, provenance, and dedupe
   ↓
@@ -51,13 +57,15 @@ Wiki Ready
 
 - Default mode: `lean`.
 - Optional/reference mode: `full`.
-- Lean Rich/reconciliation/enrichment calls: `0`.
+- Lean Rich/full-reconciliation/enrichment calls: `0`; duplicate-identity adjudication adds at most one call when conservative candidates exist.
+- Lean entity reconciliation is a distinct identity-only step, not Rich extraction: it cannot create entities, relationships, facts, summaries, evidence, names, or types.
 
 ## Provider coverage
 
 - OpenAI supports inventory extraction, independent graph extraction/completeness, reconciliation, and full enrichment through the shared structured-output boundary.
 - A local OpenAI-compatible endpoint supports those same stages for development/rehearsal.
 - Graph extraction and completeness may select independent providers/models; inventory/rich overrides retain their existing extraction fallback.
+- Duplicate adjudication follows the shared provider/model configuration, can be overridden as its own stage, and makes zero calls when deterministic candidate generation finds no candidates.
 - Local extraction concurrency is independently configured and defaults to `1`; OpenAI extraction defaults to `3`.
 - No local failure falls back to OpenAI. Local canonical persistence requires an explicit server-only acknowledgement and is only for a disposable rehearsal.
 
@@ -67,9 +75,12 @@ M4 private `ai_operation_checkpoints` now store validated, reusable operation ou
 
 - extraction inventory and dependent graph operations per chunk;
 - reconciliation decisions;
+- lean duplicate-identity adjudication;
 - full-enrichment operations and batches.
 
 Checkpoint identity includes campaign/document scope, provider, exact model, mode where semantic, operation type/key, semantic input hash, upstream fingerprint, behavior version, and schema version. Output is revalidated before reuse. Failed output is never successful. Historical cache records remain readable but are not assigned checkpoint metadata they never stored.
+
+Lean graph first-pass checkpoints remain independent of duplicate adjudication. Duplicate-adjudication identity includes the final unmerged inventory, deterministic candidate set, and raw first-pass relationships. Completeness identity includes the merged inventory and re-resolved first-pass graph, so a changed merge invalidates completeness without invalidating reusable first-pass output.
 
 Rich extraction's upstream fingerprint includes the validated inventory and its exact operation identity. Inventory changes invalidate rich reuse; a rich-model-only change preserves inventory reuse. Corrupt inventory forces both substages to rerun, while corrupt rich output preserves inventory reuse.
 
