@@ -25,7 +25,11 @@ describe("CategoryOrganizer Player View transitions", () => {
     expect(dmBefore).toContain('class="min-w-0 flex-1 truncate text-sm font-semibold');
     expect(dmBefore).toContain('draggable="false"');
     expect(dmBefore).toContain(`aria-label="Move Mira"`);
-    expect(dmBefore).toContain('aria-label="Mira: visible in Player View"');
+    expect(dmBefore).toContain('aria-label="Hide Mira from players"');
+    expect(dmBefore).toContain('title="Visible to players"');
+    expect(dmBefore).toContain('aria-label="Show Leska to players"');
+    expect(dmBefore).toContain('title="Hidden from players"');
+    expect(dmBefore).toContain('role="switch"');
     expect(dmBefore).toContain("hidden shrink-0 md:block");
     expect(dmBefore).toContain("shrink-0 md:hidden");
     expect(dmBefore).toContain(grouping === "quest_status" ? "Finished" : "Supporting");
@@ -44,6 +48,7 @@ describe("CategoryOrganizer Player View transitions", () => {
     expect(player).not.toContain("cursor-grab");
     expect(player).not.toContain('draggable="true"');
     expect(player).not.toContain("aria-label=\"Move Mira\"");
+    expect(player).not.toContain('role="switch"');
 
     const dmAfter = render("dm", grouping);
     expect(dmAfter).toContain("Mira");

@@ -40,13 +40,16 @@ describe("connected entity curation popover", () => {
     }));
 
     expect(card).toContain("Location · Supporting");
-    expect(card).toContain("Player visible");
+    expect(card).not.toContain("Player visible");
     expect(card).not.toContain("Hidden forest prominence");
     expect(card).not.toContain(">Relationships<");
     expect(card).toContain("Holds sway over");
     expect(card).toContain("Protects");
-    expect(card).toContain('aria-label="Relationship hidden in Player View"');
-    expect(card).toContain('aria-label="Relationship visible in Player View"');
+    expect(card).toContain('aria-label="Show relationship to players"');
+    expect(card).toContain('aria-label="Hide relationship from players"');
+    expect(card).toContain('aria-describedby="visibility-blocked-relationship-relationship-one"');
+    expect(card).toContain('role="tooltip"');
+    expect(card).toContain("Hidden forest is not visible to players.");
   });
 
   it("immediately makes relationship visibility eligible when the related entity becomes visible", () => {
