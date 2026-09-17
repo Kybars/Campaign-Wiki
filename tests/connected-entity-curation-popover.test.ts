@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ConnectedEntityConnectionCard, connectionVisibilityBlockers, shouldCloseQuickPopover, updateConnectedEntity } from "@/components/connected-entity-curation-popover";
+import { ConnectedEntityConnectionCard, connectionVisibilityBlockers, QUICK_POPOVER_CLOSE_DELAY_MS, shouldCloseQuickPopover, updateConnectedEntity } from "@/components/connected-entity-curation-popover";
 import { persistOptimisticVisibilityChange } from "@/components/curation-controls";
 import { EntityDetail, type EntityDetailView } from "@/components/entity-detail";
 
@@ -49,6 +49,10 @@ describe("connected entity curation popover", () => {
     expect(shouldCloseQuickPopover(true, false)).toBe(false);
     expect(shouldCloseQuickPopover(false, true)).toBe(false);
     expect(shouldCloseQuickPopover(false, false)).toBe(true);
+  });
+
+  it("uses a short grace period for pointer transitions between the trigger and popup", () => {
+    expect(QUICK_POPOVER_CLOSE_DELAY_MS).toBe(200);
   });
 
   it("keeps the popup compact while restoring independent relationship controls beneath the entity", () => {

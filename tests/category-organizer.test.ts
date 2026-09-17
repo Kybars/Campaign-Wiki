@@ -67,9 +67,9 @@ describe("CategoryOrganizer Player View transitions", () => {
   });
 
   it("omits Unclassified from the entity-detail prominence and quest-status editors", () => {
-    const controls = renderToStaticMarkup(createElement(EntityCurationControls, { campaignId: "campaign", entity: { id: "quest", name: "Save the Gate", type: "quest", prominence: null, visibility: "dm_only", quest_status: null }, onVisibilityChange: () => {} }));
-    expect(controls).toContain('<option value="minor" selected="">Minor</option>');
-    expect(controls).toContain('<option value="not_started" selected="">Not started</option>');
+    const controls = renderToStaticMarkup(createElement(EntityCurationControls, { campaignId: "campaign", entity: { id: "quest", name: "Save the Gate", type: "quest", prominence: null, quest_status: null } }));
+    expect(controls).toContain('>Minor</button>');
+    expect(controls).toContain('>Not started</button>');
     expect(controls).not.toContain("Unclassified");
   });
 });

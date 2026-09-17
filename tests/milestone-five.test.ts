@@ -1,4 +1,5 @@
 import { EntityDetail, type EntityDetailView } from "@/components/entity-detail";
+import { requiresTypeChangeConfirmation } from "@/components/curation-controls";
 import { relationshipsForEntity } from "@/lib/relationships/view";
 import { groupSourceEvidence, sourceReference, type SourceEvidence } from "@/lib/wiki/source-presentation";
 import { createElement } from "react";
@@ -51,6 +52,26 @@ describe("Milestone 5 compact entity presentation", () => {
     const page = render(detail({ entity: { ...detail().entity, type: "deity", roles: [] } }));
     expect(page).toContain("Deity");
     expect(page).not.toContain("Enemy</span>");
+  });
+
+  it("uses inline editable metadata and a title-adjacent visibility control in DM View", () => {
+    const page = render(detail({ entity: { ...detail().entity, type: "faction", prominence: "minor", roles: [] } }));
+    expect(page).toContain('aria-label="Edit prominence"');
+    expect(page).toContain('aria-label="Edit entity type"');
+    expect(page).toMatch(/>Minor<\/button><\/span><span class="relative"><button[^>]*>Faction<\/button>/);
+    expect(page).not.toContain("items-end gap-3 rounded-lg border");
+    expect(page).not.toContain("font-bold uppercase tracking-[0.14em] text-[var(--accent)]");
+    expect(page.indexOf("Colinus Birthwitch</h1>")).toBeLessThan(page.indexOf('aria-label="Show Colinus Birthwitch to players"'));
+  });
+
+  it("keeps type changes behind confirmation and makes Player View metadata read-only", () => {
+    const player = renderToStaticMarkup(createElement(EntityDetail, { campaignId, detail: detail({ entity: { ...detail().entity, prominence: "minor" } }), viewMode: "player" }));
+    expect(requiresTypeChangeConfirmation("npc", "faction")).toBe(true);
+    expect(requiresTypeChangeConfirmation("npc", "npc")).toBe(false);
+    expect(player).toContain("Minor NPC");
+    expect(player).not.toContain('aria-label="Edit prominence"');
+    expect(player).not.toContain('aria-label="Edit entity type"');
+    expect(player).not.toContain('aria-label="Show Colinus Birthwitch to players"');
   });
 
   it("uses a compact relationship description and preserves a clickable target", () => {

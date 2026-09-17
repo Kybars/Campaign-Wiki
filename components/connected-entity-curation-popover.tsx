@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EntityVisibilityToggle, RelationshipVisibilityToggle } from "@/components/curation-controls";
 import { ENTITY_TYPE_SINGULAR_LABELS, prominenceGroup, prominenceGroupLabel } from "@/lib/entities";
 import { campaignHref } from "@/lib/campaign-view";
@@ -30,6 +30,8 @@ export function shouldCloseQuickPopover(pointerIsInside: boolean, activeElementI
   return !pointerIsInside && !activeElementIsInside;
 }
 
+export const QUICK_POPOVER_CLOSE_DELAY_MS = 200;
+
 function sentenceCase(value: string) {
   return value ? value[0].toLocaleUpperCase("en-US") + value.slice(1) : value;
 }
@@ -38,21 +40,45 @@ function ConnectedEntityCurationPopover({ campaignId, relatedEntity, onVisibilit
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const pointerIsInside = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelScheduledClose = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const closeImmediately = useCallback(() => {
+    cancelScheduledClose();
+    setOpen(false);
+  }, [cancelScheduledClose]);
+
+  const scheduleClose = useCallback(() => {
+    if (!shouldCloseQuickPopover(pointerIsInside.current, Boolean(rootRef.current?.contains(document.activeElement)))) return;
+    cancelScheduledClose();
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      if (shouldCloseQuickPopover(pointerIsInside.current, Boolean(rootRef.current?.contains(document.activeElement)))) setOpen(false);
+    }, QUICK_POPOVER_CLOSE_DELAY_MS);
+  }, [cancelScheduledClose]);
 
   useEffect(() => {
     if (!open) return;
-    const closeOnOutsidePointer = (event: PointerEvent) => { if (!rootRef.current?.contains(event.target as Node)) setOpen(false); };
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const closeOnOutsidePointer = (event: PointerEvent) => { if (!rootRef.current?.contains(event.target as Node)) closeImmediately(); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") closeImmediately(); };
     document.addEventListener("pointerdown", closeOnOutsidePointer);
     document.addEventListener("keydown", closeOnEscape);
     return () => { document.removeEventListener("pointerdown", closeOnOutsidePointer); document.removeEventListener("keydown", closeOnEscape); };
-  }, [open]);
+  }, [closeImmediately, open]);
+
+  useEffect(() => cancelScheduledClose, [cancelScheduledClose]);
 
   const visibility = relatedEntity.visibility ?? "dm_only";
-  const closeWhenOutside = () => {
-    if (shouldCloseQuickPopover(pointerIsInside.current, Boolean(rootRef.current?.contains(document.activeElement)))) setOpen(false);
+  const closeWhenFocusLeaves = () => {
+    if (shouldCloseQuickPopover(pointerIsInside.current, Boolean(rootRef.current?.contains(document.activeElement)))) closeImmediately();
   };
-  return <div className="relative w-fit" onBlur={() => queueMicrotask(closeWhenOutside)} onFocus={() => setOpen(true)} onPointerEnter={() => { pointerIsInside.current = true; setOpen(true); }} onPointerLeave={() => { pointerIsInside.current = false; closeWhenOutside(); }} ref={rootRef}>
+  return <div className="relative w-fit" onBlur={() => queueMicrotask(closeWhenFocusLeaves)} onFocus={() => { cancelScheduledClose(); setOpen(true); }} onPointerEnter={() => { pointerIsInside.current = true; cancelScheduledClose(); setOpen(true); }} onPointerLeave={() => { pointerIsInside.current = false; scheduleClose(); }} ref={rootRef}>
     <div className="flex items-center gap-2"><h3 className="min-w-0"><Link className="font-serif text-xl font-semibold text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 hover:decoration-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}/entities/${relatedEntity.id}`, "dm")}>{relatedEntity.name}</Link></h3></div>
     <div aria-hidden={!open} aria-label={`Curation for ${relatedEntity.name}`} className={open ? "absolute left-0 z-30 mt-0.5" : "hidden"} role="dialog"><div className="w-72 rounded-lg border border-[var(--line)] bg-[var(--paper)] p-3 text-sm text-[var(--ink)] shadow-lg"><div className="flex items-center justify-between gap-3"><p className="font-serif text-lg font-semibold">{relatedEntity.name}</p><EntityVisibilityToggle campaignId={campaignId} entityId={relatedEntity.id} label={relatedEntity.name} onVisibilityChange={onVisibilityChange} visibility={visibility} /></div><p className="mt-0.5 text-xs text-[var(--muted)]">{ENTITY_TYPE_SINGULAR_LABELS[relatedEntity.type]} · {prominenceGroupLabel(prominenceGroup(relatedEntity.prominence))}</p>{relatedEntity.summary ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted)]">{relatedEntity.summary}</p> : null}</div></div>
   </div>;
