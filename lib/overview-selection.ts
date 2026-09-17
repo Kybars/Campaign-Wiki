@@ -7,16 +7,16 @@ export type OverviewEntry = ReadEntity & { type: EntityType; prominence: "major"
 
 const alphabetical = <T extends { name: string }>(entries: readonly T[]) => [...entries].sort((left, right) => left.name.localeCompare(right.name, "en-US", { sensitivity: "base" }));
 
-/** Picks the most prominent visible entries without using minor entries as filler. */
-export function selectProminentOverviewEntries<T extends OverviewEntry>(entries: readonly T[], type: EntityType, viewMode: CampaignViewMode, limit = 5): T[] {
+/** Picks only visible Major entries for a compact overview section. */
+export function selectProminentOverviewEntries<T extends OverviewEntry>(entries: readonly T[], type: EntityType, viewMode: CampaignViewMode, limit = 4): T[] {
   const visible = visibleEntities([...entries], viewMode).filter((entry) => entry.type === type);
-  return (["major", "supporting"] as const).flatMap((group) => alphabetical(visible.filter((entry) => prominenceGroup(entry.prominence) === group))).slice(0, limit);
+  return alphabetical(visible.filter((entry) => prominenceGroup(entry.prominence) === "major")).slice(0, limit);
 }
 
-/** Picks active quests first; finished quests never fill the front-page row. */
-export function selectQuestOverviewEntries<T extends OverviewEntry>(entries: readonly T[], viewMode: CampaignViewMode, limit = 5): T[] {
+/** Picks only visible ongoing quests for a compact overview section. */
+export function selectQuestOverviewEntries<T extends OverviewEntry>(entries: readonly T[], viewMode: CampaignViewMode, limit = 4): T[] {
   const visibleQuests = visibleEntities([...entries], viewMode).filter((entry) => entry.type === "quest");
-  return (["ongoing", "not_started"] as const).flatMap((status) => alphabetical(visibleQuests.filter((entry) => (entry.quest_status ?? "not_started") === status))).slice(0, limit);
+  return alphabetical(visibleQuests.filter((entry) => entry.quest_status === "ongoing")).slice(0, limit);
 }
 
 export function overviewMetadata(entry: OverviewEntry): string {

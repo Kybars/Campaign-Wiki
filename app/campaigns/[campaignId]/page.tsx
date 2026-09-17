@@ -26,7 +26,7 @@ function FeaturedSection({ campaignId, title, entries, type, viewMode }: { campa
   if (!entries.length) return null;
   return <section className="border-t border-[var(--line)] pt-5" aria-labelledby={`${type}-overview-heading`}>
     <div className="flex items-baseline justify-between gap-4"><h2 className="font-serif text-2xl font-semibold" id={`${type}-overview-heading`}>{title}</h2><Link className="shrink-0 text-sm font-semibold text-[var(--accent)] hover:underline" href={campaignHref(`/campaigns/${campaignId}/categories/${type}`, viewMode)}>View all {ENTITY_TYPE_LABELS[type]} <span aria-hidden="true">→</span></Link></div>
-    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{entries.map((entry) => <OverviewCard campaignId={campaignId} entry={entry} key={entry.id} viewMode={viewMode} />)}</div>
+    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{entries.map((entry) => <OverviewCard campaignId={campaignId} entry={entry} key={entry.id} viewMode={viewMode} />)}</div>
   </section>;
 }
 
@@ -48,7 +48,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         <FeaturedSection campaignId={campaignId} entries={selectProminentOverviewEntries(overviewEntries, "location", viewMode)} title="Major Locations" type="location" viewMode={viewMode} />
         <FeaturedSection campaignId={campaignId} entries={selectQuestOverviewEntries(overviewEntries, viewMode)} title="Ongoing Quests" type="quest" viewMode={viewMode} />
         <FeaturedSection campaignId={campaignId} entries={selectProminentOverviewEntries(overviewEntries, "faction", viewMode)} title="Major Factions" type="faction" viewMode={viewMode} />
-        {extraCategories.length ? <section className="border-t border-[var(--line)] pt-5" aria-labelledby="more-to-explore-heading"><h2 className="font-serif text-2xl font-semibold" id="more-to-explore-heading">More to explore</h2><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{extraCategories.map(({ type, count }) => <Link className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-white/55 px-4 py-3 transition hover:border-[var(--accent)] hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}/categories/${type}`, viewMode)} key={type}><span><span className="block font-serif text-lg font-semibold">{ENTITY_TYPE_LABELS[type]}</span><span className="text-sm text-[var(--muted)]">{count} {count === 1 ? "entry" : "entries"}</span></span><span aria-hidden="true" className="text-lg text-[var(--accent)]">→</span></Link>)}</div></section> : null}
+        {extraCategories.length ? <section className="border-t border-[var(--line)] pt-5" aria-labelledby="more-to-explore-heading"><h2 className="font-serif text-2xl font-semibold" id="more-to-explore-heading">More to explore</h2><div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">{extraCategories.map(({ type, count }) => <Link className="text-sm font-semibold text-[var(--accent)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}/categories/${type}`, viewMode)} key={type}>{ENTITY_TYPE_LABELS[type]} <span className="font-normal text-[var(--muted)]">({count})</span></Link>)}</div></section> : null}
       </div>
     </main>
   </CampaignShell>;
