@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ConnectedEntityConnectionCard, connectionVisibilityBlockers, updateConnectedEntity } from "@/components/connected-entity-curation-popover";
+import { ConnectedEntityConnectionCard, connectionVisibilityBlockers, shouldCloseQuickPopover, updateConnectedEntity } from "@/components/connected-entity-curation-popover";
 import { persistOptimisticVisibilityChange } from "@/components/curation-controls";
 import { EntityDetail, type EntityDetailView } from "@/components/entity-detail";
 
@@ -43,6 +43,12 @@ describe("connected entity curation popover", () => {
     expect(card.slice(0, triggerEnd)).toContain('aria-label="Curation for Hidden forest"');
     expect(card.slice(triggerEnd)).toContain('aria-label="Show relationship to players"');
     expect(card.slice(triggerEnd)).not.toContain('class="relative w-fit"');
+  });
+
+  it("keeps the quick popover open during pointer and keyboard transitions within its region", () => {
+    expect(shouldCloseQuickPopover(true, false)).toBe(false);
+    expect(shouldCloseQuickPopover(false, true)).toBe(false);
+    expect(shouldCloseQuickPopover(false, false)).toBe(true);
   });
 
   it("keeps the popup compact while restoring independent relationship controls beneath the entity", () => {

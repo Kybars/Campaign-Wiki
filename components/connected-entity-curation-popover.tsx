@@ -26,6 +26,10 @@ export function updateConnectedEntity(entity: CuratedEntity, field: "visibility"
   return { ...entity, [field]: value };
 }
 
+export function shouldCloseQuickPopover(pointerIsInside: boolean, activeElementIsInside: boolean) {
+  return !pointerIsInside && !activeElementIsInside;
+}
+
 function sentenceCase(value: string) {
   return value ? value[0].toLocaleUpperCase("en-US") + value.slice(1) : value;
 }
@@ -33,6 +37,7 @@ function sentenceCase(value: string) {
 function ConnectedEntityCurationPopover({ campaignId, relatedEntity, onVisibilityChange }: { campaignId: string; relatedEntity: CuratedEntity; onVisibilityChange: (visibility: KnowledgeVisibility) => void }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const pointerIsInside = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -44,7 +49,10 @@ function ConnectedEntityCurationPopover({ campaignId, relatedEntity, onVisibilit
   }, [open]);
 
   const visibility = relatedEntity.visibility ?? "dm_only";
-  return <div className="relative w-fit" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }} onFocus={() => setOpen(true)} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} ref={rootRef}>
+  const closeWhenOutside = () => {
+    if (shouldCloseQuickPopover(pointerIsInside.current, Boolean(rootRef.current?.contains(document.activeElement)))) setOpen(false);
+  };
+  return <div className="relative w-fit" onBlur={() => queueMicrotask(closeWhenOutside)} onFocus={() => setOpen(true)} onPointerEnter={() => { pointerIsInside.current = true; setOpen(true); }} onPointerLeave={() => { pointerIsInside.current = false; closeWhenOutside(); }} ref={rootRef}>
     <div className="flex items-center gap-2"><h3 className="min-w-0"><Link className="font-serif text-xl font-semibold text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 hover:decoration-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}/entities/${relatedEntity.id}`, "dm")}>{relatedEntity.name}</Link></h3></div>
     <div aria-hidden={!open} aria-label={`Curation for ${relatedEntity.name}`} className={open ? "absolute left-0 z-30 mt-0.5" : "hidden"} role="dialog"><div className="w-72 rounded-lg border border-[var(--line)] bg-[var(--paper)] p-3 text-sm text-[var(--ink)] shadow-lg"><div className="flex items-center justify-between gap-3"><p className="font-serif text-lg font-semibold">{relatedEntity.name}</p><EntityVisibilityToggle campaignId={campaignId} entityId={relatedEntity.id} label={relatedEntity.name} onVisibilityChange={onVisibilityChange} visibility={visibility} /></div><p className="mt-0.5 text-xs text-[var(--muted)]">{ENTITY_TYPE_SINGULAR_LABELS[relatedEntity.type]} · {prominenceGroupLabel(prominenceGroup(relatedEntity.prominence))}</p>{relatedEntity.summary ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted)]">{relatedEntity.summary}</p> : null}</div></div>
   </div>;
