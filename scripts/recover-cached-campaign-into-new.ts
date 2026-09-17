@@ -11,11 +11,11 @@ function usage(): never {
 
 async function main() {
   if (!sourceCampaignId || !name || !["--dry-run", "--execute"].includes(mode) || !expectedCacheId || !expectedFingerprint) usage();
-  const [{ preflightCachedRecovery }, { applyLeanGraphDefaults, buildLeanDiagnostics }, { createAdminClient, requireData }, { persistCanonicalGraph, recordProcessingRun, updateCampaign }] = await Promise.all([
-    import("@/lib/processing/recover-campaign"), import("@/lib/graph/lean"), import("@/lib/db/client"), import("@/lib/db/repository"),
+  const [{ preflightCachedRecovery }, { applyLeanGraphDefaults, buildLeanDiagnostics }, { applyDeterministicProminence }, { createAdminClient, requireData }, { persistCanonicalGraph, recordProcessingRun, updateCampaign }] = await Promise.all([
+    import("@/lib/processing/recover-campaign"), import("@/lib/graph/lean"), import("@/lib/graph/prominence"), import("@/lib/db/client"), import("@/lib/db/repository"),
   ]);
   const preflight = await preflightCachedRecovery(sourceCampaignId, { processingMode: "lean" });
-  const graph = applyLeanGraphDefaults(preflight.graph);
+  const graph = applyDeterministicProminence(applyLeanGraphDefaults(preflight.graph), preflight.pages);
   const expected = { entities: 112, facts: 502, relationships: 145 };
   const sourceInvariant = {
     cacheId: preflight.cache.run.id,

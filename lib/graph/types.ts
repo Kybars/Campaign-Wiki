@@ -1,7 +1,7 @@
 import type { CandidateEntity, CandidateRelationship, SourceEvidence } from "@/lib/ai/schemas";
 import type { EntityRole, EntityType } from "@/lib/db/types";
 import type { LocationHierarchyDiagnostic } from "@/lib/locations/hierarchy";
-import type { CanonicalFactDraft, EntityProminence, KnowledgeVisibility, ProvenanceOrigin } from "@/lib/knowledge/types";
+import type { CanonicalFactDraft, EntityProminence, KnowledgeVisibility, ProvenanceOrigin, QuestStatus } from "@/lib/knowledge/types";
 
 export interface FactAggregationDiagnostics {
   candidateFactCount: number;
@@ -63,6 +63,9 @@ export interface CanonicalEntity {
   prominence?: EntityProminence | null;
   prominenceReason?: string | null;
   prominenceEvidence?: SourceEvidence[];
+  questStatus?: QuestStatus | null;
+  sourceMentionCount?: number;
+  sourceMentionPageCount?: number;
   sources: SourceEvidence[];
   candidateIds: string[];
   reconciliationEvidence: SourceEvidence[];

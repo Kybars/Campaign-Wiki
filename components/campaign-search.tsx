@@ -6,7 +6,7 @@ import type { EntityType } from "@/lib/db/types";
 
 type SearchResult = { id: string; name: string; type: EntityType; aliases: string[] };
 
-export function CampaignSearch({ campaignId, viewMode }: { campaignId: string; viewMode: CampaignViewMode }) {
+export function CampaignSearch({ campaignId, viewMode, autoFocus = false }: { campaignId: string; viewMode: CampaignViewMode; autoFocus?: boolean }) {
   const listboxId = useId();
   const [term, setTerm] = useState(""); const [results, setResults] = useState<SearchResult[]>([]); const [open, setOpen] = useState(false); const [activeIndex, setActiveIndex] = useState(-1);
   const sequence = useRef(0);
@@ -27,7 +27,7 @@ export function CampaignSearch({ campaignId, viewMode }: { campaignId: string; v
   function goTo(result: SearchResult) { window.location.assign(campaignHref(`/campaigns/${campaignId}/entities/${result.id}`, viewMode)); }
   return <div className="relative">
     <label className="sr-only" htmlFor={`campaign-search-${listboxId}`}>Search this campaign</label>
-    <input id={`campaign-search-${listboxId}`} value={term} onChange={(event) => setTerm(event.target.value)} onFocus={() => { if (results.length) setOpen(true); }} onKeyDown={(event) => {
+    <input autoFocus={autoFocus} id={`campaign-search-${listboxId}`} value={term} onChange={(event) => setTerm(event.target.value)} onFocus={() => { if (results.length) setOpen(true); }} onKeyDown={(event) => {
       if (event.key === "ArrowDown") { event.preventDefault(); if (results.length) { setOpen(true); setActiveIndex((index) => Math.min(index + 1, results.length - 1)); } }
       if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); }
       if (event.key === "Enter" && activeIndex >= 0) { event.preventDefault(); goTo(results[activeIndex]); }

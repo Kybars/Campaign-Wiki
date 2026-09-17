@@ -11,14 +11,14 @@ async function save(campaignId: string, body: object) {
   if (!response.ok) throw new Error(result.error ?? "Could not save this change");
 }
 
-export function EntityVisibilityToggle({ campaignId, entityId, initialVisibility, label }: { campaignId: string; entityId: string; initialVisibility: KnowledgeVisibility; label: string }) {
+export function EntityVisibilityToggle({ campaignId, entityId, initialVisibility, label, onVisibilityChange }: { campaignId: string; entityId: string; initialVisibility: KnowledgeVisibility; label: string; onVisibilityChange?: (visibility: KnowledgeVisibility) => void }) {
   const [visibility, setVisibility] = useState(initialVisibility);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const toggle = async () => {
     const previous = visibility; const next = previous === "player_visible" ? "dm_only" : "player_visible";
     setVisibility(next); setBusy(true); setError("");
-    try { await save(campaignId, { kind: "entity", entityId, patch: { field: "visibility", value: next } }); }
+    try { await save(campaignId, { kind: "entity", entityId, patch: { field: "visibility", value: next } }); onVisibilityChange?.(next); }
     catch (caught) { setVisibility(previous); setError(caught instanceof Error ? caught.message : "Could not save"); }
     finally { setBusy(false); }
   };
@@ -63,8 +63,8 @@ export function EntityCurationControls({ campaignId, entity }: { campaignId: str
   };
   return <div className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-[var(--line)] bg-white/45 p-3 text-sm">
     <label className="grid gap-1 font-semibold">Type<select className="rounded border border-[var(--line)] bg-white px-2 py-1.5 font-normal" onChange={(event) => setPendingType(event.target.value as EntityType)} value={type}>{ENTITY_TYPES.map((value) => <option key={value} value={value}>{ENTITY_TYPE_SINGULAR_LABELS[value]}</option>)}</select></label>
-    <label className="grid gap-1 font-semibold">Prominence<select className="rounded border border-[var(--line)] bg-white px-2 py-1.5 font-normal" onChange={(event) => void patch("prominence", event.target.value === "" ? null : event.target.value as EntityProminence)} value={prominence ?? ""}><option value="">Unclassified</option><option value="major">Major</option><option value="supporting">Supporting</option><option value="minor">Minor</option></select></label>
-    {type === "quest" ? <label className="grid gap-1 font-semibold">Status<select className="rounded border border-[var(--line)] bg-white px-2 py-1.5 font-normal" onChange={(event) => void patch("quest_status", event.target.value === "" ? null : event.target.value as QuestStatus)} value={status ?? ""}><option value="">Unclassified</option><option value="ongoing">Ongoing</option><option value="not_started">Not started</option><option value="finished">Finished</option></select></label> : null}
+    <label className="grid gap-1 font-semibold">Prominence<select className="rounded border border-[var(--line)] bg-white px-2 py-1.5 font-normal" onChange={(event) => void patch("prominence", event.target.value as EntityProminence)} value={prominence ?? "minor"}><option value="major">Major</option><option value="supporting">Supporting</option><option value="minor">Minor</option></select></label>
+    {type === "quest" ? <label className="grid gap-1 font-semibold">Status<select className="rounded border border-[var(--line)] bg-white px-2 py-1.5 font-normal" onChange={(event) => void patch("quest_status", event.target.value as QuestStatus)} value={status ?? "not_started"}><option value="ongoing">Ongoing</option><option value="not_started">Not started</option><option value="finished">Finished</option></select></label> : null}
     <span className="grid gap-1 font-semibold">Player visible<span className="h-8 pt-1"><EntityVisibilityToggle campaignId={campaignId} entityId={entity.id} initialVisibility={entity.visibility} label={entity.name} /></span></span>
     {error ? <p className="w-full text-xs text-red-700" role="alert">{error}</p> : null}
     {pendingType ? <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4"><dialog aria-labelledby="type-change-title" aria-modal="true" className="relative m-0 max-w-md rounded-xl border border-[var(--line)] bg-[var(--paper)] p-6 text-[var(--ink)] shadow-2xl" onKeyDown={(event) => { if (event.key === "Escape") setPendingType(null); }} open><h2 className="font-serif text-2xl font-semibold" id="type-change-title">Change entity type?</h2><p className="mt-3 leading-7">{entity.name} will move from {ENTITY_TYPE_LABELS[type]} to {ENTITY_TYPE_LABELS[pendingType]}. Existing relationships, aliases, sources, and visibility will be kept.</p>{type === "location" || pendingType === "location" ? <p className="mt-2 text-sm leading-6 text-[var(--muted)]">No hierarchy relationship will be invented or deleted because of this type change.</p> : null}<div className="mt-6 flex justify-end gap-3"><button autoFocus className="rounded border border-[var(--line)] px-3 py-2 font-semibold" onClick={() => setPendingType(null)} type="button">Cancel</button><button className="button-primary" onClick={() => void confirmType()} type="button">Change to {ENTITY_TYPE_SINGULAR_LABELS[pendingType]}</button></div></dialog></div> : null}

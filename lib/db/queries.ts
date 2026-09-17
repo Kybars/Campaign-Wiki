@@ -6,6 +6,7 @@ import { filterEntitiesBySearchTerm } from "@/lib/entities";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipsForEntity } from "@/lib/relationships/view";
 import { playerVisibleCategoryKeys, visibleEntities, visibleFacts, visibleRelationships, visibleSummary, type CampaignViewMode } from "@/lib/campaign-view";
+import { relationshipEvidenceForView } from "@/lib/wiki/relationship-evidence";
 
 type EntitySourceRow = Database["public"]["Tables"]["entity_sources"]["Row"];
 type RelationshipSourceRow = Database["public"]["Tables"]["relationship_sources"]["Row"];
@@ -174,7 +175,7 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
   const relevant = relationshipsForEntity(safeRelationships, entityId);
   const relatedIds = [...new Set(relevant.map((relationship) => relationship.relatedEntityId))];
   const relatedResult = relatedIds.length
-    ? await client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility").in("id", relatedIds)
+    ? await client.from("entities").select("id,name,type,roles,aliases,summary,gm_summary,player_summary,visibility,prominence").in("id", relatedIds)
     : { data: [], error: null };
   const related = requireData(relatedResult.data, relatedResult.error, "Load related entities");
   const relatedFactsResult = relatedIds.length
@@ -191,7 +192,7 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
   }));
 
   const relationshipIds = [...new Set(relevant.flatMap((relationship) => relationship.relationshipIds))];
-  const relationshipSourcesResult = relationshipIds.length
+  const relationshipSourcesResult = viewMode === "dm" && relationshipIds.length
     ? await client.from("relationship_sources").select("*").in("relationship_id", relationshipIds).order("page_number")
     : { data: [], error: null };
   const relationshipSources = requireData(
@@ -272,9 +273,9 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
     relationships: relevant.map((relationship) => ({
       ...relationship,
       relatedEntity: relatedById.get(relationship.relatedEntityId),
-      sources: deduplicateSources(documentRelationshipSources
+      sources: relationshipEvidenceForView(viewMode, deduplicateSources(documentRelationshipSources
         .filter((source) => relationship.relationshipIds.includes(source.relationship_id)))
-        .map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" })),
+        .map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" }))),
     })),
   };
 }

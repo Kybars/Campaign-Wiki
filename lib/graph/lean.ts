@@ -27,12 +27,11 @@ export function buildLeanDiagnostics(graph: CanonicalGraph) {
     enrichmentRequired: false,
     enrichmentCalls: 0,
     openAIGenerationCallsAfterReconciliation: 0,
-    prominenceMode: "unclassified" as const,
+    prominenceMode: "deterministic_source" as const,
     prominenceCounts: {
       major: graph.entities.filter((entity) => entity.prominence === "major").length,
       supporting: graph.entities.filter((entity) => entity.prominence === "supporting").length,
       minor: graph.entities.filter((entity) => entity.prominence === "minor").length,
-      unclassified: graph.entities.filter((entity) => entity.prominence == null).length,
     },
     visibilityMode: "dm_only_default" as const,
     visibilityCounts: {

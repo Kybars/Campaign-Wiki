@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  loadCampaignAndDocument: vi.fn(), loadLatestCompleteExtractionCache: vi.fn(),
+  loadCampaignForProcessing: vi.fn(), loadLatestCompleteExtractionCache: vi.fn(),
   persistCanonicalGraph: vi.fn(), recordProcessingRun: vi.fn(), updateCampaign: vi.fn(),
   createEnrichmentCacheRun: vi.fn(), finishEnrichmentCacheRun: vi.fn(),
   getAIProviderConfig: vi.fn(), assertAIProviderPersistenceAllowed: vi.fn(),
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db/repository", () => ({
-  loadCampaignAndDocument: mocks.loadCampaignAndDocument,
+  loadCampaignForProcessing: mocks.loadCampaignForProcessing,
   loadLatestCompleteExtractionCache: mocks.loadLatestCompleteExtractionCache,
   persistCanonicalGraph: mocks.persistCanonicalGraph,
   recordProcessingRun: mocks.recordProcessingRun,
@@ -26,7 +26,7 @@ import { recoverCampaignFromCachedExtraction } from "@/lib/processing/recover-ca
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.loadCampaignAndDocument.mockResolvedValue({ campaign: { name: "Fixture", status: "failed" }, document: { id: "document" } });
+  mocks.loadCampaignForProcessing.mockResolvedValue({ campaign: { name: "Fixture", status: "failed" }, document: { id: "document" }, pages: [{ pageNumber: 1, text: "Mira is a hunter." }] });
   mocks.loadLatestCompleteExtractionCache.mockResolvedValue({
     run: { id: "cache", document_id: "document", cache_schema_version: 4, chunking_metadata: { chunkCount: 1 } },
     chunks: [{ chunk_index: 0, chunk_id: "chunk", validated_output: { entities: [{ temporary_id: "mira", name: "Mira", type: "npc", roles: [], aliases: [], summary: "A hunter.", sources: [{ page_number: 1, supporting_text: "Mira is a hunter." }], facts: [{ temporary_id: "job", field_key: "occupation", content: "Hunter", sources: [{ page_number: 1, supporting_text: "Mira is a hunter." }] }] }], relationships: [] } }],

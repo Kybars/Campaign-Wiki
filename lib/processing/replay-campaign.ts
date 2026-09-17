@@ -7,7 +7,7 @@ import { enrichmentGraphFingerprint } from "@/lib/ai/enrichment-input";
 import { parseCampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 import {
-  loadCampaignAndDocument,
+  loadCampaignForProcessing,
   loadLatestCompleteExtractionCache,
   loadCompleteEnrichmentCache,
   persistCanonicalGraph,
@@ -26,6 +26,7 @@ import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mod
 import { assertAIProviderPersistenceAllowed, getAIProviderConfig } from "@/lib/env";
 import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
+import { applyDeterministicProminence } from "@/lib/graph/prominence";
 
 function mergeDiagnostics(current: Json, replay: Json): Json {
   if (current !== null && !Array.isArray(current) && typeof current === "object") return { ...current, replay };
@@ -35,7 +36,7 @@ function mergeDiagnostics(current: Json, replay: Json): Json {
 export async function replayCampaignFromCache(campaignId: string, options: { refreshReconciliation?: boolean; processingMode?: ProcessingMode } = {}) {
   const startedAt = Date.now();
   const processingMode = resolveProcessingMode(options.processingMode);
-  const { campaign, document } = await loadCampaignAndDocument(campaignId);
+  const { campaign, document, pages } = await loadCampaignForProcessing(campaignId);
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
   if (![1, 2, 3, RICH_EXTRACTION_CACHE_SCHEMA_VERSION].includes(cache.run.cache_schema_version)) {
@@ -77,9 +78,10 @@ export async function replayCampaignFromCache(campaignId: string, options: { ref
       throw new Error("Full replay requires a matching complete enrichment result. Select lean replay or run full processing first.");
     }
     const output = enrichmentCache?.output ? parseCampaignEnrichmentOutput(enrichmentCache.output) : undefined;
-    const graph = processingMode === "lean"
+    const graphWithModeDefaults = processingMode === "lean"
       ? applyLeanGraphDefaults(canonicalGraph)
       : output ? applyCampaignEnrichment(canonicalGraph, output) : canonicalGraph;
+    const graph = applyDeterministicProminence(graphWithModeDefaults, pages);
     await persistCanonicalGraph(campaignId, document.id, graph);
     const replayDiagnostics = {
       cacheRunId: cache.run.id,

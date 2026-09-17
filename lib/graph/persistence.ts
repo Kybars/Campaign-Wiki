@@ -22,6 +22,9 @@ export function canonicalGraphPersistencePayload(graph: CanonicalGraph) {
       visibility: entity.visibility,
       prominence: entity.prominence,
       prominenceReason: entity.prominenceReason,
+      questStatus: entity.questStatus,
+      sourceMentionCount: entity.sourceMentionCount,
+      sourceMentionPageCount: entity.sourceMentionPageCount,
       sources: entity.sources,
       metadata: {
         candidateIds: entity.candidateIds,

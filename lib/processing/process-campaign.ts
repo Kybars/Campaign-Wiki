@@ -27,6 +27,7 @@ import { aggregateCandidates } from "@/lib/graph/aggregate";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { applyCampaignEnrichment, buildEnrichmentDiagnostics } from "@/lib/graph/enrichment";
 import { applyLeanGraphDefaults, buildLeanDiagnostics } from "@/lib/graph/lean";
+import { applyDeterministicProminence } from "@/lib/graph/prominence";
 import type { CanonicalGraph } from "@/lib/graph/types";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
@@ -94,7 +95,7 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const aggregation = await checkpointStore.load<{ relationshipKeys: string[] }>(aggregationIdentity);
   if (aggregation && JSON.stringify([...aggregation.output.relationshipKeys].sort()) !== JSON.stringify(expectedKeys)) await checkpointStore.saveFailed(aggregationIdentity, aggregation.usage, "Stored graph aggregation does not match deterministic graph", aggregation.attemptCount);
   if (!aggregation || JSON.stringify([...aggregation.output.relationshipKeys].sort()) !== JSON.stringify(expectedKeys)) await checkpointStore.saveValidated({ identity: aggregationIdentity, output: { relationshipKeys: expectedKeys }, usage: [], attemptCount: 1 });
-  const graph = applyLeanGraphDefaults(canonicalGraph);
+  const graph = applyDeterministicProminence(applyLeanGraphDefaults(canonicalGraph), pages);
   const inventoryCalls = inventories.flatMap((item) => [item.inventoryCheckpointStatus === "RUN" ? item.initialInventoryUsage : null, item.completenessCheckpointStatus === "RUN" ? item.completenessUsage : null].filter((usage): usage is ModelCallUsage => usage !== null));
   const graphCalls = [...graphChunks.flatMap((item) => [item.firstPassUsage, item.completenessUsage].filter((usage): usage is ModelCallUsage => usage !== null)), ...(duplicateAdjudication.usage ? [duplicateAdjudication.usage] : [])];
   await recordProcessingRun(campaignId, "graph_extraction", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, reconciledInventoryEntities: merged.inventory.entities.length, duplicateCandidatePairs: duplicateCandidates.pairs.length, duplicateMergeGroups: duplicateAdjudication.decision.merge_groups.length, duplicateReviewPairs: duplicateAdjudication.decision.review_pairs.length, duplicateAdjudicationCheckpointStatus: duplicateAdjudication.checkpointStatus, graphExtractionCacheHits: graphChunks.filter((item) => item.firstPassCheckpointStatus === "REUSE").length, graphCompletenessCacheHits: graphChunks.filter((item) => item.completenessCheckpointStatus === "REUSE").length, firstPassRelationships: graphChunks.reduce((count, item) => count + item.firstPass.length, 0), completenessRelationships: graphChunks.reduce((count, item) => count + item.completeness.length, 0), canonicalRelationships: graph.relationships.length, graphExtractionProvider: graphExtractionProvider.providerId, graphExtractionModel: graphExtractionProvider.modelId, entityReconciliationProvider: entityReconciliationProvider.providerId, entityReconciliationModel: entityReconciliationProvider.modelId, graphCompletenessProvider: graphCompletenessProvider.providerId, graphCompletenessModel: graphCompletenessProvider.modelId } as unknown as Json });
@@ -210,7 +211,7 @@ export async function processCampaign(campaignId: string, options: { processingM
     let openAIGenerationCallsAfterReconciliation = 0;
     let enrichmentDiagnostics: ReturnType<typeof buildEnrichmentDiagnostics> | ReturnType<typeof buildLeanDiagnostics>;
     if (processingMode === "lean") {
-      graph = applyLeanGraphDefaults(canonicalGraph);
+      graph = applyDeterministicProminence(applyLeanGraphDefaults(canonicalGraph), pages);
       enrichmentDiagnostics = buildLeanDiagnostics(graph);
       await recordProcessingRun(campaignId, "enrichment", "complete", { output: {
         ...enrichmentDiagnostics,
@@ -248,6 +249,7 @@ export async function processCampaign(campaignId: string, options: { processingM
           throw error;
         }
       }
+      graph = applyDeterministicProminence(graph, pages);
       enrichmentDiagnostics = buildEnrichmentDiagnostics(graph);
       const enrichmentUsage = summarizeModelUsage("enrichment", enrichmentCalls);
       openAIGenerationCallsAfterReconciliation = enrichmentProvider.providerId === "openai" ? enrichmentCalls.length : 0;

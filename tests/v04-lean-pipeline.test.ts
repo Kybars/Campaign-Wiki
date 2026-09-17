@@ -46,13 +46,11 @@ describe("v0.4 lean graph behavior", () => {
     expect(visibleSummary(readEntities[0], "player")).toBe("");
   });
 
-  it("reports zero enrichment calls and renders null prominence honestly", () => {
+  it("reports zero enrichment calls and treats legacy null prominence as Minor", () => {
     const diagnostics = buildLeanDiagnostics(applyLeanGraphDefaults(enrichmentFixtureGraph()));
-    expect(diagnostics).toMatchObject({ processingMode: "lean", enrichmentRequired: false, enrichmentCalls: 0, openAIGenerationCallsAfterReconciliation: 0, prominenceMode: "unclassified", visibilityMode: "dm_only_default", overviewMode: "none" });
-    expect(diagnostics.prominenceCounts.unclassified).toBeGreaterThan(0);
+    expect(diagnostics).toMatchObject({ processingMode: "lean", enrichmentRequired: false, enrichmentCalls: 0, openAIGenerationCallsAfterReconciliation: 0, prominenceMode: "deterministic_source", visibilityMode: "dm_only_default", overviewMode: "none" });
     expect(diagnostics.visibilityCounts.entities.playerVisible).toBe(0);
-    expect(prominenceGroup(null)).toBe("unclassified");
-    expect(prominenceGroupLabel("unclassified")).toBe("Unclassified");
-    expect(prominenceGroup(null)).not.toBe("minor");
+    expect(prominenceGroup(null)).toBe("minor");
+    expect(prominenceGroupLabel("minor")).toBe("Minor");
   });
 });

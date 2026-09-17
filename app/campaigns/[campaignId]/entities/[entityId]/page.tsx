@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { CampaignBreadcrumbs } from "@/components/campaign-breadcrumbs";
 import { EntityDetail } from "@/components/entity-detail";
-import { WikiHeader } from "@/components/wiki-header";
+import { CampaignShell } from "@/components/wiki-header";
 import { campaignEntityExists, getCampaign, getCampaignNavigation, getEntityDetail } from "@/lib/db/queries";
 import { campaignViewMode, shouldRedirectHiddenPlayerPage } from "@/lib/campaign-view";
 import { ENTITY_TYPE_LABELS } from "@/lib/entities";
@@ -23,12 +23,11 @@ export default async function EntityPage({ params, searchParams }: { params: Pro
   const navigation = await getCampaignNavigation(campaignId, viewMode);
   const category = { label: ENTITY_TYPE_LABELS[detail.entity.type], path: detail.entity.type };
   return (
-    <>
-      <WikiHeader availableCategories={navigation} campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={`/campaigns/${campaignId}/entities/${entityId}`} active={detail.entity.type} />
-      <main className="mx-auto max-w-6xl px-6 py-10 sm:py-14">
+    <CampaignShell active={detail.entity.type} availableCategories={navigation} campaignId={campaignId} campaignName={campaign.name} viewMode={viewMode} currentPath={`/campaigns/${campaignId}/entities/${entityId}`}>
+      <main className="px-4 py-5 sm:px-6 sm:py-7">
         <CampaignBreadcrumbs campaignId={campaignId} campaignName={campaign.name} category={category} current={detail.entity.name} viewMode={viewMode} />
-        <div className="mt-8"><EntityDetail campaignId={campaignId} detail={detail} viewMode={viewMode} /></div>
+        <div className="mt-5"><EntityDetail campaignId={campaignId} detail={detail} viewMode={viewMode} /></div>
       </main>
-    </>
+    </CampaignShell>
   );
 }

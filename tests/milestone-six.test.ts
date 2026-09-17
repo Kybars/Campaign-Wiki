@@ -1,6 +1,6 @@
 import { EntityDetail, type EntityDetailView } from "@/components/entity-detail";
 import { LocationTree } from "@/components/location-tree";
-import { WikiHeader } from "@/components/wiki-header";
+import { CampaignShell } from "@/components/wiki-header";
 import { filterEntitiesBySearchTerm, hasEntityRole } from "@/lib/entities";
 import { buildLocationHierarchy, type HierarchyRelationship } from "@/lib/locations/hierarchy";
 import { locationOverview } from "@/lib/locations/presentation";
@@ -116,12 +116,14 @@ describe("Milestone 6 location navigation", () => {
     expect(enemies.map((entity) => entity.type)).toEqual(["deity", "faction"]);
   });
 
-  it("exposes every category and campaign-home link in the shared navigation", () => {
-    const header = renderToStaticMarkup(createElement(WikiHeader, { campaignId, campaignName: "Campaign" }));
+  it("exposes campaign navigation in the shared shell without a redundant library link", () => {
+    const header = renderToStaticMarkup(createElement(CampaignShell, { campaignId, campaignName: "Campaign" }, createElement("p", null, "Content")));
     for (const category of ["npc", "deity", "location", "faction", "item", "event", "quest", "enemies", "other"]) {
       expect(header).toContain(`/campaigns/${campaignId}/categories/${category}`);
     }
-    expect(header).toContain('href="/"');
+    expect(header).toContain(`href="/campaigns/${campaignId}"`);
+    expect(header).toContain("Search this campaign");
+    expect(header).not.toContain("All Campaigns");
   });
 
   it("remains finite when malformed cyclic containment is supplied", () => {

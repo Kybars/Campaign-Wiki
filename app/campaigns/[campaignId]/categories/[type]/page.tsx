@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CampaignBreadcrumbs } from "@/components/campaign-breadcrumbs";
 import { CategoryOrganizer } from "@/components/category-organizer";
 import { EventChronology } from "@/components/event-chronology";
 import { LocationTree } from "@/components/location-tree";
-import { WikiHeader } from "@/components/wiki-header";
+import { CampaignShell } from "@/components/wiki-header";
 import { campaignHref, campaignViewMode, shouldRedirectHiddenPlayerPage } from "@/lib/campaign-view";
 import { getCampaign, getCampaignEntities, getCampaignLocationHierarchy, getCampaignNavigation, getEventChronologyEntries } from "@/lib/db/queries";
 import { ENTITY_TYPE_LABELS, isEntityType } from "@/lib/entities";
@@ -29,12 +28,10 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const title = isEnemiesView ? "Enemies" : ENTITY_TYPE_LABELS[type];
   const alternate = type === "location" ? "hierarchy" : type === "event" ? "chronology" : null;
   const useAlternate = query.layout === alternate;
-  return <>
-    <WikiHeader active={type} availableCategories={navigation} campaignId={campaignId} campaignName={campaign.name} currentPath={`/campaigns/${campaignId}/categories/${type}${useAlternate ? `?layout=${alternate}` : ""}`} viewMode={viewMode} />
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-      <CampaignBreadcrumbs campaignId={campaignId} campaignName={campaign.name} category={{ label: title, path: type }} viewMode={viewMode} />
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5"><div><p className="eyebrow">Campaign category</p><h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">{title}</h1><p className="mt-2 text-[var(--muted)]">{entities.length} {entities.length === 1 ? "entry" : "entries"}</p></div>{alternate ? <nav aria-label={`${title} organization`} className="flex rounded-lg border border-[var(--line)] bg-white/55 p-1 text-sm font-semibold"><Link className={`rounded px-3 py-2 ${!useAlternate ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)]"}`} href={campaignHref(`/campaigns/${campaignId}/categories/${type}`, viewMode)}>By prominence</Link><Link className={`rounded px-3 py-2 ${useAlternate ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)]"}`} href={campaignHref(`/campaigns/${campaignId}/categories/${type}?layout=${alternate}`, viewMode)}>{alternate === "hierarchy" ? "Hierarchy" : "Chronology"}</Link></nav> : null}</div>
-      {type === "quest" ? <CategoryOrganizer campaignId={campaignId} entries={entities} grouping="quest_status" viewMode={viewMode} /> : useAlternate && type === "location" ? <section className="mt-8 rounded-xl border border-[var(--line)] bg-white/55 p-5"><LocationTree campaignId={campaignId} roots={locationHierarchy!.buildTree()} viewMode={viewMode} /></section> : useAlternate && type === "event" ? <section className="mt-8 rounded-xl border border-[var(--line)] bg-white/55 p-5"><EventChronology campaignId={campaignId} events={eventEntries} viewMode={viewMode} /></section> : <CategoryOrganizer campaignId={campaignId} entries={entities} viewMode={viewMode} />}
+  return <CampaignShell active={type} availableCategories={navigation} campaignId={campaignId} campaignName={campaign.name} currentPath={`/campaigns/${campaignId}/categories/${type}${useAlternate ? `?layout=${alternate}` : ""}`} viewMode={viewMode}>
+    <main className="px-4 py-5 sm:px-6 sm:py-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] pb-3"><h1 className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl">{title} <span className="font-sans text-sm font-normal text-[var(--muted)]">· {entities.length}</span></h1>{alternate ? <nav aria-label={`${title} organization`} className="flex rounded-md border border-[var(--line)] bg-white/55 p-0.5 text-xs font-semibold"><Link className={`rounded px-2.5 py-1.5 ${!useAlternate ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)]"}`} href={campaignHref(`/campaigns/${campaignId}/categories/${type}`, viewMode)}>Board</Link><Link className={`rounded px-2.5 py-1.5 ${useAlternate ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--muted)]"}`} href={campaignHref(`/campaigns/${campaignId}/categories/${type}?layout=${alternate}`, viewMode)}>{alternate === "hierarchy" ? "Hierarchy" : "Chronology"}</Link></nav> : null}</div>
+      {type === "quest" ? <CategoryOrganizer campaignId={campaignId} entries={entities} grouping="quest_status" key={`${campaignId}:${type}:quest_status:${viewMode}`} viewMode={viewMode} /> : useAlternate && type === "location" ? <section className="mt-8 rounded-xl border border-[var(--line)] bg-white/55 p-5"><LocationTree campaignId={campaignId} roots={locationHierarchy!.buildTree()} viewMode={viewMode} /></section> : useAlternate && type === "event" ? <section className="mt-8 rounded-xl border border-[var(--line)] bg-white/55 p-5"><EventChronology campaignId={campaignId} events={eventEntries} viewMode={viewMode} /></section> : <CategoryOrganizer campaignId={campaignId} entries={entities} key={`${campaignId}:${type}:prominence:${viewMode}`} viewMode={viewMode} />}
     </main>
-  </>;
+  </CampaignShell>;
 }

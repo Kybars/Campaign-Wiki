@@ -4,14 +4,16 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.5.1`
+- Package version: `0.5.2`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
 - Manual entity type, prominence, visibility, quest status, and relationship visibility use explicit typed values plus manual-state flags. Graph replay refreshes document-derived data, then restores flagged GM choices by stable row identity.
 - Category pages organize entities by prominence, with hierarchy/chronology alternatives and quest-status grouping. Player View hides empty categories and redirects known hidden pages to a non-leaking campaign notice.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: v0.5 wiki usability + durable GM curation
+- Latest completed milestone: v0.5.2 campaign organization, deterministic prominence, and Player View safety
+- Imported canonical graphs now receive deterministic, per-entity-type prominence from conservative source mention/page counts plus unique canonical relationship counts. Fresh quests default to `not_started`; durable manual prominence and quest-status overrides remain replay-safe. The normal UI exposes only Major/Supporting/Minor and Ongoing/Not started/Finished, with legacy nulls displayed as Minor/Not started.
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - v0.5 migration: `20260916192058_v05_durable_gm_curation.sql`, committed locally; remote application is pending because the linked CLI could not initialize its login role over the current network.
+- v0.5.2 migration: `20260917091332_deterministic_entity_prominence.sql`, committed locally; it has not been applied remotely.
 - Latest targeted work: dogfooding showed that duplicate entity names could make otherwise valid first-pass relationship endpoints ambiguous and discard those edges. Lean processing now reconciles only high-confidence duplicate candidates after graph first pass, preserves the raw first-pass output, re-resolves it through canonical names and approved aliases, and runs completeness against the reconciled inventory. Uncertain candidates remain separate for later manual review; duplicate detection is intentionally conservative, not complete.
 - Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
 

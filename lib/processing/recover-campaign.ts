@@ -9,13 +9,14 @@ import { applyLeanGraphDefaults, buildLeanDiagnostics } from "@/lib/graph/lean";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { aggregateCachedChunks, parseCachedReconciliation } from "@/lib/processing/replay-cache";
 import { RICH_EXTRACTION_CACHE_SCHEMA_VERSION } from "@/lib/processing/cache-version";
-import { createEnrichmentCacheRun, finishEnrichmentCacheRun, loadCampaignAndDocument, loadLatestCompleteExtractionCache, persistCanonicalGraph, recordProcessingRun, updateCampaign } from "@/lib/db/repository";
+import { createEnrichmentCacheRun, finishEnrichmentCacheRun, loadCampaignForProcessing, loadLatestCompleteExtractionCache, persistCanonicalGraph, recordProcessingRun, updateCampaign } from "@/lib/db/repository";
 import { summarizeModelUsage } from "@/lib/ai/usage";
 import type { Json } from "@/lib/db/types";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
 import { OpenAICallBudget, OpenAICallBudgetExceededError, summarizePaidCallPlan, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
+import { applyDeterministicProminence } from "@/lib/graph/prominence";
 
 export const TEST_THREE_CAMPAIGN_ID = "d14f9875-5ebf-46c6-b07e-d65a3e65c5f4";
 const TEST_TWO_CAMPAIGN_ID = "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3";
@@ -23,7 +24,7 @@ const TEST_TWO_CAMPAIGN_ID = "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3";
 export async function preflightCachedRecovery(campaignId: string, options: { processingMode?: ProcessingMode } = {}) {
   const processingMode = resolveProcessingMode(options.processingMode);
   if (campaignId === TEST_TWO_CAMPAIGN_ID) throw new Error("Test 2 is immutable and cannot be recovered");
-  const { campaign, document } = await loadCampaignAndDocument(campaignId);
+  const { campaign, document, pages } = await loadCampaignForProcessing(campaignId);
   if (campaign.status !== "failed") throw new Error("Cached recovery only accepts a failed campaign");
   const cache = await loadLatestCompleteExtractionCache(campaignId);
   if (cache.run.document_id !== document.id) throw new Error("Extraction cache belongs to a different campaign document");
@@ -48,7 +49,7 @@ export async function preflightCachedRecovery(campaignId: string, options: { pro
   const checkpointPlan = provider ? await planEnrichmentResume(graph, databaseCheckpointStore(), { campaignId, documentId: document.id, sourceExtractionCacheId: cache.run.id, processingMode: "full", providerId: provider.providerId, modelId: provider.modelId, graphFingerprint }) : [];
   const retryCeiling = checkpointPlan.filter((item) => item.operationType !== "gm_overview" && item.operationType !== "player_overview" && item.status !== "REUSE").length;
   const paidCallPlan = provider ? summarizePaidCallPlan(provider.providerId, checkpointPlan, retryCeiling, getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN) : summarizePaidCallPlan("local", [], 0, 0);
-  return { campaign, document, cache, aggregate, graph, graphFingerprint, callBreakdown, expectedEnrichmentCalls, processingMode, checkpointPlan, paidCallPlan };
+  return { campaign, document, pages, cache, aggregate, graph, graphFingerprint, callBreakdown, expectedEnrichmentCalls, processingMode, checkpointPlan, paidCallPlan };
 }
 
 export async function recoverCampaignFromCachedExtraction(campaignId: string, options: { execute?: boolean; processingMode?: ProcessingMode } = {}) {
@@ -70,7 +71,7 @@ export async function recoverCampaignFromCachedExtraction(campaignId: string, op
     let usage = summarizeModelUsage("enrichment", []);
     let modeDiagnostics: ReturnType<typeof buildLeanDiagnostics> | ReturnType<typeof buildEnrichmentDiagnostics>;
     if (preflight.processingMode === "lean") {
-      graph = applyLeanGraphDefaults(preflight.graph);
+      graph = applyDeterministicProminence(applyLeanGraphDefaults(preflight.graph), preflight.pages);
       modeDiagnostics = buildLeanDiagnostics(graph);
       await recordProcessingRun(campaignId, "recovery_enrichment", "complete", { output: { ...modeDiagnostics, mode: "skipped_by_processing_mode", modelUsage: usage } as unknown as Json });
     } else {
@@ -80,7 +81,7 @@ export async function recoverCampaignFromCachedExtraction(campaignId: string, op
       cacheId = await createEnrichmentCacheRun(campaignId, preflight.document.id, preflight.cache.run.id, cacheModelId, preflight.graphFingerprint);
       await updateCampaign(campaignId, { processing_stage: "Classifying cached campaign knowledge" });
       const enriched = await enrichCanonicalGraphWithAI(preflight.graph, { provider: structuredProvider, checkpointStore, checkpointContext: { campaignId, documentId: preflight.document.id, sourceExtractionCacheId: preflight.cache.run.id, processingMode: "full", providerId: structuredProvider.providerId, modelId: structuredProvider.modelId, graphFingerprint: preflight.graphFingerprint } });
-      graph = enriched.graph;
+      graph = applyDeterministicProminence(enriched.graph, preflight.pages);
       usage = summarizeModelUsage("enrichment", enriched.usage);
       await finishEnrichmentCacheRun(cacheId, "complete", enriched.output, usage as unknown as Json);
       modeDiagnostics = buildEnrichmentDiagnostics(graph);

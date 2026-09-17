@@ -12,6 +12,16 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-17",
+    title: "Campaign organization and Player View safety",
+    changes: [
+      "Added deterministic imported prominence and quest-status defaults while preserving durable GM overrides across replay.",
+      "Reworked campaign browsing into responsive organization boards with compact curation controls and a sidebar/mobile campaign navigator.",
+      "Closed Player View stale-list and relationship-evidence leaks, and added compact connected-entity visibility curation from Connections.",
+    ],
+  },
+  {
+    version: "0.5.1",
     date: "2026-09-16",
     title: "Durable GM curation",
     changes: [

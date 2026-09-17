@@ -109,7 +109,7 @@ describe("v0.4 processing orchestration", () => {
     expect(mocks.getAIProviderConfig).not.toHaveBeenCalledWith("enrichment");
     expect(mocks.enrichCanonicalGraphWithAI).not.toHaveBeenCalled();
     expect(mocks.createEnrichmentCacheRun).not.toHaveBeenCalled();
-    expect(mocks.persistCanonicalGraph).toHaveBeenCalledWith("campaign", "document", expect.objectContaining({ entities: [expect.objectContaining({ visibility: "dm_only", prominence: null, playerSummary: null })] }));
+    expect(mocks.persistCanonicalGraph).toHaveBeenCalledWith("campaign", "document", expect.objectContaining({ entities: [expect.objectContaining({ visibility: "dm_only", prominence: "major", playerSummary: null, sourceMentionCount: 1, sourceMentionPageCount: 1 })] }));
     expect(result).toMatchObject({ processingMode: "lean", finalInventoryEntities: 1, relationshipCount: 0 });
     const completeCall = mocks.updateCampaign.mock.calls.find(([, values]) => values.status === "complete");
     expect(completeCall).toBeDefined();

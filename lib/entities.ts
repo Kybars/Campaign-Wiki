@@ -27,15 +27,15 @@ export const ENTITY_TYPE_SINGULAR_LABELS: Record<EntityType, string> = {
 
 export const ENTITY_ROLE_LABELS: Record<EntityRole, string> = { enemy: "Enemy" };
 
-export const PROMINENCE_GROUPS = ["major", "supporting", "minor", "unclassified"] as const;
+export const PROMINENCE_GROUPS = ["major", "supporting", "minor"] as const;
 export type ProminenceGroup = (typeof PROMINENCE_GROUPS)[number];
 
 export function prominenceGroup(prominence: EntityProminence | null | undefined): ProminenceGroup {
-  return prominence ?? "unclassified";
+  return prominence ?? "minor";
 }
 
 export function prominenceGroupLabel(group: ProminenceGroup): string {
-  return group === "unclassified" ? "Unclassified" : group[0].toLocaleUpperCase("en-US") + group.slice(1);
+  return group[0].toLocaleUpperCase("en-US") + group.slice(1);
 }
 
 export function hasEntityRole(entity: { roles: EntityRole[] }, role: EntityRole): boolean {
