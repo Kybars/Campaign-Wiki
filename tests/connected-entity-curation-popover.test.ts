@@ -20,12 +20,13 @@ function detail(): EntityDetailView {
 }
 
 describe("connected entity curation popover", () => {
-  it("renders its DM trigger but exposes no curation control in Player View", () => {
+  it("uses the entity link as the DM trigger without rendering a permanent Manage button", () => {
     const dm = renderToStaticMarkup(createElement(EntityDetail, { campaignId: "campaign", detail: detail(), viewMode: "dm" }));
     const player = renderToStaticMarkup(createElement(EntityDetail, { campaignId: "campaign", detail: detail(), viewMode: "player" }));
 
-    expect(dm).toContain("Manage Hidden forest");
-    expect(player).not.toContain("Manage Hidden forest");
+    expect(dm).toContain('href="/campaigns/campaign/entities/related"');
+    expect(dm).not.toContain("Manage Hidden forest");
+    expect(dm).not.toContain(">Manage<");
     expect(player).not.toContain("Player visible");
     expect(player).not.toContain("Curation for Hidden forest");
   });
