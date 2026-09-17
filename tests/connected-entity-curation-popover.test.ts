@@ -2,11 +2,12 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ConnectedEntityConnectionCard, connectionVisibilityBlockers, QUICK_POPOVER_CLOSE_DELAY_MS, shouldCloseQuickPopover, updateConnectedEntity } from "@/components/connected-entity-curation-popover";
-import { persistOptimisticVisibilityChange } from "@/components/curation-controls";
+import { persistOptimisticVisibilityChange, visibilityHelpOpenFor } from "@/components/curation-controls";
 import { EntityDetail, type EntityDetailView } from "@/components/entity-detail";
 
 const currentEntity = { id: "current", name: "Current entity", visibility: "player_visible" as const };
 const hiddenRelatedEntity = { id: "related", name: "Hidden forest", type: "location" as const, prominence: "supporting" as const, visibility: "dm_only" as const };
+const currentEntityEndpoint = { ...currentEntity, type: "npc" as const };
 const relationships = [
   { id: "relationship-one", displayLabel: "Holds sway over", visibility: "dm_only" as const },
   { id: "relationship-two", displayLabel: "Protects", visibility: "player_visible" as const },
@@ -15,7 +16,7 @@ const relationships = [
 function detail(): EntityDetailView {
   return {
     entity: { ...currentEntity, type: "npc", aliases: [], roles: [], summary: "", prominence: "major" },
-    relationships: relationships.map((relationship) => ({ ...relationship, description: "", relatedEntity: hiddenRelatedEntity, sources: [] })),
+    relationships: relationships.map((relationship) => ({ ...relationship, description: "", relatedEntity: hiddenRelatedEntity, sourceEntity: currentEntityEndpoint, targetEntity: hiddenRelatedEntity, sources: [] })),
     sources: [],
   };
 }
@@ -35,7 +36,7 @@ describe("connected entity curation popover", () => {
   it("limits the quick-popover trigger to the connected entity identity, leaving relationship controls outside it", () => {
     const card = renderToStaticMarkup(createElement(ConnectedEntityConnectionCard, {
       campaignId: "campaign", currentEntity, initialRelatedEntity: hiddenRelatedEntity,
-      relationships: relationships.map((relationship) => ({ ...relationship, description: "", sources: [] })),
+      relationships: relationships.map((relationship) => ({ ...relationship, description: "", sourceEntity: currentEntityEndpoint, targetEntity: hiddenRelatedEntity, sources: [] })),
     }));
 
     const triggerEnd = card.indexOf('<ul class="mt-2 space-y-2">');
@@ -60,7 +61,7 @@ describe("connected entity curation popover", () => {
       campaignId: "campaign",
       currentEntity,
       initialRelatedEntity: hiddenRelatedEntity,
-      relationships: relationships.map((relationship) => ({ ...relationship, description: "", sources: [] })),
+      relationships: relationships.map((relationship) => ({ ...relationship, description: "", sourceEntity: currentEntityEndpoint, targetEntity: hiddenRelatedEntity, sources: [] })),
     }));
 
     expect(card).toContain("Location · Supporting");
@@ -71,9 +72,18 @@ describe("connected entity curation popover", () => {
     expect(card).toContain("Protects");
     expect(card).toContain('aria-label="Show relationship to players"');
     expect(card).toContain('aria-label="Hide relationship from players"');
-    expect(card).toContain('aria-describedby="visibility-blocked-relationship-relationship-one"');
-    expect(card).toContain('role="tooltip"');
-    expect(card).toContain("Hidden forest is not visible to players.");
+    expect(card).not.toContain('aria-describedby="visibility-blocked-relationship-relationship-one"');
+    expect(card).not.toContain('role="tooltip"');
+    expect(card).not.toContain("Hidden forest is not visible to players.");
+  });
+
+  it("treats disabled relationship visibility help as transient", () => {
+    expect(visibilityHelpOpenFor("pointer_enter")).toBe(true);
+    expect(visibilityHelpOpenFor("click")).toBe(true);
+    expect(visibilityHelpOpenFor("focus")).toBe(true);
+    expect(visibilityHelpOpenFor("pointer_leave")).toBe(false);
+    expect(visibilityHelpOpenFor("blur")).toBe(false);
+    expect(visibilityHelpOpenFor("escape")).toBe(false);
   });
 
   it("immediately makes relationship visibility eligible when the related entity becomes visible", () => {

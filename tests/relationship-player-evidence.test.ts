@@ -25,6 +25,8 @@ function detail(sources: SourceEvidence[]): EntityDetailView {
       relationship_type: "holds sway over",
       visibility: "player_visible",
       relatedEntity: { id: "path", name: "Ancient Path", type: "location" },
+      sourceEntity: { id: "forest", name: "Fire Forest of Innenotdar", type: "npc" },
+      targetEntity: { id: "path", name: "Ancient Path", type: "location" },
       sources,
     }],
   };
@@ -36,7 +38,7 @@ describe("Player View relationship evidence safety", () => {
     const playerHtml = renderToStaticMarkup(createElement(EntityDetail, { campaignId: "campaign", detail: detail(playerSources), viewMode: "player" }));
 
     expect(playerSources).toEqual([]);
-    expect(playerHtml).toContain("Holds sway over");
+    expect(playerHtml).toContain("holds sway over");
     expect(playerHtml).toContain("Ancient Path");
     expect(playerHtml).not.toContain("[p. 11]");
     expect(playerHtml).not.toContain("Show evidence");

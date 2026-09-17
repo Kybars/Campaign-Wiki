@@ -105,7 +105,7 @@ describe("Milestone 3 relationship normalization", () => {
     expect(result.normalization.originalRelationshipTypes).toEqual(["owns", "owned_by"]);
   });
 
-  it("renders the inverse label from the target entity perspective", () => {
+  it("keeps the canonical forward label from the target entity perspective", () => {
     const row = {
       id: "r1",
       source_entity_id: "parent",
@@ -116,7 +116,7 @@ describe("Milestone 3 relationship normalization", () => {
     };
     expect(relationshipsForEntity([row], "child")[0]).toMatchObject({
       relatedEntityId: "parent",
-      displayLabel: "child of",
+      displayLabel: "parent of",
       outgoing: false,
     });
   });

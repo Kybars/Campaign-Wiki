@@ -170,6 +170,12 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
   ]);
   const allRelationships = requireData(allRelationshipResult.data, allRelationshipResult.error, "Load relationships");
   const allEntities = requireData(allEntitiesResult.data, allEntitiesResult.error, "Load campaign entities");
+  const entitiesById = new Map(allEntities.map((item) => [item.id, item]));
+  const relationshipEndpoint = (id: string) => {
+    const endpoint = entitiesById.get(id);
+    if (!endpoint) throw new Error("Load relationship endpoint");
+    return { id: endpoint.id, name: endpoint.name, type: endpoint.type };
+  };
   const facts = visibleFacts(requireData(factResult.data, factResult.error, "Load entity facts"), allEntities, viewMode);
   const safeRelationships = visibleRelationships(allRelationships, allEntities, viewMode);
   const relevant = relationshipsForEntity(safeRelationships, entityId);
@@ -273,6 +279,8 @@ export async function getEntityDetail(campaignId: string, entityId: string, view
     relationships: relevant.map((relationship) => ({
       ...relationship,
       relatedEntity: relatedById.get(relationship.relatedEntityId),
+      sourceEntity: relationshipEndpoint(relationship.source_entity_id),
+      targetEntity: relationshipEndpoint(relationship.target_entity_id),
       sources: relationshipEvidenceForView(viewMode, deduplicateSources(documentRelationshipSources
         .filter((source) => relationship.relationshipIds.includes(source.relationship_id)))
         .map((source) => ({ ...source, filename: filenameById.get(source.document_id) ?? "Campaign PDF" }))),

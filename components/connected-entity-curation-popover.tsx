@@ -12,7 +12,7 @@ import { EvidencePopover } from "@/components/evidence-popover";
 import type { SourceEvidence } from "@/lib/wiki/source-presentation";
 
 type CuratedEntity = { id: string; name: string; type: EntityType; summary?: string; visibility?: KnowledgeVisibility; prominence?: EntityProminence | null };
-type ConnectedRelationship = { id: string; relationshipIds?: string[]; description: string; displayLabel: string; visibility?: KnowledgeVisibility; sources: SourceEvidence[] };
+type ConnectedRelationship = { id: string; relationshipIds?: string[]; description: string; displayLabel: string; visibility?: KnowledgeVisibility; sourceEntity: CuratedEntity; targetEntity: CuratedEntity; sources: SourceEvidence[] };
 type CurrentEntity = { id: string; name: string; visibility?: KnowledgeVisibility };
 
 export function connectionVisibilityBlockers(currentEntity: CurrentEntity, relatedEntity: CuratedEntity) {
@@ -31,10 +31,6 @@ export function shouldCloseQuickPopover(pointerIsInside: boolean, activeElementI
 }
 
 export const QUICK_POPOVER_CLOSE_DELAY_MS = 200;
-
-function sentenceCase(value: string) {
-  return value ? value[0].toLocaleUpperCase("en-US") + value.slice(1) : value;
-}
 
 function ConnectedEntityCurationPopover({ campaignId, relatedEntity, onVisibilityChange }: { campaignId: string; relatedEntity: CuratedEntity; onVisibilityChange: (visibility: KnowledgeVisibility) => void }) {
   const [open, setOpen] = useState(false);
@@ -87,5 +83,6 @@ function ConnectedEntityCurationPopover({ campaignId, relatedEntity, onVisibilit
 export function ConnectedEntityConnectionCard({ campaignId, currentEntity, initialRelatedEntity, relationships }: { campaignId: string; currentEntity: CurrentEntity; initialRelatedEntity: CuratedEntity; relationships: ConnectedRelationship[] }) {
   const [relatedEntity, setRelatedEntity] = useState(initialRelatedEntity);
   const blockers = connectionVisibilityBlockers(currentEntity, relatedEntity);
-  return <li className="rounded-lg border border-[var(--line)] bg-white/45 p-4"><ConnectedEntityCurationPopover campaignId={campaignId} relatedEntity={relatedEntity} onVisibilityChange={(visibility) => setRelatedEntity((entity) => updateConnectedEntity(entity, "visibility", visibility))} /><ul className="mt-2 space-y-2">{relationships.map((relationship) => <li className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" key={relationship.id}><span className="min-w-0 flex-1 text-[var(--muted)]"><span className="font-semibold text-[var(--ink)]">{sentenceCase(relationship.displayLabel)}</span>{relationship.description.trim() ? <span> — {relationship.description.trim()}</span> : null} <EvidencePopover anchors={[currentEntity.name, relatedEntity.name]} label={relationship.displayLabel} sources={relationship.sources} /></span><RelationshipVisibilityToggle blockers={blockers} campaignId={campaignId} initialVisibility={relationship.visibility ?? "dm_only"} relationshipIds={relationship.relationshipIds ?? [relationship.id]} /></li>)}</ul></li>;
+  const sentenceEntity = (entity: CuratedEntity) => entity.id === currentEntity.id ? <span className="font-semibold text-[var(--ink)]">{entity.name}</span> : <Link className="font-semibold text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 hover:decoration-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" href={campaignHref(`/campaigns/${campaignId}/entities/${entity.id}`, "dm")}>{entity.name}</Link>;
+  return <li className="rounded-lg border border-[var(--line)] bg-white/45 p-4"><ConnectedEntityCurationPopover campaignId={campaignId} relatedEntity={relatedEntity} onVisibilityChange={(visibility) => setRelatedEntity((entity) => updateConnectedEntity(entity, "visibility", visibility))} /><ul className="mt-2 space-y-2">{relationships.map((relationship) => <li className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" key={relationship.id}><span className="min-w-0 flex-1 text-[var(--muted)]">{sentenceEntity(relationship.sourceEntity)} {relationship.displayLabel} {sentenceEntity(relationship.targetEntity)}. <EvidencePopover anchors={[relationship.sourceEntity.name, relationship.targetEntity.name]} label={relationship.displayLabel} sources={relationship.sources} /></span><RelationshipVisibilityToggle blockers={blockers} campaignId={campaignId} initialVisibility={relationship.visibility ?? "dm_only"} relationshipIds={relationship.relationshipIds ?? [relationship.id]} /></li>)}</ul></li>;
 }

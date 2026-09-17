@@ -23,15 +23,22 @@ function VisibilityIcon({ visible }: { visible: boolean }) {
     : <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M3 3l18 18" /><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17.8 17.8 0 0 1-3.2 3.8M6.2 6.2A17.8 17.8 0 0 0 2.5 12s3.5 7 9.5 7c1.4 0 2.7-.3 3.8-.8" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>;
 }
 
+export type VisibilityHelpInteraction = "pointer_enter" | "pointer_leave" | "focus" | "blur" | "click" | "escape";
+
+export function visibilityHelpOpenFor(interaction: VisibilityHelpInteraction) {
+  return interaction === "pointer_enter" || interaction === "focus" || interaction === "click";
+}
+
 function VisibilityToggle({ visibility, label, disabled = false, disabledReason, disabledId, busy = false, onToggle }: { visibility: KnowledgeVisibility; label: string; disabled?: boolean; disabledReason?: string; disabledId?: string; busy?: boolean; onToggle: () => void }) {
   const visible = visibility === "player_visible";
   const stateText = visible ? "Visible to players" : "Hidden from players";
   const actionLabel = visible ? `Hide ${label} from players` : `Show ${label} to players`;
-  const tooltip = disabled ? disabledReason : stateText;
   const descriptionId = disabled && disabledReason ? `visibility-blocked-${(disabledId ?? label).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}` : undefined;
-  return <span className="group relative inline-flex items-center">
-    <button aria-checked={visible} aria-describedby={descriptionId} aria-disabled={disabled || undefined} aria-label={actionLabel} className={`grid size-7 place-items-center rounded-full border shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ${visible ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-white/70 text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"} ${disabled ? "cursor-not-allowed opacity-50" : ""}`} disabled={busy} onClick={() => { if (!disabled) onToggle(); }} role="switch" title={tooltip} type="button"><VisibilityIcon visible={visible} /></button>
-    {disabledReason ? <span className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded border border-[var(--line)] bg-white p-2 text-xs leading-5 text-[var(--ink)] shadow-lg group-hover:block group-focus-within:block" id={descriptionId} role="tooltip">{disabledReason}</span> : null}
+  const [helpOpen, setHelpOpen] = useState(false);
+  const updateHelp = (interaction: VisibilityHelpInteraction) => { if (disabledReason) setHelpOpen(visibilityHelpOpenFor(interaction)); };
+  return <span className="relative inline-flex items-center">
+    <button aria-checked={visible} aria-describedby={helpOpen ? descriptionId : undefined} aria-disabled={disabled || undefined} aria-label={actionLabel} className={`grid size-7 place-items-center rounded-full border shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ${visible ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] bg-white/70 text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"} ${disabled ? "cursor-not-allowed opacity-50" : ""}`} disabled={busy} onBlur={() => updateHelp("blur")} onClick={() => { if (disabled) updateHelp("click"); else onToggle(); }} onFocus={() => updateHelp("focus")} onKeyDown={(event) => { if (event.key === "Escape") updateHelp("escape"); }} onPointerEnter={() => updateHelp("pointer_enter")} onPointerLeave={() => updateHelp("pointer_leave")} role="switch" title={disabled ? undefined : stateText} type="button"><VisibilityIcon visible={visible} /></button>
+    {disabledReason && helpOpen ? <span className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-64 rounded border border-[var(--line)] bg-white p-2 text-xs leading-5 text-[var(--ink)] shadow-lg" id={descriptionId} role="tooltip">{disabledReason}</span> : null}
   </span>;
 }
 

@@ -15,7 +15,7 @@ describe("bidirectional relationship view", () => {
     expect(relationshipsForEntity([relationship], "hanna")[0]).toMatchObject({ outgoing: true, relatedEntityId: "inn", displayLabel: "owns" });
   });
 
-  it("renders that same row from the target side with inverse language", () => {
-    expect(relationshipsForEntity([relationship], "inn")[0]).toMatchObject({ outgoing: false, relatedEntityId: "hanna", displayLabel: "owned by" });
+  it("keeps the stored canonical forward language from the target side", () => {
+    expect(relationshipsForEntity([relationship], "inn")[0]).toMatchObject({ outgoing: false, relatedEntityId: "hanna", displayLabel: "owns" });
   });
 });

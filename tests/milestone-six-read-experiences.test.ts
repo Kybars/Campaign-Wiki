@@ -19,8 +19,8 @@ describe("Milestone 6 read experiences", () => {
       entity: { id: "quest", name: "Relight the Beacon", type: "quest", aliases: [], roles: [], summary: "Restore the beacon." },
       facts: [{ id: "objective", fieldKey: "objective", content: "Relight the beacon", sortOrder: 0, evidence: [] }, { id: "stakes", fieldKey: "stakes", content: "Keep the harbor safe", sortOrder: 1, evidence: [] }],
       relationships: [
-        { id: "giver", description: "", displayLabel: "questgiver for", relationship_type: "questgiver_for", relatedEntity: { id: "mira", name: "Mira", type: "npc" }, sources: [] },
-        { id: "place", description: "", displayLabel: "concerns", relationship_type: "concerns", relatedEntity: { id: "emberwatch", name: "Emberwatch", type: "location" }, sources: [] },
+        { id: "giver", description: "", displayLabel: "questgiver for", relationship_type: "questgiver_for", relatedEntity: { id: "mira", name: "Mira", type: "npc" }, sourceEntity: { id: "mira", name: "Mira", type: "npc" }, targetEntity: { id: "quest", name: "Relight the Beacon", type: "quest" }, sources: [] },
+        { id: "place", description: "", displayLabel: "concerns", relationship_type: "concerns", relatedEntity: { id: "emberwatch", name: "Emberwatch", type: "location" }, sourceEntity: { id: "quest", name: "Relight the Beacon", type: "quest" }, targetEntity: { id: "emberwatch", name: "Emberwatch", type: "location" }, sources: [] },
       ], sources: [],
     };
     const page = renderToStaticMarkup(createElement(EntityDetail, { campaignId, detail, viewMode: "player" }));

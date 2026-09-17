@@ -18,20 +18,6 @@ export interface RelationshipRow {
   resolution_metadata?: unknown;
 }
 
-interface StoredNormalization {
-  forwardLabel: string;
-  inverseLabel: string;
-}
-
-function storedNormalization(value: unknown): StoredNormalization | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-  const normalization = (value as Record<string, unknown>).normalization;
-  if (!normalization || typeof normalization !== "object" || Array.isArray(normalization)) return undefined;
-  const { forwardLabel, inverseLabel } = normalization as Record<string, unknown>;
-  if (typeof forwardLabel !== "string" || typeof inverseLabel !== "string") return undefined;
-  return { forwardLabel, inverseLabel };
-}
-
 function richerDescription(rows: RelationshipRow[]): string {
   return rows.reduce((best, row) => row.description.length > best.length ? row.description : best, "");
 }
@@ -57,9 +43,6 @@ export function relationshipsForEntity<T extends RelationshipRow>(relationships:
     const rows = entries.map((entry) => entry.relationship);
     const first = entries[0];
     const presentation = relationshipPresentation(facts);
-    const persistedPresentation = entries
-      .map((entry) => storedNormalization(entry.relationship.resolution_metadata))
-      .find((value) => value !== undefined);
     const outgoing = first.fact.sourceId === entityId;
 
     return {
@@ -72,9 +55,7 @@ export function relationshipsForEntity<T extends RelationshipRow>(relationships:
       relationshipIds: rows.map((row) => row.id),
       outgoing,
       relatedEntityId: outgoing ? first.fact.targetId : first.fact.sourceId,
-      displayLabel: outgoing
-        ? (persistedPresentation?.forwardLabel ?? presentation.forwardLabel)
-        : (persistedPresentation?.inverseLabel ?? presentation.inverseLabel),
+      displayLabel: presentation.forwardLabel,
     };
   });
 }

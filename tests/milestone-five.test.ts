@@ -27,6 +27,8 @@ function detail(overrides: Partial<EntityDetailView> = {}): EntityDetailView {
       displayLabel: "uncle of",
       description: "Colinus Birthwitch is the uncle of Kylar Birthwitch.",
       relatedEntity: { id: "kylar", name: "Kylar Birthwitch", type: "npc" },
+      sourceEntity: { id: "colinus", name: "Colinus Birthwitch", type: "npc" },
+      targetEntity: { id: "kylar", name: "Kylar Birthwitch", type: "npc" },
       sources: [source("relationship-source-1", 45, "Colinus is Kylar's uncle.")],
     }],
     sources: [source("entity-source-1", 27, "Colinus serves on the council.")],
@@ -74,17 +76,17 @@ describe("Milestone 5 compact entity presentation", () => {
     expect(player).not.toContain('aria-label="Show Colinus Birthwitch to players"');
   });
 
-  it("uses a compact relationship description and preserves a clickable target", () => {
+  it("uses a canonical relationship sentence and preserves a clickable target", () => {
     const page = render();
-    expect(page).toContain("Colinus Birthwitch is the uncle of Kylar Birthwitch.");
+    expect(page).toContain("Colinus Birthwitch</span> uncle of <a");
     expect(page).toContain(`href="/campaigns/${campaignId}/entities/kylar"`);
     expect(page).not.toContain("relationship source");
   });
 
-  it("falls back to relationship label plus a linked target when no description exists", () => {
+  it("uses the canonical relationship sentence when no description exists", () => {
     const view = detail({ relationships: [{ ...detail().relationships[0], description: "", displayLabel: "uncle of" }] });
     const page = render(view);
-    expect(page).toContain("Uncle of</span>");
+    expect(page).toContain("Colinus Birthwitch</span> uncle of");
     expect(page).toContain("Kylar Birthwitch</a>");
   });
 
@@ -134,10 +136,12 @@ describe("Milestone 5 compact entity presentation", () => {
       displayLabel: "knows",
       description: `Colinus knows Person ${index}.`,
       relatedEntity: { id: `person-${index}`, name: `Person ${index}`, type: "npc" as const },
+      sourceEntity: { id: "colinus", name: "Colinus Birthwitch", type: "npc" as const },
+      targetEntity: { id: `person-${index}`, name: `Person ${index}`, type: "npc" as const },
       sources: [],
     }));
     const page = render(detail({ relationships }));
-    expect((page.match(/Colinus knows Person \d+\./g) ?? [])).toHaveLength(12);
+    expect((page.match(/ knows /g) ?? [])).toHaveLength(12);
   });
 
   it("keeps location parent and immediate sublocations available", () => {

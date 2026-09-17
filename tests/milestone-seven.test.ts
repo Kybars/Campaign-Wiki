@@ -47,7 +47,7 @@ describe("Milestone 7 deterministic regression and replay fixture", () => {
     expect(relationship.sources.map((source) => source.page_number)).toEqual([6, 7]);
     const rows = relationshipsForEntity([{ id: relationship.key, source_entity_id: relationship.sourceEntityKey, target_entity_id: relationship.targetEntityKey, relationship_type: relationship.relationshipType, description: relationship.description, confidence: relationship.confidence }], kylar.key);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ relatedEntityId: colinus.key, displayLabel: "nephew of" });
+    expect(rows[0]).toMatchObject({ relatedEntityId: colinus.key, displayLabel: "uncle of" });
   });
 
   it("retains the full location chain and source-backed normalized containment after replay", () => {
