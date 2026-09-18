@@ -12,6 +12,16 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
+    date: "2026-09-18",
+    title: "Import workflow and interface refinements",
+    changes: [
+      "Added a dedicated campaign import page, returned upload errors to the import form, and kept first-campaign onboarding on the homepage.",
+      "Improved connection visibility controls and relationship presentation for more reliable campaign curation.",
+      "Refined campaign overview layout and information density for easier scanning.",
+    ],
+  },
+  {
+    version: "0.5.2",
     date: "2026-09-17",
     title: "Campaign organization and Player View safety",
     changes: [

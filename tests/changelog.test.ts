@@ -30,6 +30,12 @@ describe("changelog", () => {
     expect(currentChangelog.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  it("records the 0.5.3 import and interface fixes", () => {
+    expect(currentChangelog.version).toBe("0.5.3");
+    expect(currentChangelog.changes.join(" ")).toContain("dedicated campaign import page");
+    expect(currentChangelog.changes.join(" ")).toContain("connection visibility controls");
+  });
+
   it("renders the current badge as a changelog link with a focusable preview", () => {
     const badge = renderToStaticMarkup(createElement(VersionLink));
     expect(badge).toContain(`href="${CHANGELOG_PATH}"`);
