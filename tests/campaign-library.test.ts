@@ -22,7 +22,7 @@ describe("CampaignLibrary", () => {
 
   it("offers an import action for an empty library", () => {
     const page = renderToStaticMarkup(createElement(CampaignLibrary, { loadFailed: false, campaigns: [] }));
-    expect(page).toContain('href="/#import"');
+    expect(page).toContain('href="/import"');
     expect(page).toContain("Begin with your campaign material.");
   });
 });

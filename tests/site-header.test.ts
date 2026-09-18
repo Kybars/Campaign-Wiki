@@ -10,7 +10,7 @@ describe("global site header", () => {
     expect(header).toContain('href="/"');
     expect(header).toContain("Campaign Wiki");
     expect(header).toMatch(/aria-label="Campaign Wiki version [^"]+\. View changelog\."/);
-    expect(header).toContain('href="/#import"');
+    expect(header).toContain('href="/import"');
     expect(header).toContain("Import campaign");
     expect(header).not.toContain(">Home</a>");
     expect(header).not.toContain(">Campaigns</a>");

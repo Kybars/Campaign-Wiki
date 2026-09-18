@@ -13,7 +13,7 @@ export function SiteHeader() {
         </Link>
         <div className="ml-auto flex items-center gap-3">
           <VersionLink />
-          <Link className="rounded-md bg-[var(--gold)] px-3 py-2 text-sm font-bold text-[var(--night)] transition hover:bg-[#f0c875] focus:outline-none focus-visible:ring-2 focus-visible:ring-white" href="/#import">Import campaign</Link>
+          <Link className="rounded-md bg-[var(--gold)] px-3 py-2 text-sm font-bold text-[var(--night)] transition hover:bg-[#f0c875] focus:outline-none focus-visible:ring-2 focus-visible:ring-white" href="/import">Import campaign</Link>
         </div>
       </div>
     </header>

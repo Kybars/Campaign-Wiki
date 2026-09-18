@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function redirectWithError(request: Request, message: string) {
-  const url = new URL("/", request.url);
+  const url = new URL("/import", request.url);
   url.searchParams.set("error", message);
   return NextResponse.redirect(url, 303);
 }
