@@ -22,6 +22,12 @@ export interface SourceProminenceMetrics {
   prominenceScore: number;
 }
 
+export interface SourceOccurrenceScan {
+  mentionCount: number;
+  mentionPageCount: number;
+  pageEvidence: Array<{ page_number: number; supporting_text: string }>;
+}
+
 export function isSafeMentionAlias(value: string): boolean {
   const normalized = normalizeName(value);
   if (!normalized) return false;
@@ -34,14 +40,21 @@ function escapedPattern(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
 }
 
-function countNormalizedSourceMentions(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: Array<{ pageNumber: number; text: string }>) {
+function occurrenceExcerpt(text: string, matchStart: number) {
+  const maximumLength = 480;
+  const start = Math.max(0, Math.min(matchStart - 220, Math.max(0, text.length - maximumLength)));
+  return text.slice(start, start + maximumLength).trim();
+}
+
+/** Exact, case-insensitive matching of safe canonical names and aliases against original page text. */
+export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: Array<{ pageNumber: number; text: string }>): SourceOccurrenceScan {
   const names = [...new Map([entity.name, ...entity.aliases]
     .filter(isSafeMentionAlias)
-    .map((name) => [normalizeName(name), name])).keys()]
+    .map((name) => [normalizeName(name), name])).values()]
     .sort((left, right) => right.length - left.length || left.localeCompare(right));
-  const expressions = names.map((name) => new RegExp(`(?<![\\p{L}\\p{N}])${escapedPattern(name)}(?![\\p{L}\\p{N}])`, "gu"));
+  const expressions = names.map((name) => new RegExp(`(?<![\\p{L}\\p{N}])${escapedPattern(name)}(?![\\p{L}\\p{N}])`, "giu"));
   let mentionCount = 0;
-  const mentionedPages = new Set<number>();
+  const pageEvidence: SourceOccurrenceScan["pageEvidence"] = [];
 
   for (const page of pages) {
     const spans: Array<{ start: number; end: number }> = [];
@@ -51,15 +64,16 @@ function countNormalizedSourceMentions(entity: Pick<CanonicalEntity, "name" | "a
     for (const span of spans) {
       if (!accepted.some((item) => span.start < item.end && span.end > item.start)) accepted.push(span);
     }
-    if (accepted.length) mentionedPages.add(page.pageNumber);
+    if (accepted.length) pageEvidence.push({ page_number: page.pageNumber, supporting_text: occurrenceExcerpt(page.text, accepted[0].start) });
     mentionCount += accepted.length;
   }
 
-  return { mentionCount, mentionPageCount: mentionedPages.size };
+  return { mentionCount, mentionPageCount: pageEvidence.length, pageEvidence };
 }
 
 export function countSourceMentions(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: DocumentPage[]) {
-  return countNormalizedSourceMentions(entity, pages.map((page) => ({ pageNumber: page.pageNumber, text: normalizeName(page.text) })));
+  const { mentionCount, mentionPageCount } = scanSourceOccurrences(entity, pages);
+  return { mentionCount, mentionPageCount };
 }
 
 export function calculateProminenceScore(metrics: Omit<SourceProminenceMetrics, "prominenceScore">): number {
@@ -98,15 +112,16 @@ export function classifyEntityProminence<T extends { key: string; name: string; 
 }
 
 export function applyDeterministicProminence(graph: CanonicalGraph, pages: DocumentPage[]): CanonicalGraph {
-  const normalizedPages = pages.map((page) => ({ pageNumber: page.pageNumber, text: normalizeName(page.text) }));
   const relationshipKeys = new Map(graph.entities.map((entity) => [entity.key, new Set<string>()]));
   for (const relationship of graph.relationships) {
     relationshipKeys.get(relationship.sourceEntityKey)?.add(relationship.key);
     relationshipKeys.get(relationship.targetEntityKey)?.add(relationship.key);
   }
   const metrics = new Map<string, SourceProminenceMetrics>();
+  const occurrences = new Map<string, SourceOccurrenceScan>();
   for (const entity of graph.entities) {
-    const mentions = countNormalizedSourceMentions(entity, normalizedPages);
+    const mentions = scanSourceOccurrences(entity, pages);
+    occurrences.set(entity.key, mentions);
     const base = { ...mentions, relationshipCount: relationshipKeys.get(entity.key)?.size ?? 0 };
     metrics.set(entity.key, { ...base, prominenceScore: calculateProminenceScore(base) });
   }
@@ -115,8 +130,11 @@ export function applyDeterministicProminence(graph: CanonicalGraph, pages: Docum
     ...graph,
     entities: graph.entities.map((entity) => {
       const metric = metrics.get(entity.key)!;
+      const occurrenceEvidence = occurrences.get(entity.key)!.pageEvidence;
+      const sources = [...entity.sources, ...occurrenceEvidence].filter((source, index, all) => all.findIndex((item) => item.page_number === source.page_number && item.supporting_text === source.supporting_text) === index);
       return {
         ...entity,
+        sources,
         prominence: classifications.get(entity.key)!,
         prominenceReason: `Deterministic source score ${metric.prominenceScore}`,
         prominenceEvidence: [],

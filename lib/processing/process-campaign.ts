@@ -36,7 +36,7 @@ import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 import { OpenAICallBudget, OpenAICallBudgetExceededError, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
 import { buildFinalGraphInventory, buildLeanGraphCore, combineGraphPasses, graphAggregationCheckpointIdentity, planGraphCompleteness, planGraphFirstPass, reResolveGraphFirstPass, runGraphCompletenessLimited, runGraphFirstPassLimited } from "@/lib/processing/graph-core";
 import { semanticInputHash } from "@/lib/ai/operation-checkpoint";
-import { adjudicateDuplicateCandidates, applyEntityMerges, buildDuplicateCandidates, planDuplicateAdjudication } from "@/lib/ai/entity-reconciliation";
+import { adjudicateDuplicateCandidates, applyEntityMerges, applyExplicitIdentityRelationships, buildDuplicateCandidates, planDuplicateAdjudication } from "@/lib/ai/entity-reconciliation";
 
 async function processLeanGraphCampaign(args: { campaignId: string; documentId: string; pages: import("@/lib/pdf/types").DocumentPage[]; startedAt: number }) {
   const { campaignId, documentId, pages, startedAt } = args;
@@ -75,13 +75,14 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const rawFirstPass = await runGraphFirstPassLimited(chunks, finalInventory, graphExtractionProvider, graphContext, graphConcurrency);
   const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
   const rawChunks = rawFirstPass.map((result) => ({ chunkId: result.chunkId, raw: result.raw, validPages: chunkById.get(result.chunkId)?.pages.map((page) => page.pageNumber) }));
-  const duplicateCandidates = buildDuplicateCandidates(finalInventory, rawChunks);
+  const identityReconciled = applyExplicitIdentityRelationships(finalInventory, rawChunks);
+  const duplicateCandidates = buildDuplicateCandidates(identityReconciled.inventory, rawChunks);
   const duplicateContext = { campaignId, documentId, processingMode, store: checkpointStore, sourceIdentity: semanticInputHash({ documentId, finalInventoryUpstreamFingerprint }) };
-  const duplicatePlan = await planDuplicateAdjudication(finalInventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
+  const duplicatePlan = await planDuplicateAdjudication(identityReconciled.inventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
   const plannedDuplicateCalls = duplicateCandidates.pairs.length && duplicatePlan.status !== "REUSE" && entityReconciliationProvider.providerId === "openai" ? 1 : 0;
   if (!budget.allowPlanned(plannedDuplicateCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedDuplicateCalls);
-  const duplicateAdjudication = await adjudicateDuplicateCandidates(finalInventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
-  const merged = applyEntityMerges(finalInventory, duplicateAdjudication.decision);
+  const duplicateAdjudication = await adjudicateDuplicateCandidates(identityReconciled.inventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
+  const merged = applyEntityMerges(identityReconciled.inventory, duplicateAdjudication.decision);
   const resolvedFirstPass = reResolveGraphFirstPass(rawFirstPass, chunks, merged.inventory);
   const mergedGraphContext = { ...graphContext, finalInventoryFingerprint: merged.fingerprint };
   const completenessPlan = await planGraphCompleteness(chunks, merged.inventory, resolvedFirstPass, graphCompletenessProvider, mergedGraphContext);

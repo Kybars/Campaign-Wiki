@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   adjudicateDuplicateCandidates,
   applyEntityMerges,
+  applyExplicitIdentityRelationships,
   buildDuplicateCandidates,
   duplicateAdjudicationCheckpointIdentity,
   validateDuplicateAdjudication,
@@ -47,6 +48,18 @@ describe("deterministic duplicate candidates", () => {
     expect(pair("masked", "nerezza")?.reasons).toContain("explicit_alias");
     expect(pair("silver", "golden")).toBeUndefined();
   });
+
+  it("offers short/formal polity variants to adjudication without treating generic subgroups as duplicates", () => {
+    const candidates = buildDuplicateCandidates({ entities: [
+      entity("ragesia", "Ragesia", "faction"),
+      entity("empire", "Ragesian Empire", "faction"),
+      entity("inquisitors", "Inquisitors", "faction"),
+      entity("ragesian-inquisitors", "Ragesian Inquisitors", "faction"),
+      entity("scourge", "The Scourge", "faction"),
+    ] }, []);
+    expect(candidates.pairs).toContainEqual(expect.objectContaining({ leftId: "empire", rightId: "ragesia", reasons: ["polity_formal_variant"] }));
+    expect(candidates.pairs.some((pair) => [pair.leftId, pair.rightId].includes("inquisitors") && [pair.leftId, pair.rightId].includes("ragesian-inquisitors"))).toBe(false);
+  });
 });
 
 describe("duplicate adjudication validation", () => {
@@ -86,6 +99,20 @@ describe("merge application and raw relationship recovery", () => {
     expect(drakus.sources.map((item) => item.page_number)).toEqual([1, 2]);
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.resolutionKeys.get("emperor coaltongue")).toEqual(["drakus"]);
+  });
+
+  it("deterministically merges only explicit NPC same-person relationships before adjudication", () => {
+    const identity = applyExplicitIdentityRelationships(inventory, [{ chunkId: "chunk", validPages: [2], raw: { relationships: [
+      { source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2 },
+      { source: "Dassen", relationship: "same person as", target: "Torch", page: 2 },
+    ] } }]);
+    const drakus = identity.inventory.entities.find((item) => item.temporary_id === "drakus")!;
+    expect(identity.inventory.entities.filter((item) => item.type === "npc")).toHaveLength(1);
+    expect(drakus.aliases).toContain("Emperor Coaltongue");
+    expect(drakus.sources.map((item) => item.page_number)).toEqual([1, 2]);
+    const resolved = resolveRawRelationships({ relationships: [{ source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2 }] }, identity.inventory, chunk);
+    expect(resolved.relationships).toEqual([]);
+    expect(resolved.selfEdgeRejections).toBe(1);
   });
 
   it("recovers ambiguous and alias-named endpoints, rejects unknown/self edges, and dedupes recovered edges", () => {

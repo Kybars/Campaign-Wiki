@@ -42,10 +42,13 @@ const inverseDefinitions: Record<string, InverseDefinition> = {
 };
 
 const obviousGrammarVariants: Record<string, string> = {
+  "is a member of": "member of",
+  "is member of": "member of",
   kill: "kills",
   killed: "kills",
   teach: "teaches",
   taught: "teaches",
+  serve: "serves",
 };
 
 export interface NormalizedRelationshipFact {

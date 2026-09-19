@@ -6,7 +6,7 @@ import { GRAPH_CORE_BEHAVIOR_VERSION, GRAPH_CORE_CONTRACT_VERSION, modelInputHas
 import type { ValidatedExtractionInventoryOutput, SourceEvidence } from "@/lib/ai/schemas";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import type { ModelCallUsage } from "@/lib/ai/usage";
-import { normalizeName } from "@/lib/graph/normalize";
+import { normalizeCanonicalDisplayName, normalizeName } from "@/lib/graph/normalize";
 import type { CanonicalGraph, CanonicalRelationship } from "@/lib/graph/types";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipPresentation, normalizeRelationshipFact } from "@/lib/relationships/normalize";
@@ -207,7 +207,7 @@ export function buildLeanGraphCore(inventory: GraphInventory, chunks: PageChunk[
   }
   const relationships = [...byKey.values()];
   const hierarchy = buildLocationHierarchy(inventory.entities.filter((entity) => entity.type === "location").map((entity) => ({ id: entity.temporary_id, name: entity.name })), relationships.map((relationship) => ({ id: relationship.key, sourceId: relationship.sourceEntityKey, targetId: relationship.targetEntityKey, relationshipType: relationship.relationshipType, confidence: relationship.confidence })));
-  return { entities: inventory.entities.map((entity) => ({ key: entity.temporary_id, name: entity.name, normalizedName: normalizeName(entity.name), type: entity.type, roles: [], roleSources: {}, aliases: [...(entity.aliases ?? [])], summary: "", sources: [...entity.sources], candidateIds: [...(entity.memberIds ?? [entity.temporary_id])], reconciliationEvidence: [], mergeReason: (entity.memberIds?.length ?? 1) > 1 ? "ai" as const : "deterministic" as const })), relationships: relationships.filter((relationship) => !hierarchy.consideredRelationshipIds.has(relationship.key) || hierarchy.selectedRelationshipIds.has(relationship.key)), facts: [], factAggregationDiagnostics: emptyGraph, discardedRelationships: hierarchy.diagnostics.map((item) => ({ id: item.relationshipId, reason: item.reason })), locationHierarchyDiagnostics: hierarchy.diagnostics, candidateToCanonical: new Map(inventory.entities.flatMap((entity) => (entity.memberIds ?? [entity.temporary_id]).map((id) => [id, entity.temporary_id] as const))) };
+  return { entities: inventory.entities.map((entity) => { const name = normalizeCanonicalDisplayName(entity.name); return { key: entity.temporary_id, name, normalizedName: normalizeName(name), type: entity.type, roles: [], roleSources: {}, aliases: [...(entity.aliases ?? [])], summary: "", sources: [...entity.sources], candidateIds: [...(entity.memberIds ?? [entity.temporary_id])], reconciliationEvidence: [], mergeReason: (entity.memberIds?.length ?? 1) > 1 ? "ai" as const : "deterministic" as const }; }), relationships: relationships.filter((relationship) => !hierarchy.consideredRelationshipIds.has(relationship.key) || hierarchy.selectedRelationshipIds.has(relationship.key)), facts: [], factAggregationDiagnostics: emptyGraph, discardedRelationships: hierarchy.diagnostics.map((item) => ({ id: item.relationshipId, reason: item.reason })), locationHierarchyDiagnostics: hierarchy.diagnostics, candidateToCanonical: new Map(inventory.entities.flatMap((entity) => (entity.memberIds ?? [entity.temporary_id]).map((id) => [id, entity.temporary_id] as const))) };
 }
 
 export function graphAggregationCheckpointIdentity(graph: CanonicalGraph, graphResults: GraphChunkResult[], checkpoint: GraphCheckpointContext): AIOperationIdentity {

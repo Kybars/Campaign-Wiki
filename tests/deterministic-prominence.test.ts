@@ -9,6 +9,7 @@ import {
   classifyEntityProminence,
   countSourceMentions,
   isSafeMentionAlias,
+  scanSourceOccurrences,
   type SourceProminenceMetrics,
 } from "@/lib/graph/prominence";
 
@@ -33,6 +34,27 @@ describe("deterministic source mention counting", () => {
   it("rejects short and generic single-token aliases but accepts specific names and phrases", () => {
     for (const unsafe of ["Io", "King", "Emperor", "Captain", "General", "Prince", "Princess", "Lord", "Lady"]) expect(isSafeMentionAlias(unsafe)).toBe(false);
     for (const safe of ["Drakus", "Emperor Coaltongue", "Moon Gate"]) expect(isSafeMentionAlias(safe)).toBe(true);
+  });
+
+  it("shares literal occurrence pages with provenance, retains inventory evidence, and counts repeated page mentions", () => {
+    const subject = entity("drakus", "Drakus Coaltongue", "npc", ["Emperor Coaltongue"]);
+    subject.sources = [{ page_number: 99, supporting_text: "Inventory evidence without a literal name." }];
+    const pages = [
+      { pageNumber: 3, text: "Drakus Coaltongue arrives." },
+      { pageNumber: 6, text: "Emperor Coaltongue speaks. Drakus Coaltongue replies. Drakus Coaltongue leaves." },
+      { pageNumber: 8, text: "No matching name." },
+    ];
+    const scan = scanSourceOccurrences(subject, pages);
+    expect(scan.mentionCount).toBe(4);
+    expect(scan.mentionPageCount).toBe(2);
+    expect(scan.pageEvidence.map((item) => item.page_number)).toEqual([3, 6]);
+    expect(scan.pageEvidence).toHaveLength(2);
+    const graph: CanonicalGraph = { entities: [subject], relationships: [], facts: [], candidateToCanonical: new Map(), discardedRelationships: [], locationHierarchyDiagnostics: [], factAggregationDiagnostics: { candidateFactCount: 0, canonicalFactCount: 0, deduplicatedFactCount: 0, factEvidenceCount: 0 } };
+    const result = applyDeterministicProminence(graph, pages).entities[0];
+    expect(result).toMatchObject({ sourceMentionCount: 4, sourceMentionPageCount: 2 });
+    expect(result.sources.map((item) => item.page_number)).toEqual([99, 3, 6]);
+    expect(result.sources.filter((item) => item.page_number === 6)).toHaveLength(1);
+    expect(result.sources.find((item) => item.page_number === 6)?.supporting_text).toContain("Emperor Coaltongue");
   });
 });
 
