@@ -12,12 +12,12 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
-    date: "2026-09-18",
-    title: "Import workflow and interface refinements",
+    date: "2026-09-19",
+    title: "Lean graph correctness",
     changes: [
-      "Added a dedicated campaign import page, returned upload errors to the import form, and kept first-campaign onboarding on the homepage.",
-      "Improved connection visibility controls and relationship presentation for more reliable campaign curation.",
-      "Refined campaign overview layout and information density for easier scanning.",
+      "Reconciled explicit NPC same-person relationships before duplicate adjudication and expanded conservative polity duplicate candidacy.",
+      "Unified exact source-occurrence provenance with deterministic prominence and preserved inventory-derived evidence.",
+      "Added conservative canonical display capitalization and safe relationship grammar deduplication.",
     ],
   },
   {

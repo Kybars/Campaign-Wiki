@@ -30,10 +30,10 @@ describe("changelog", () => {
     expect(currentChangelog.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("records the 0.5.3 import and interface fixes", () => {
-    expect(currentChangelog.version).toBe("0.5.3");
-    expect(currentChangelog.changes.join(" ")).toContain("dedicated campaign import page");
-    expect(currentChangelog.changes.join(" ")).toContain("connection visibility controls");
+  it("records the 0.6.0 lean graph correctness release", () => {
+    expect(currentChangelog.version).toBe("0.6.0");
+    expect(currentChangelog.changes.join(" ")).toContain("same-person relationships");
+    expect(currentChangelog.changes.join(" ")).toContain("source-occurrence provenance");
   });
 
   it("renders the current badge as a changelog link with a focusable preview", () => {
