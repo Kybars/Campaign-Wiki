@@ -7,8 +7,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 describe("changelog", () => {
-  it("derives the current release from the package version", () => {
+  it("matches the current release to the package version", () => {
     expect(currentVersion).toBe(packageMetadata.version);
+    expect(changelog[0].version).toBe(packageMetadata.version);
     expect(currentChangelog).toBe(changelog[0]);
   });
 
@@ -30,10 +31,14 @@ describe("changelog", () => {
     expect(currentChangelog.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("records the 0.6.1 graph pipeline hardening release", () => {
-    expect(currentChangelog.version).toBe("0.6.1");
-    expect(currentChangelog.changes.join(" ")).toContain("authoritative entity merge application");
-    expect(currentChangelog.changes.join(" ")).toContain("bounded adaptive gap recovery");
+  it("preserves the historical release entries", () => {
+    expect(changelog.map((release) => release.version)).toEqual(expect.arrayContaining([
+      "0.4.0",
+      "0.5.0",
+      "0.5.3",
+      "0.6.0",
+      "0.6.1",
+    ]));
   });
 
   it("renders the current badge as a changelog link with a focusable preview", () => {

@@ -1,5 +1,3 @@
-import packageMetadata from "@/package.json";
-
 export interface ChangelogEntry {
   version: string;
   date: string;
@@ -11,13 +9,42 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
-    version: packageMetadata.version,
+    version: "0.6.2",
+    date: "2026-09-20",
+    title: "Append-only release history",
+    changes: [
+      "Restored missing historical release entries and made changelog versions explicit instead of deriving release identity from the package version.",
+      "Added regression coverage so future package-version bumps cannot silently overwrite prior changelog history.",
+    ],
+  },
+  {
+    version: "0.6.1",
     date: "2026-09-20",
     title: "Graph pipeline hardening",
     changes: [
       "Graph pipeline hardening: authoritative entity merge application, semantic-text coverage, model-driven relationship reconciliation, and bounded adaptive gap recovery.",
       "Preserved exact raw-source provenance while excluding recurring page boilerplate from semantic extraction, mentions, prominence, and coverage.",
       "Added versioned audit traces for pair-level merge conflicts, relationship validation and semantic reconciliation, adaptive gaps, final dedupe, and provenance union.",
+    ],
+  },
+  {
+    version: "0.6.0",
+    date: "2026-09-19",
+    title: "Lean graph correctness",
+    changes: [
+      "Reconciled explicit NPC same-person relationships before duplicate adjudication and expanded conservative polity duplicate candidacy.",
+      "Unified exact source-occurrence provenance with deterministic prominence and preserved inventory-derived evidence.",
+      "Added conservative canonical display capitalization and safe relationship grammar deduplication.",
+    ],
+  },
+  {
+    version: "0.5.3",
+    date: "2026-09-18",
+    title: "Import workflow and interface refinements",
+    changes: [
+      "Added a dedicated campaign import page, returned upload errors to the import form, and kept first-campaign onboarding on the homepage.",
+      "Improved connection visibility controls and relationship presentation for more reliable campaign curation.",
+      "Refined campaign overview layout and information density for easier scanning.",
     ],
   },
   {
@@ -38,6 +65,15 @@ export const changelog = [
       "Added replay-safe entity type, prominence, visibility, quest status, and relationship visibility controls without changing extraction behavior.",
       "Reworked category and entity pages around accessible GM organization, fail-closed Player View navigation, source evidence, and grouped relationship presentation.",
       "Made the campaign library the homepage focus once campaigns exist while retaining focused first-run onboarding.",
+    ],
+  },
+  {
+    version: "0.5.0",
+    date: "2026-09-16",
+    title: "Main-site redesign",
+    changes: [
+      "Redesigned the home experience around a clear campaign library, campaign status, and an obvious import path.",
+      "Added a responsive product shell and dedicated campaign-library route while preserving existing campaign, processing, and DM/Player views.",
     ],
   },
   {
@@ -120,6 +156,15 @@ export const changelog = [
     changes: [
       "Requires explicit acknowledgement before local enrichment can replace canonical campaign data.",
       "Makes local preflight distinguish confirmed model availability from endpoints that do not report models.",
+    ],
+  },
+  {
+    version: "0.4.0",
+    date: "2026-09-10",
+    title: "Local AI development provider",
+    changes: [
+      "Added a provider-independent structured AI boundary with local model support.",
+      "Added provider preflight and provider-aware recovery diagnostics.",
     ],
   },
   {
