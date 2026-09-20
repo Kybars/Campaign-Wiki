@@ -9,8 +9,8 @@ import { normalizeName } from "@/lib/graph/normalize";
 import { normalizeRelationshipType } from "@/lib/graph/normalize";
 import { pageTextForModel } from "@/lib/pdf/model-text";
 
-export const ENTITY_RECONCILIATION_BEHAVIOR_VERSION = "v0.6.1-authoritative-pair-components-1";
-export const ENTITY_RECONCILIATION_CONTRACT_VERSION = 5;
+export const ENTITY_RECONCILIATION_BEHAVIOR_VERSION = "v0.6.3-bounded-duplicate-adjudication-batches-1";
+export const ENTITY_RECONCILIATION_CONTRACT_VERSION = 6;
 
 export interface GraphInventoryEntity extends Omit<ValidatedExtractionInventoryEntity, "sources"> {
   sources: SourceEvidence[];
@@ -101,6 +101,8 @@ const POLITY_SUFFIXES = new Set(["empire", "kingdom", "republic", "nation", "rea
 const ORGANIZATION_QUALIFIERS = new Set(["army", "church", "cult", "empire", "guard", "guild", "inquisitors", "kingdom", "knights", "nation", "order", "realm", "republic"]);
 const MAX_CANDIDATE_PAIRS = 500;
 const MAX_CANDIDATES_PER_ENTITY = 16;
+export const MAX_DUPLICATE_ADJUDICATION_BATCH_PAIRS = 24;
+export const MAX_DUPLICATE_ADJUDICATION_BATCH_PAYLOAD_BYTES = 48_000;
 
 function tokens(value: string) { return normalizeName(value).split(" ").filter(Boolean); }
 function withoutLeadingArticle(value: string) { const items = tokens(value); return (ARTICLES.has(items[0]) ? items.slice(1) : items).join(" "); }
@@ -287,42 +289,107 @@ export function buildDuplicateCandidates(inventory: GraphInventory, rawChunks: R
   return { pairs, components };
 }
 
-function adjudicationPayload(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[]) {
+function adjudicationPayload(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], batchId: string) {
   const entityById = new Map(inventory.entities.map((entity) => [entity.temporary_id, entity]));
   const occurrenceExcerpts = (entity: GraphInventoryEntity) => rawChunks.flatMap((chunk) => (chunk.pages ?? []).flatMap((page) => {
     const semanticText = pageTextForModel(page); const normalizedText = normalizeName(semanticText); const normalizedEntity = normalizeName(entity.name); const match = normalizedText.indexOf(normalizedEntity);
     if (match < 0) return [];
     const compact = semanticText.replace(/\s+/g, " ").trim(); const compactMatch = normalizeName(compact).indexOf(normalizedEntity); const start = Math.max(0, compactMatch - 180);
-    return [{ chunk_id: chunk.chunkId, page: page.pageNumber, excerpt: compact.slice(start, start + 520) }];
-  })).slice(0, 3);
+    return [{ chunk_id: chunk.chunkId, page: page.pageNumber, excerpt: compact.slice(start, start + 360) }];
+  })).slice(0, 1);
   const relevantRelationships = (memberIds: string[]) => {
     const names = new Set(memberIds.flatMap((id) => { const entity = entityById.get(id)!; return [entity.name, ...(entity.aliases ?? [])].map(normalizeName); }));
-    return rawChunks.flatMap((chunk) => chunk.raw.relationships.filter((relationship) => names.has(normalizeName(relationship.source)) || names.has(normalizeName(relationship.target))).map((relationship) => ({ chunk_id: chunk.chunkId, ...relationship }))).slice(0, 12);
+    return rawChunks.flatMap((chunk) => chunk.raw.relationships
+      .filter((relationship) => names.has(normalizeName(relationship.source)) || names.has(normalizeName(relationship.target)))
+      .map((relationship) => ({ chunk_id: chunk.chunkId, source: relationship.source, target: relationship.target, relationship: relationship.relationship, page: relationship.page, evidence_quote: relationship.evidence_quote.slice(0, 360) })))
+      .slice(0, 24);
   };
+  const memberIds = [...new Set(candidates.pairs.flatMap((pair) => [pair.leftId, pair.rightId]))].sort();
+  const relationships = relevantRelationships(memberIds);
+  const componentByPair = new Map(candidates.components.flatMap((component) => component.pairs.map((pair) => [pairKey(pair.leftId, pair.rightId), component.componentId] as const)));
   return {
-    components: candidates.components.map((component) => ({
-      component_id: component.componentId,
-      entities: component.memberIds.map((id) => {
-        const entity = entityById.get(id)!;
-        return { id, name: entity.name, type: entity.type, inventory_sources: entity.sources.slice(0, 4).map((source) => ({ page: source.page_number, excerpt: source.supporting_text.slice(0, 520) })), occurrence_excerpts: occurrenceExcerpts(entity) };
-      }),
-      candidate_pairs: component.pairs.map((pair) => {
-        const left = entityById.get(pair.leftId)!; const right = entityById.get(pair.rightId)!;
-        const leftPages = pageSet(left); const rightPages = pageSet(right);
-        const relationships = relevantRelationships([pair.leftId, pair.rightId]);
-        return {
-          left_id: pair.leftId, right_id: pair.rightId, reasons: pair.reasons,
-          left: { name: left.name, type: left.type, inventory_sources: left.sources.slice(0, 3), occurrence_excerpts: occurrenceExcerpts(left) },
-          right: { name: right.name, type: right.type, inventory_sources: right.sources.slice(0, 3), occurrence_excerpts: occurrenceExcerpts(right) },
-          source_page_overlap: [...leftPages].filter((page) => rightPages.has(page)).sort((a, b) => a - b),
-          relevant_relationships: relationships,
-          explicit_identity_alias_evidence: relationships.filter((relationship) => ALIAS_RELATIONSHIPS.has(normalizeName(relationship.relationship)) || normalizeName(relationship.relationship) === IDENTITY_RELATIONSHIP),
-        };
-      }),
-      relevant_first_pass_relationships: relevantRelationships(component.memberIds),
-      explicit_identity_alias_evidence: relevantRelationships(component.memberIds).filter((relationship) => ALIAS_RELATIONSHIPS.has(normalizeName(relationship.relationship)) || normalizeName(relationship.relationship) === IDENTITY_RELATIONSHIP),
+    batch_id: batchId,
+    candidate_components: candidates.components.map((component) => ({ component_id: component.componentId, entity_ids: component.memberIds })),
+    entities: memberIds.map((id) => {
+      const entity = entityById.get(id)!;
+      return { id, name: entity.name, type: entity.type, inventory_sources: entity.sources.slice(0, 2).map((source) => ({ page: source.page_number, excerpt: source.supporting_text.slice(0, 320) })), occurrence_excerpts: occurrenceExcerpts(entity) };
+    }),
+    candidate_pairs: candidates.pairs.map((pair) => {
+      const left = entityById.get(pair.leftId)!; const right = entityById.get(pair.rightId)!;
+      const leftPages = pageSet(left); const rightPages = pageSet(right);
+      return { component_id: componentByPair.get(pairKey(pair.leftId, pair.rightId))!, left_id: pair.leftId, right_id: pair.rightId, reasons: pair.reasons, source_page_overlap: [...leftPages].filter((page) => rightPages.has(page)).sort((a, b) => a - b) };
+    }),
+    relevant_first_pass_relationships: relationships,
+    explicit_identity_alias_evidence: relationships.filter((relationship) => ALIAS_RELATIONSHIPS.has(normalizeName(relationship.relationship)) || normalizeName(relationship.relationship) === IDENTITY_RELATIONSHIP),
+  };
+}
+
+export interface DuplicateAdjudicationBatch {
+  batchId: string;
+  candidates: DuplicateCandidates;
+  payload: ReturnType<typeof adjudicationPayload>;
+  payloadBytes: number;
+}
+
+function batchCandidates(components: DuplicateCandidateComponent[]): DuplicateCandidates {
+  const pairs = components.flatMap((component) => component.pairs).sort((left, right) => pairKey(left.leftId, left.rightId).localeCompare(pairKey(right.leftId, right.rightId)));
+  return {
+    pairs,
+    components: components.map((component) => ({
+      componentId: component.componentId,
+      memberIds: [...new Set(component.pairs.flatMap((pair) => [pair.leftId, pair.rightId]))].sort(),
+      pairs: [...component.pairs].sort((left, right) => pairKey(left.leftId, left.rightId).localeCompare(pairKey(right.leftId, right.rightId))),
     })),
   };
+}
+
+function createAdjudicationBatch(inventory: GraphInventory, components: DuplicateCandidateComponent[], rawChunks: RawGraphChunk[]): DuplicateAdjudicationBatch {
+  const candidates = batchCandidates(components);
+  const batchId = `duplicate_batch_${semanticInputHash(candidates.pairs.map((pair) => [pair.leftId, pair.rightId, pair.reasons])).slice(0, 24)}`;
+  const payload = adjudicationPayload(inventory, candidates, rawChunks, batchId);
+  return { batchId, candidates, payload, payloadBytes: Buffer.byteLength(JSON.stringify(payload), "utf8") };
+}
+
+/**
+ * Packs complete connected components where possible. Components that exceed a
+ * deterministic pair or payload bound are split only at their sorted pair
+ * boundary, so every offered pair is assigned to exactly one model request.
+ */
+export function buildDuplicateAdjudicationBatches(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[]): DuplicateAdjudicationBatch[] {
+  if (!candidates.pairs.length) return [];
+  const batches: DuplicateAdjudicationBatch[] = [];
+  let pending: DuplicateCandidateComponent[] = [];
+  const fits = (components: DuplicateCandidateComponent[]) => {
+    const batch = createAdjudicationBatch(inventory, components, rawChunks);
+    return batch.candidates.pairs.length <= MAX_DUPLICATE_ADJUDICATION_BATCH_PAIRS && batch.payloadBytes <= MAX_DUPLICATE_ADJUDICATION_BATCH_PAYLOAD_BYTES;
+  };
+  const push = (components: DuplicateCandidateComponent[]) => {
+    const batch = createAdjudicationBatch(inventory, components, rawChunks);
+    if (batch.candidates.pairs.length > MAX_DUPLICATE_ADJUDICATION_BATCH_PAIRS || batch.payloadBytes > MAX_DUPLICATE_ADJUDICATION_BATCH_PAYLOAD_BYTES) throw new Error(`Duplicate adjudication batch ${batch.batchId} exceeds its deterministic bound`);
+    batches.push(batch);
+  };
+  for (const component of [...candidates.components].sort((left, right) => left.componentId.localeCompare(right.componentId))) {
+    if (fits([component])) {
+      if (pending.length && !fits([...pending, component])) { push(pending); pending = []; }
+      pending.push(component);
+      continue;
+    }
+    if (pending.length) { push(pending); pending = []; }
+    let componentPairs: DuplicateCandidatePair[] = [];
+    for (const pair of [...component.pairs].sort((left, right) => pairKey(left.leftId, left.rightId).localeCompare(pairKey(right.leftId, right.rightId)))) {
+      const next = { ...component, pairs: [...componentPairs, pair] };
+      if (fits([next])) { componentPairs.push(pair); continue; }
+      if (!componentPairs.length) throw new Error(`Duplicate adjudication pair ${pairKey(pair.leftId, pair.rightId)} exceeds its deterministic payload bound`);
+      push([{ ...component, pairs: componentPairs }]);
+      componentPairs = [pair];
+      if (!fits([{ ...component, pairs: componentPairs }])) throw new Error(`Duplicate adjudication pair ${pairKey(pair.leftId, pair.rightId)} exceeds its deterministic payload bound`);
+    }
+    if (componentPairs.length) push([{ ...component, pairs: componentPairs }]);
+  }
+  if (pending.length) push(pending);
+  const assigned = batches.flatMap((batch) => batch.candidates.pairs.map((pair) => pairKey(pair.leftId, pair.rightId)));
+  if (assigned.length !== candidates.pairs.length || new Set(assigned).size !== assigned.length || assigned.some((key) => !candidates.pairs.some((pair) => pairKey(pair.leftId, pair.rightId) === key))) throw new Error("Duplicate adjudication batches must partition every candidate pair exactly once");
+  return batches;
 }
 
 export function validateDuplicateAdjudication(raw: unknown, candidates: DuplicateCandidates, inventory?: GraphInventory): DuplicateAdjudication {
@@ -421,34 +488,75 @@ function authoritativeMergePlan(inventory: GraphInventory, decision: DuplicateAd
 
 export interface DuplicateCheckpointContext { campaignId: string; documentId: string; processingMode: string; store: AIOperationCheckpointStore; sourceIdentity: string; }
 
-export function duplicateAdjudicationCheckpointIdentity(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): AIOperationIdentity {
-  const payload = adjudicationPayload(inventory, candidates, rawChunks);
-  return { campaignId: context.campaignId, documentId: context.documentId, sourceExtractionCacheId: null, providerId: provider.providerId, modelId: provider.modelId, processingMode: context.processingMode, stage: "reconciliation", operationType: "entity_duplicate_adjudication", operationKey: "final_inventory", inputHash: modelInputHash(ENTITY_RECONCILIATION_SYSTEM_PROMPT, payload), upstreamFingerprint: semanticInputHash({ source: context.sourceIdentity, inventory, candidates, firstPass: rawChunks }), behaviorVersion: ENTITY_RECONCILIATION_BEHAVIOR_VERSION, schemaVersion: ENTITY_RECONCILIATION_CONTRACT_VERSION };
+export function duplicateAdjudicationCheckpointIdentity(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext, suppliedBatch?: DuplicateAdjudicationBatch): AIOperationIdentity {
+  const batches = suppliedBatch ? [suppliedBatch] : buildDuplicateAdjudicationBatches(inventory, candidates, rawChunks);
+  if (batches.length !== 1) throw new Error("Duplicate adjudication checkpoint identity requires exactly one batch");
+  const batch = batches[0]!;
+  return { campaignId: context.campaignId, documentId: context.documentId, sourceExtractionCacheId: null, providerId: provider.providerId, modelId: provider.modelId, processingMode: context.processingMode, stage: "reconciliation", operationType: "entity_duplicate_adjudication", operationKey: batch.batchId, inputHash: modelInputHash(ENTITY_RECONCILIATION_SYSTEM_PROMPT, batch.payload), upstreamFingerprint: semanticInputHash({ source: context.sourceIdentity, inventory, candidates: batch.candidates, firstPass: rawChunks }), behaviorVersion: ENTITY_RECONCILIATION_BEHAVIOR_VERSION, schemaVersion: ENTITY_RECONCILIATION_CONTRACT_VERSION };
 }
 
-export async function planDuplicateAdjudication(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<{ status: CheckpointPlanStatus; reason: string }> {
-  if (!candidates.pairs.length) return { status: "REUSE", reason: "no duplicate candidates; no model call" };
-  const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, rawChunks, provider, context);
-  return context.store.inspect ? context.store.inspect(identity) : { status: await context.store.load(identity) ? "REUSE" : "RUN", reason: "duplicate adjudication checkpoint" };
+export interface DuplicateAdjudicationPlan {
+  batchId: string;
+  operationType: "entity_duplicate_adjudication";
+  operationKey: string;
+  status: CheckpointPlanStatus;
+  reason: string;
 }
 
-export async function adjudicateDuplicateCandidates(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<{ decision: DuplicateAdjudication; usage: ModelCallUsage | null; checkpointStatus: "REUSE" | "RUN" }> {
-  if (!candidates.pairs.length) return { decision: { merge_groups: [], review_pairs: [], pair_decisions: [] }, usage: null, checkpointStatus: "REUSE" };
-  const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, rawChunks, provider, context);
+export async function planDuplicateAdjudication(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<DuplicateAdjudicationPlan[]> {
+  const batches = buildDuplicateAdjudicationBatches(inventory, candidates, rawChunks);
+  return Promise.all(batches.map(async (batch) => {
+    const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, rawChunks, provider, context, batch);
+    const inspection = context.store.inspect ? await context.store.inspect(identity) : { status: await context.store.load(identity) ? "REUSE" as const : "RUN" as const, reason: "duplicate adjudication checkpoint" };
+    return { batchId: batch.batchId, operationType: "entity_duplicate_adjudication" as const, operationKey: identity.operationKey, ...inspection };
+  }));
+}
+
+function combineDuplicateAdjudications(candidates: DuplicateCandidates, decisions: DuplicateAdjudication[]): DuplicateAdjudication {
+  return validateDuplicateAdjudication({
+    merge_groups: [],
+    review_pairs: decisions.flatMap((decision) => decision.review_pairs).sort((left, right) => pairKey(left.left_id, left.right_id).localeCompare(pairKey(right.left_id, right.right_id))),
+    pair_decisions: decisions.flatMap((decision) => decision.pair_decisions).sort((left, right) => pairKey(left.left_id, left.right_id).localeCompare(pairKey(right.left_id, right.right_id))),
+  }, candidates);
+}
+
+export interface DuplicateAdjudicationBatchResult {
+  batch: DuplicateAdjudicationBatch;
+  identity: AIOperationIdentity;
+  checkpointStatus: "REUSE" | "RUN";
+  usage: ModelCallUsage | null;
+}
+
+async function adjudicateBatch(inventory: GraphInventory, batch: DuplicateAdjudicationBatch, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<{ decision: DuplicateAdjudication; result: DuplicateAdjudicationBatchResult }> {
+  const identity = duplicateAdjudicationCheckpointIdentity(inventory, batch.candidates, rawChunks, provider, context, batch);
   const cached = await context.store.load<{ decision: DuplicateAdjudication }>(identity);
   if (cached) {
-    try { return { decision: validateDuplicateAdjudication(cached.output.decision, candidates, inventory), usage: null, checkpointStatus: "REUSE" }; }
+    try { return { decision: validateDuplicateAdjudication(cached.output.decision, batch.candidates, inventory), result: { batch, identity, usage: null, checkpointStatus: "REUSE" } }; }
     catch (error) { await context.store.saveFailed(identity, cached.usage, `Stored duplicate adjudication invalid: ${error instanceof Error ? error.message : "unknown"}`, cached.attemptCount); }
   }
-  const response = await provider.parseStructured({ system: ENTITY_RECONCILIATION_SYSTEM_PROMPT, payload: adjudicationPayload(inventory, candidates, rawChunks), schema: duplicateAdjudicationSchema, schemaName: "entity_duplicate_adjudication" });
+  const response = await provider.parseStructured({ system: ENTITY_RECONCILIATION_SYSTEM_PROMPT, payload: batch.payload, schema: duplicateAdjudicationSchema, schemaName: "entity_duplicate_adjudication" });
   let decision: DuplicateAdjudication;
-  try { decision = validateDuplicateAdjudication(response.output, candidates, inventory); }
+  try { decision = validateDuplicateAdjudication(response.output, batch.candidates, inventory); }
   catch (error) {
     await context.store.saveFailed(identity, [response.usage], `Duplicate adjudication invalid: ${error instanceof Error ? error.message : "unknown"}`, 1);
     throw error;
   }
   await context.store.saveValidated({ identity, output: { decision }, usage: [response.usage], attemptCount: 1 });
-  return { decision, usage: response.usage, checkpointStatus: "RUN" };
+  return { decision, result: { batch, identity, usage: response.usage, checkpointStatus: "RUN" } };
+}
+
+export async function adjudicateDuplicateCandidates(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<{ decision: DuplicateAdjudication; usage: ModelCallUsage | null; usages: ModelCallUsage[]; batches: DuplicateAdjudicationBatchResult[]; checkpointStatus: "REUSE" | "RUN" }> {
+  const batches = buildDuplicateAdjudicationBatches(inventory, candidates, rawChunks);
+  if (!batches.length) return { decision: { merge_groups: [], review_pairs: [], pair_decisions: [] }, usage: null, usages: [], batches: [], checkpointStatus: "REUSE" };
+  const results: DuplicateAdjudicationBatchResult[] = [];
+  const decisions: DuplicateAdjudication[] = [];
+  for (const batch of batches) {
+    const adjudicated = await adjudicateBatch(inventory, batch, rawChunks, provider, context);
+    decisions.push(adjudicated.decision);
+    results.push(adjudicated.result);
+  }
+  const usages = results.flatMap((result) => result.usage ? [result.usage] : []);
+  return { decision: combineDuplicateAdjudications(candidates, decisions), usage: usages.length === 1 ? usages[0]! : null, usages, batches: results, checkpointStatus: results.some((result) => result.checkpointStatus === "RUN") ? "RUN" : "REUSE" };
 }
 
 export interface AppliedEntityMerges {

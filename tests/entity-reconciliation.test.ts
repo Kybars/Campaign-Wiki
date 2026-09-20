@@ -4,9 +4,13 @@ import {
   adjudicateDuplicateCandidates,
   applyEntityMerges,
   applyExplicitIdentityRelationships,
+  buildDuplicateAdjudicationBatches,
   buildDuplicateCandidates,
   duplicateAdjudicationCheckpointIdentity,
   duplicateAdjudicationSchema,
+  MAX_DUPLICATE_ADJUDICATION_BATCH_PAIRS,
+  MAX_DUPLICATE_ADJUDICATION_BATCH_PAYLOAD_BYTES,
+  planDuplicateAdjudication,
   validateDuplicateAdjudication,
   type DuplicateAdjudication,
   type GraphInventory,
@@ -287,7 +291,7 @@ describe("duplicate adjudication checkpointing and call suppression", () => {
     expect(first.checkpointStatus).toBe("RUN");
     expect(replay.checkpointStatus).toBe("REUSE");
     expect(model.parseStructured).toHaveBeenCalledOnce();
-    expect(model.parseStructured).toHaveBeenCalledWith(expect.objectContaining({ payload: expect.objectContaining({ components: [expect.objectContaining({ candidate_pairs: [expect.objectContaining({ source_page_overlap: [1] })], relevant_first_pass_relationships: [expect.objectContaining({ relationship: "also known as" })], explicit_identity_alias_evidence: [expect.any(Object)] })] }) }));
+    expect(model.parseStructured).toHaveBeenCalledWith(expect.objectContaining({ payload: expect.objectContaining({ candidate_pairs: [expect.objectContaining({ source_page_overlap: [1] })], relevant_first_pass_relationships: [expect.objectContaining({ relationship: "also known as" })], explicit_identity_alias_evidence: [expect.any(Object)] }) }));
     const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, rawEvidence, model, context);
     const changed = duplicateAdjudicationCheckpointIdentity(inventory, candidates, [{ chunkId: "x", raw: { relationships: [] } }], model, context);
     expect(identity.upstreamFingerprint).not.toBe(changed.upstreamFingerprint);
@@ -300,5 +304,65 @@ describe("duplicate adjudication checkpointing and call suppression", () => {
     const result = await adjudicateDuplicateCandidates(inventory, candidates, [], model, { campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store: memoryCheckpointStore() });
     expect(result.checkpointStatus).toBe("REUSE");
     expect(model.parseStructured).not.toHaveBeenCalled();
+  });
+});
+
+describe("bounded duplicate adjudication batches", () => {
+  const usage = { model: "model", responseId: null, inputTokens: 1, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: 1, totalTokens: 2, estimatedCostUsd: null };
+  const inventory: GraphInventory = { entities: Array.from({ length: 53 }, (_, index) => entity(`entity-${index}`, `Entity ${index}`, "npc", index + 1)) };
+  const pairs = Array.from({ length: 52 }, (_, index) => ({ leftId: `entity-${index}`, rightId: `entity-${index + 1}`, reasons: ["exact_name" as const] }));
+  const candidates = { pairs, components: [{ componentId: "duplicate_component_1", memberIds: inventory.entities.map((item) => item.temporary_id), pairs }] };
+  const context = () => ({ campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store: memoryCheckpointStore() });
+  const model = () => {
+    const parseStructured = vi.fn(async ({ payload }: { payload: { candidate_pairs: Array<{ left_id: string; right_id: string }> } }) => ({
+      output: {
+        merge_groups: [],
+        review_pairs: [],
+        pair_decisions: payload.candidate_pairs.map((pair) => ({ left_id: pair.left_id, right_id: pair.right_id, outcome: "MERGE" as const, reason_code: "NAME_VARIANT_STRONG" as const, evidence_pages: [1], explanation: null })),
+      },
+      providerId: "openai" as const,
+      modelId: "model",
+      responseId: null,
+      usage,
+    }));
+    return { providerId: "openai" as const, modelId: "model", parseStructured } as unknown as StructuredModelProvider & { parseStructured: typeof parseStructured };
+  };
+
+  it("partitions every candidate pair once within deterministic pair and payload bounds", () => {
+    const batches = buildDuplicateAdjudicationBatches(inventory, candidates, []);
+    expect(batches.length).toBeGreaterThan(1);
+    expect(batches.every((batch) => batch.candidates.pairs.length <= MAX_DUPLICATE_ADJUDICATION_BATCH_PAIRS)).toBe(true);
+    expect(batches.every((batch) => batch.payloadBytes <= MAX_DUPLICATE_ADJUDICATION_BATCH_PAYLOAD_BYTES)).toBe(true);
+    const assigned = batches.flatMap((batch) => batch.candidates.pairs.map((pair) => [pair.leftId, pair.rightId].sort().join("|"))).sort();
+    expect(assigned).toEqual(candidates.pairs.map((pair) => [pair.leftId, pair.rightId].sort().join("|")).sort());
+    expect(new Set(assigned).size).toBe(candidates.pairs.length);
+  });
+
+  it("combines batch decisions into the same transitive merge semantics as one complete decision set", async () => {
+    const store = memoryCheckpointStore();
+    const provider = model();
+    const result = await adjudicateDuplicateCandidates(inventory, candidates, [], provider, { campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store });
+    const singleDecision = validateDuplicateAdjudication({ merge_groups: [], review_pairs: [], pair_decisions: candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome: "MERGE", reason_code: "NAME_VARIANT_STRONG", evidence_pages: [1], explanation: null })) }, candidates, inventory);
+    expect(result.batches).toHaveLength(buildDuplicateAdjudicationBatches(inventory, candidates, []).length);
+    expect(provider.parseStructured).toHaveBeenCalledTimes(result.batches.length);
+    expect(applyEntityMerges(inventory, result.decision).inventory).toEqual(applyEntityMerges(inventory, singleDecision).inventory);
+  });
+
+  it("plans, reuses, and retries checkpoints independently for each batch", async () => {
+    const store = memoryCheckpointStore();
+    const provider = model();
+    const checkpointContext = { campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store };
+    const planned = await planDuplicateAdjudication(inventory, candidates, [], provider, checkpointContext);
+    expect(planned).toHaveLength(buildDuplicateAdjudicationBatches(inventory, candidates, []).length);
+    expect(planned.every((item) => item.status === "RUN")).toBe(true);
+    const first = await adjudicateDuplicateCandidates(inventory, candidates, [], provider, checkpointContext);
+    const replay = await adjudicateDuplicateCandidates(inventory, candidates, [], provider, checkpointContext);
+    expect(replay.batches.every((item) => item.checkpointStatus === "REUSE")).toBe(true);
+    const corrupted = [...store.validated.values()].find((item) => item.identity.operationKey === first.batches[1]!.identity.operationKey)!;
+    corrupted.output = { decision: { merge_groups: [], review_pairs: [], pair_decisions: [] } };
+    const retried = await adjudicateDuplicateCandidates(inventory, candidates, [], provider, checkpointContext);
+    expect(retried.batches.filter((item) => item.checkpointStatus === "RUN")).toHaveLength(1);
+    expect(provider.parseStructured).toHaveBeenCalledTimes(first.batches.length + 1);
+    expect(store.failures).toHaveLength(1);
   });
 });

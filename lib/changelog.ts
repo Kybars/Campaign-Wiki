@@ -9,6 +9,15 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.3",
+    date: "2026-09-20",
+    title: "Bounded entity reconciliation",
+    changes: [
+      "Split duplicate-entity adjudication into bounded deterministic batches to prevent large campaigns from producing oversized reconciliation requests.",
+      "Added batch-level checkpointing and regression coverage for complete, non-overlapping candidate-pair adjudication.",
+    ],
+  },
+  {
     version: "0.6.2",
     date: "2026-09-20",
     title: "Append-only release history",

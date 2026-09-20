@@ -76,8 +76,8 @@ beforeEach(() => {
   mocks.runGraphFirstPassLimited.mockResolvedValue([]);
   mocks.buildDuplicateCandidates.mockReturnValue({ pairs: [], components: [] });
   mocks.applyExplicitIdentityRelationships.mockImplementation((inventory) => ({ inventory, memberToCanonicalId: new Map(), resolutionKeys: new Map(), reviewPairs: [], applications: [], fingerprint: "identity" }));
-  mocks.planDuplicateAdjudication.mockResolvedValue({ status: "REUSE", reason: "no candidates" });
-  mocks.adjudicateDuplicateCandidates.mockResolvedValue({ decision: { merge_groups: [], review_pairs: [], pair_decisions: [] }, usage: null, checkpointStatus: "REUSE" });
+  mocks.planDuplicateAdjudication.mockResolvedValue([]);
+  mocks.adjudicateDuplicateCandidates.mockResolvedValue({ decision: { merge_groups: [], review_pairs: [], pair_decisions: [] }, usage: null, usages: [], batches: [], checkpointStatus: "REUSE" });
   mocks.applyEntityMerges.mockImplementation((inventory) => ({ inventory, memberToCanonicalId: new Map(), resolutionKeys: new Map(), reviewPairs: [], applications: [], fingerprint: "merged" }));
   mocks.reResolveGraphFirstPass.mockReturnValue([]);
   mocks.planGraphCompleteness.mockResolvedValue([]);
