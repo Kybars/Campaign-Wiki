@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 import type { ModelCallUsage } from "@/lib/ai/usage";
 
-export const EXTRACTION_INVENTORY_BEHAVIOR_VERSION = "v0.4-identity-page-grounding-3";
+export const EXTRACTION_INVENTORY_BEHAVIOR_VERSION = "v0.6.1-semantic-text-inventory-1";
 // The initial compact inventory remains v3-compatible and reusable. Version 4
 // adds a dependent completeness substage and deterministic final union.
-export const EXTRACTION_INVENTORY_COMPLETENESS_BEHAVIOR_VERSION = "v0.4-inventory-completeness-4";
-export const EXTRACTION_INVENTORY_FINAL_BEHAVIOR_VERSION = "v0.4-inventory-final-union-4";
-export const EXTRACTION_RICH_FACTS_BEHAVIOR_VERSION = "v0.4-compact-rich-facts-3";
-export const EXTRACTION_RICH_RELATIONSHIPS_BEHAVIOR_VERSION = "v0.4-compact-rich-relationships-3";
+export const EXTRACTION_INVENTORY_COMPLETENESS_BEHAVIOR_VERSION = "v0.6.1-semantic-text-completeness-1";
+export const EXTRACTION_INVENTORY_FINAL_BEHAVIOR_VERSION = "v0.6.1-inventory-final-union-1";
+export const EXTRACTION_RICH_FACTS_BEHAVIOR_VERSION = "v0.6.1-semantic-text-rich-facts-1";
+export const EXTRACTION_RICH_RELATIONSHIPS_BEHAVIOR_VERSION = "v0.6.1-semantic-text-rich-relationships-1";
 export const EXTRACTION_RICH_BEHAVIOR_VERSION = EXTRACTION_RICH_FACTS_BEHAVIOR_VERSION;
 export const EXTRACTION_BEHAVIOR_VERSION = EXTRACTION_RICH_BEHAVIOR_VERSION;
 export const RECONCILIATION_BEHAVIOR_VERSION = "v0.4-m4-reconciliation-1";
@@ -17,8 +17,8 @@ export const EXTRACTION_INVENTORY_COMPLETENESS_CONTRACT_VERSION = 4;
 export const EXTRACTION_INVENTORY_FINAL_CONTRACT_VERSION = 4;
 export const EXTRACTION_RICH_FACTS_CONTRACT_VERSION = 3;
 export const EXTRACTION_RICH_RELATIONSHIPS_CONTRACT_VERSION = 3;
-export const GRAPH_CORE_BEHAVIOR_VERSION = "v0-graph-core-2";
-export const GRAPH_CORE_CONTRACT_VERSION = 1;
+export const GRAPH_CORE_BEHAVIOR_VERSION = "v0.6.1-semantic-reconciliation-finalization-1";
+export const GRAPH_CORE_CONTRACT_VERSION = 2;
 export const EXTRACTION_RICH_CONTRACT_VERSION = EXTRACTION_RICH_FACTS_CONTRACT_VERSION;
 export const EXTRACTION_CONTRACT_VERSION = EXTRACTION_RICH_CONTRACT_VERSION;
 export const RECONCILIATION_CONTRACT_VERSION = 1;

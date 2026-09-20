@@ -13,7 +13,7 @@ const inventory: ValidatedExtractionInventoryOutput = {
   ],
 };
 const chunk = { id: "synthetic", characterCount: 62, pages: [{ pageNumber: 1, text: "The Vault contains the Relic. The Captain commands the Guard." }] };
-const firstPass = validateGraphExtraction({ relationships: [{ source: "Relic", relationship: "located in", target: "Vault", page: 1 }] }, inventory, chunk);
+const firstPass = validateGraphExtraction({ relationships: [{ source: "Relic", relationship: "located in", target: "Vault", page: 1, evidence_quote: "The Vault contains the Relic." }] }, inventory, chunk);
 
 describe("graph completeness isolation", () => {
   it("serializes existing canonical relationships in human-readable form without IDs", () => {
@@ -35,27 +35,36 @@ describe("graph completeness isolation", () => {
     expect(input).toContain("Captain | npc | aliases: The Commander");
   });
 
-  it("classifies an inverse of the first pass as a duplicate and keeps a new edge novel", () => {
+  it("does not use a phrase table to classify opposite wording as duplicate", () => {
     const sweep = validateGraphCompletenessSweep({ relationships: [
-      { source: "Vault", relationship: "contains", target: "Relic", page: 1 },
-      { source: "Captain", relationship: "commands", target: "Guard", page: 1 },
+      { source: "Vault", relationship: "contains", target: "Relic", page: 1, evidence_quote: "The Vault contains the Relic." },
+      { source: "Captain", relationship: "commands", target: "Guard", page: 1, evidence_quote: "The Captain commands the Guard." },
     ] }, inventory, chunk, new Set(firstPass.relationships.map((relationship) => relationship.semanticKey)));
-    expect(sweep.classifications.map((item) => item.classification)).toEqual(["DUPLICATE_OF_FIRST_PASS", "NOVEL_ACCEPTED"]);
-    expect(sweep.novelRelationships).toHaveLength(1);
+    expect(sweep.classifications.map((item) => item.classification)).toEqual(["NOVEL_ACCEPTED", "NOVEL_ACCEPTED"]);
+    expect(sweep.novelRelationships).toHaveLength(2);
   });
 
-  it("dedupes within the sweep and rejects entity creation attempts", () => {
+  it("retains quote-backed duplicates for final provenance union and rejects entity creation attempts", () => {
     const sweep = validateGraphCompletenessSweep({ relationships: [
-      { source: "Captain", relationship: "commands", target: "Guard", page: 1 },
-      { source: "Captain", relationship: "commands", target: "Guard", page: 1 },
-      { source: "Unknown", relationship: "commands", target: "Guard", page: 1 },
+      { source: "Captain", relationship: "commands", target: "Guard", page: 1, evidence_quote: "The Captain commands the Guard." },
+      { source: "Captain", relationship: "commands", target: "Guard", page: 1, evidence_quote: "Captain commands the Guard" },
+      { source: "Unknown", relationship: "commands", target: "Guard", page: 1, evidence_quote: "The Captain commands the Guard." },
     ] }, inventory, chunk, new Set());
-    expect(sweep.classifications.map((item) => item.classification)).toEqual(["NOVEL_ACCEPTED", "DUPLICATE_WITHIN_SWEEP", "REJECTED_UNKNOWN_ENDPOINT"]);
-    expect(sweep.validation.relationships).toHaveLength(1);
+    expect(sweep.classifications.map((item) => item.classification)).toEqual(["NOVEL_ACCEPTED", "NOVEL_ACCEPTED", "REJECTED_UNKNOWN_ENDPOINT"]);
+    expect(sweep.validation.relationships).toHaveLength(2);
   });
 
-  it("preserves every first-pass edge while unioning only novel semantic keys", () => {
-    const sweep = validateGraphCompletenessSweep({ relationships: [{ source: "Captain", relationship: "commands", target: "Guard", page: 1 }] }, inventory, chunk, new Set(firstPass.relationships.map((relationship) => relationship.semanticKey)));
+  it("rejects a completeness proposal whose quote is absent from the raw page", () => {
+    const sweep = validateGraphCompletenessSweep({ relationships: [
+      { source: "Captain", relationship: "commands", target: "Guard", page: 1, evidence_quote: "The Captain leads every soldier." },
+    ] }, inventory, chunk, new Set());
+    expect(sweep.classifications[0].classification).toBe("REJECTED_EVIDENCE_NOT_FOUND");
+    expect(sweep.validation.validationRecords[0].outcome).toBe("REJECTED_EVIDENCE_NOT_FOUND");
+    expect(sweep.novelRelationships).toEqual([]);
+  });
+
+  it("preserves every first-pass edge and every valid completeness proposal for provenance union", () => {
+    const sweep = validateGraphCompletenessSweep({ relationships: [{ source: "Captain", relationship: "commands", target: "Guard", page: 1, evidence_quote: "The Captain commands the Guard." }] }, inventory, chunk, new Set(firstPass.relationships.map((relationship) => relationship.semanticKey)));
     const union = buildGraphCompletenessUnion(firstPass.relationships, sweep.novelRelationships);
     expect(union).toHaveLength(2);
     expect(union.map((relationship) => relationship.semanticKey)).toContain(firstPass.relationships[0].semanticKey);

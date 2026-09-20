@@ -90,12 +90,12 @@ describe("Milestone 5 compact entity presentation", () => {
     expect(page).toContain("Kylar Birthwitch</a>");
   });
 
-  it("keeps inverse semantic duplicates to one relationship row before presentation", () => {
+  it("does not guess that unreconciled inverse legacy rows are duplicates", () => {
     const rows = relationshipsForEntity([
       { id: "r1", source_entity_id: "colinus", target_entity_id: "kylar", relationship_type: "uncle_of", description: "Colinus is Kylar's uncle.", confidence: 0.9 },
       { id: "r2", source_entity_id: "kylar", target_entity_id: "colinus", relationship_type: "nephew_of", description: "Kylar is Colinus's nephew.", confidence: 0.9 },
     ], "colinus");
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(2);
   });
 
   it("renders compact source references with an accessible controlled popover", () => {

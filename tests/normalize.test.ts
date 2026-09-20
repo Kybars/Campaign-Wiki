@@ -17,15 +17,15 @@ describe("canonical display capitalization", () => {
   });
 });
 
-describe("relationship grammar normalization", () => {
-  it.each([["kill", "kills"], ["killed", "kills"], ["teach", "teaches"], ["taught", "teaches"], ["is a member of", "member of"], ["is member of", "member of"], ["serve", "serves"]])("normalizes %s to %s", (input, expected) => {
-    expect(normalizeRelationshipFact("a", "b", input).canonicalType).toBe(expected);
+describe("relationship instance normalization", () => {
+  it.each(["kill", "killed", "teach", "taught", "is a member of", "is member of", "serve"])("preserves the evidence-backed label %s", (input) => {
+    expect(normalizeRelationshipFact("a", "b", input).canonicalType).toBe(input);
   });
 
-  it("collapses grammatical variants without collapsing distinct semantics", () => {
-    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "killed"))).toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "kills")));
-    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "is a member of"))).toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "member of")));
-    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "serve"))).toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "serves")));
+  it("does not collapse phrases before evidence-aware model reconciliation", () => {
+    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "killed"))).not.toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "kills")));
+    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "is a member of"))).not.toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "member of")));
+    expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "serve"))).not.toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "serves")));
     expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "member of"))).not.toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "second-in-command of")));
     expect(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "owns"))).not.toBe(relationshipSemanticKey(normalizeRelationshipFact("a", "b", "acquired")));
   });

@@ -193,6 +193,10 @@ type RelationshipScoringFamily =
   | "slain_location";
 
 const exactScoringFamilies: Record<string, RelationshipScoringFamily[]> = {
+  "parent of": ["parenthood"],
+  owns: ["ownership", "possession_or_use"],
+  "member of": ["membership", "association"],
+  "located in": ["location", "association"],
   command: ["command"],
   commands: ["command"],
   "advisor to": ["advisory"],
@@ -223,12 +227,32 @@ const exactScoringFamilies: Record<string, RelationshipScoringFamily[]> = {
   "is a": ["classification"],
 };
 
+// Evaluator-only direction aliases. Production reconciliation never consumes
+// this table; it exists solely to preserve historical benchmark comparability.
+const inverseScoringLabels: Record<string, string> = {
+  contains: "located in",
+  "child of": "parent of",
+  "owned by": "owns",
+  "has member": "member of",
+  "used by": "uses",
+};
+
 const productionSemanticFamilies: Record<string, RelationshipScoringFamily[]> = {
   "parent of": ["parenthood"],
+  family_parent: ["parenthood"],
   owns: ["ownership", "possession_or_use"],
+  ownership: ["ownership", "possession_or_use"],
+  acquisition: ["possession_or_use"],
   membership: ["membership", "association"],
   "located in": ["location", "association"],
+  location_containment: ["location", "association"],
   "sibling of": ["sibling"],
+  family_sibling: ["sibling"],
+  command: ["command"],
+  advice: ["advisory"],
+  rulership: ["rule"],
+  rulership_emperor: ["rule"],
+  leadership: ["association"],
 };
 
 export interface CanonicalScoringRelationship {
@@ -247,10 +271,8 @@ function scoringFamilies(fact: NormalizedRelationshipFact): string[] {
 }
 
 /**
- * Canonicalizes evaluator edges through the production relationship normalizer first.
- * The only extra inverse is the generic surface label `used by`, which production does
- * not currently model. Exact label families are deliberately small: they preserve the
- * benchmark's coarse gold categories without fuzzy or campaign-specific matching.
+ * Canonicalizes evaluator edges with a frozen evaluator-only equivalence layer.
+ * Production relationship semantics are model-reconciled and do not consume it.
  */
 export function canonicalizeRelationshipForScoring(
   sourceId: string,
@@ -258,9 +280,8 @@ export function canonicalizeRelationshipForScoring(
   relationshipType: string,
 ): CanonicalScoringRelationship {
   const initiallyNormalized = normalizeRelationshipFact(sourceId, targetId, relationshipType);
-  const fact = !initiallyNormalized.knownInverse && initiallyNormalized.normalizedInputType === "used by"
-    ? normalizeRelationshipFact(targetId, sourceId, "uses")
-    : initiallyNormalized;
+  const inverseLabel = inverseScoringLabels[initiallyNormalized.normalizedInputType];
+  const fact = inverseLabel ? normalizeRelationshipFact(targetId, sourceId, inverseLabel) : initiallyNormalized;
   const acceptedFamilies = scoringFamilies(fact);
   const [canonicalSource, canonicalTarget] = acceptedFamilies.includes("sibling")
     ? [fact.sourceId, fact.targetId].sort()

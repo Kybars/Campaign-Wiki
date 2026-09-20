@@ -58,10 +58,10 @@ describe("Milestone 3 relationship normalization", () => {
     ["member_of", "has_member"],
     ["located_in", "contains"],
     ["serves_on", "has_member"],
-  ])("maps %s and its %s form to the same semantic key", (directType, inverseType) => {
+  ])("keeps %s and its possible %s inverse separate before reconciliation", (directType, inverseType) => {
     const direct = normalizeRelationshipFact("a", "b", directType);
     const inverse = normalizeRelationshipFact("b", "a", inverseType);
-    expect(relationshipSemanticKey(direct)).toBe(relationshipSemanticKey(inverse));
+    expect(relationshipSemanticKey(direct)).not.toBe(relationshipSemanticKey(inverse));
   });
 
   it("leaves a direct freeform relationship unchanged", () => {
@@ -70,39 +70,34 @@ describe("Milestone 3 relationship normalization", () => {
     expect(graph.relationships[0]).toMatchObject({ relationshipType: "blackmails" });
   });
 
-  it("normalizes a known inverse pair to one logical fact", () => {
+  it("does not lexically collapse a possible inverse pair", () => {
     const graph = buildCanonicalGraph(aggregate([
       relationship("c1:r1", "c1:a", "c1:b", "parent_of", 4),
       relationship("c1:r2", "c1:b", "c1:a", "child_of", 7),
     ]));
-    expect(graph.relationships).toHaveLength(1);
-    expect(graph.relationships[0]).toMatchObject({ relationshipType: "parent of" });
-    expect(graph.relationships[0].candidateRelationshipIds).toEqual(["c1:r1", "c1:r2"]);
+    expect(graph.relationships).toHaveLength(2);
   });
 
-  it("swaps endpoints when only an inverse form is present", () => {
+  it("preserves endpoints when only a possible inverse form is present", () => {
     const graph = buildCanonicalGraph(aggregate([
       relationship("c1:r1", "c1:b", "c1:a", "child of"),
     ]));
     expect(graph.relationships[0]).toMatchObject({
-      sourceEntityKey: graph.candidateToCanonical.get("c1:a"),
-      targetEntityKey: graph.candidateToCanonical.get("c1:b"),
-      relationshipType: "parent of",
+      sourceEntityKey: graph.candidateToCanonical.get("c1:b"),
+      targetEntityKey: graph.candidateToCanonical.get("c1:a"),
+      relationshipType: "child of",
     });
   });
 
-  it("preserves source evidence and alternate descriptions from both forms", () => {
+  it("keeps source evidence on distinct unreconciled forms", () => {
     const shortDescription = "A owns B.";
     const richDescription = "B is owned by A under the original charter.";
     const graph = buildCanonicalGraph(aggregate([
       relationship("c1:r1", "c1:a", "c1:b", "owns", 12, shortDescription),
       relationship("c1:r2", "c1:b", "c1:a", "owned_by", 20, richDescription),
     ]));
-    const result = graph.relationships[0];
-    expect(result.sources.map((source) => source.page_number)).toEqual([12, 20]);
-    expect(result.description).toBe(richDescription);
-    expect(result.normalization.descriptions).toEqual([shortDescription, richDescription]);
-    expect(result.normalization.originalRelationshipTypes).toEqual(["owns", "owned_by"]);
+    expect(graph.relationships).toHaveLength(2);
+    expect(graph.relationships.flatMap((item) => item.sources.map((source) => source.page_number)).sort((a, b) => a - b)).toEqual([12, 20]);
   });
 
   it("keeps the canonical forward label from the target entity perspective", () => {
@@ -121,17 +116,16 @@ describe("Milestone 3 relationship normalization", () => {
     });
   });
 
-  it("does not render persisted canonical and inverse rows twice on one page", () => {
+  it("does not guess that legacy persisted opposite phrases are equivalent", () => {
     const rows = [
       { id: "r1", source_entity_id: "a", target_entity_id: "b", relationship_type: "parent_of", description: "A is B's parent.", confidence: 0.8 },
       { id: "r2", source_entity_id: "b", target_entity_id: "a", relationship_type: "child_of", description: "B is A's child.", confidence: 0.9 },
     ];
     const viewed = relationshipsForEntity(rows, "a");
-    expect(viewed).toHaveLength(1);
-    expect(viewed[0].relationshipIds).toEqual(["r1", "r2"]);
+    expect(viewed).toHaveLength(2);
   });
 
-  it("normalizes the Colinus and Kylar uncle/nephew regression", () => {
+  it("keeps uncle/nephew instances separate without a reconciliation decision", () => {
     const graph = buildCanonicalGraph({
       entities: [entity("c1:colinus", "Colinus Birthwitch"), entity("c1:kylar", "Kylar Birthwitch")],
       relationships: [
@@ -139,10 +133,7 @@ describe("Milestone 3 relationship normalization", () => {
         relationship("c1:r2", "c1:kylar", "c1:colinus", "nephew_of", 20),
       ],
     });
-    const result = graph.relationships[0];
-    expect(graph.relationships).toHaveLength(1);
-    expect(result.relationshipType).toBe("uncle of");
-    expect(result.normalization).toMatchObject({ forwardLabel: "uncle of", inverseLabel: "nephew of" });
+    expect(graph.relationships).toHaveLength(2);
   });
 
   it("keeps genuinely different relationship types between the same entities", () => {
@@ -184,17 +175,15 @@ describe("Milestone 3 relationship normalization", () => {
         { canonical_id: "cult", name: "Cult of Ash", group_ids: [cultGroup.id], type: "faction", roles: [], aliases: [], summary: "A cult.", identity_evidence: cultGroup.candidates.flatMap((candidate) => candidate.sources) },
       ],
     });
-    expect(graph.relationships).toHaveLength(1);
-    expect(graph.relationships[0].sources.map((source) => source.page_number)).toEqual([3, 9]);
+    expect(graph.relationships).toHaveLength(2);
+    expect(graph.relationships.flatMap((item) => item.sources.map((source) => source.page_number)).sort((a, b) => a - b)).toEqual([3, 9]);
   });
 
-  it("supports located_in and contains without implementing a hierarchy", () => {
+  it("keeps located_in and contains distinct until semantic reconciliation", () => {
     const graph = buildCanonicalGraph(aggregate([
       relationship("c1:r1", "c1:a", "c1:b", "located_in"),
       relationship("c1:r2", "c1:b", "c1:a", "contains"),
     ]));
-    expect(graph.relationships).toHaveLength(1);
-    expect(graph.relationships[0]).toMatchObject({ relationshipType: "located in" });
-    expect(graph.relationships[0].normalization).toMatchObject({ inverseLabel: "contains" });
+    expect(graph.relationships).toHaveLength(2);
   });
 });

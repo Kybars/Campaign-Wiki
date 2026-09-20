@@ -214,9 +214,9 @@ describe("two-pass curated recall regression", () => {
     expect(deterministicInventoryId(fingerprint, "npc", "Echo", 1)).not.toBe(deterministicInventoryId(fingerprint, "quest", "Echo", 1));
   });
 
-  it("uses the v3 identity-page checkpoint contract and invalidates v2 inventory identity", async () => {
+  it("uses the cleaned-model-text identity-page checkpoint behavior and invalidates older inventory identity", async () => {
     expect(EXTRACTION_INVENTORY_CONTRACT_VERSION).toBe(3);
-    expect(EXTRACTION_INVENTORY_BEHAVIOR_VERSION).toBe("v0.4-identity-page-grounding-3");
+    expect(EXTRACTION_INVENTORY_BEHAVIOR_VERSION).toBe("v0.6.1-semantic-text-inventory-1");
     const store = memoryCheckpointStore();
     const current = inventoryCheckpointIdentity(chunk, provider("model", responder() as never), context(store));
     const v2 = { ...current, behaviorVersion: "v0.4-compact-inventory-2", schemaVersion: 2 };

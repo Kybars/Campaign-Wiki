@@ -1,4 +1,4 @@
-import { normalizeRelationshipFact } from "@/lib/relationships/normalize";
+import { normalizeRelationshipType } from "@/lib/graph/normalize";
 import type { KnowledgeVisibility } from "@/lib/knowledge/types";
 
 export interface LocationRecord {
@@ -112,25 +112,24 @@ export function buildLocationHierarchy<T extends LocationRecord>(
   const candidatesByChild = new Map<string, ParentCandidate[]>();
 
   for (const relationship of relationships) {
-    const fact = normalizeRelationshipFact(
-      relationship.sourceId,
-      relationship.targetId,
-      relationship.relationshipType,
-    );
-    if (fact.semanticType !== "located in" || !locationById.has(fact.sourceId)) continue;
+    // Structural projection only; relationship dedupe never uses this mapping.
+    const type = normalizeRelationshipType(relationship.relationshipType);
+    const childId = type === "located in" ? relationship.sourceId : type === "contains" ? relationship.targetId : undefined;
+    const parentId = type === "located in" ? relationship.targetId : type === "contains" ? relationship.sourceId : undefined;
+    if (!childId || !parentId || !locationById.has(childId)) continue;
     consideredRelationshipIds.add(relationship.id);
-    const candidate = { relationship, childId: fact.sourceId, parentId: fact.targetId };
-    if (fact.sourceId === fact.targetId) {
-      unresolvedChildren.add(fact.sourceId);
+    const candidate = { relationship, childId, parentId };
+    if (childId === parentId) {
+      unresolvedChildren.add(childId);
       diagnostics.push(diagnostic(candidate, "self_containment", "A location cannot contain itself"));
       continue;
     }
-    if (!locationById.has(fact.targetId)) {
-      unresolvedChildren.add(fact.sourceId);
+    if (!locationById.has(parentId)) {
+      unresolvedChildren.add(childId);
       diagnostics.push(diagnostic(candidate, "missing_parent", "Containment parent is not a canonical location"));
       continue;
     }
-    candidatesByChild.set(fact.sourceId, [...(candidatesByChild.get(fact.sourceId) ?? []), candidate]);
+    candidatesByChild.set(childId, [...(candidatesByChild.get(childId) ?? []), candidate]);
   }
 
   const uniqueCandidatesByChild = new Map<string, ParentCandidate[]>();

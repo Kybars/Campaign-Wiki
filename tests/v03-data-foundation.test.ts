@@ -113,7 +113,7 @@ describe("v0.3 Milestone 0 domain model", () => {
     const graph = fixtureGraph();
     const colinus = graph.entities.find((entity) => entity.name === "Colinus Birthwitch")!;
     colinus.visibility = "player_visible";
-    graph.relationships[0].visibility = "dm_only";
+    graph.relationships.forEach((relationship) => { relationship.visibility = "dm_only"; });
     graph.facts = [
       {
         entityKey: colinus.key,
@@ -139,9 +139,9 @@ describe("v0.3 Milestone 0 domain model", () => {
     const payload = canonicalGraphPersistencePayload(graph);
     expect(payload.entities.find((entity) => entity.key === colinus.key)?.visibility).toBe("player_visible");
     expect(payload.facts.map((fact) => fact.visibility)).toEqual(["player_visible", "dm_only"]);
-    expect(payload.relationships).toHaveLength(1);
-    expect(payload.relationships[0].visibility).toBe("dm_only");
-    expect(payload.relationships[0].sources).toHaveLength(2);
+    expect(payload.relationships).toHaveLength(2);
+    expect(payload.relationships.every((relationship) => relationship.visibility === "dm_only")).toBe(true);
+    expect(payload.relationships.flatMap((relationship) => relationship.sources)).toHaveLength(2);
   });
 
   it("keeps facts from one page distinguishable and evidence attached to its fact", () => {

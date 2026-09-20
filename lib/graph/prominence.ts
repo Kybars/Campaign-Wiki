@@ -3,6 +3,7 @@ import type { CanonicalEntity, CanonicalGraph } from "@/lib/graph/types";
 import { normalizeName } from "@/lib/graph/normalize";
 import type { EntityProminence } from "@/lib/knowledge/types";
 import type { DocumentPage } from "@/lib/pdf/types";
+import { pageTextForModel } from "@/lib/pdf/model-text";
 
 export const PROMINENCE_SCORE_WEIGHTS = {
   mentionPageCount: 3,
@@ -46,7 +47,7 @@ function occurrenceExcerpt(text: string, matchStart: number) {
   return text.slice(start, start + maximumLength).trim();
 }
 
-/** Exact, case-insensitive matching of safe canonical names and aliases against original page text. */
+/** Semantic counting uses cleaned text; emitted evidence remains an exact raw-page slice. */
 export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: Array<{ pageNumber: number; text: string }>): SourceOccurrenceScan {
   const names = [...new Map([entity.name, ...entity.aliases]
     .filter(isSafeMentionAlias)
@@ -57,14 +58,20 @@ export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "al
   const pageEvidence: SourceOccurrenceScan["pageEvidence"] = [];
 
   for (const page of pages) {
+    const semanticText = pageTextForModel(page);
     const spans: Array<{ start: number; end: number }> = [];
-    for (const expression of expressions) for (const match of page.text.matchAll(expression)) spans.push({ start: match.index, end: match.index + match[0].length });
+    for (const expression of expressions) for (const match of semanticText.matchAll(expression)) spans.push({ start: match.index, end: match.index + match[0].length });
     spans.sort((left, right) => left.start - right.start || right.end - right.start - (left.end - left.start));
     const accepted: Array<{ start: number; end: number }> = [];
     for (const span of spans) {
       if (!accepted.some((item) => span.start < item.end && span.end > item.start)) accepted.push(span);
     }
-    if (accepted.length) pageEvidence.push({ page_number: page.pageNumber, supporting_text: occurrenceExcerpt(page.text, accepted[0].start) });
+    if (accepted.length) {
+      const rawExpressions = names.map((name) => new RegExp(`(?<![\\p{L}\\p{N}])${escapedPattern(name)}(?![\\p{L}\\p{N}])`, "iu"));
+      const rawStart = rawExpressions.map((expression) => expression.exec(page.text)?.index).find((index): index is number => index !== undefined)
+        ?? Math.max(0, Math.min(accepted[0].start, page.text.length - 1));
+      pageEvidence.push({ page_number: page.pageNumber, supporting_text: occurrenceExcerpt(page.text, rawStart) });
+    }
     mentionCount += accepted.length;
   }
 

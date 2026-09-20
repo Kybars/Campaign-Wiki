@@ -67,8 +67,8 @@ describe("v0.5 relationship presentation", () => {
     ["personal guard of", "has personal guard"],
     ["is emperor of", "has emperor"],
     ["conquered", "conquered by"],
-  ])("uses a safe inverse for %s", (relationshipType, inverse) => {
-    expect(normalizeRelationshipFact("a", "b", relationshipType).inverseLabel).toBe(inverse);
+  ])("uses the identical canonical sentence label for %s", (relationshipType) => {
+    expect(normalizeRelationshipFact("a", "b", relationshipType).inverseLabel).toBe(relationshipType);
   });
 
   it("never manufactures Connected Via for freeform relationships", () => {

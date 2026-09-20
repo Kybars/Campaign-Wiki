@@ -17,13 +17,13 @@ function provider(modelId: string, outputs: unknown[]) {
 }
 
 describe("graph core production adapter", () => {
-  it("uses canonical inverse semantics, page-derived provenance, and no facts or generated summaries", () => {
+  it("preserves the evidence-backed instance direction, page-derived provenance, and no generated facts", () => {
     const mira = inventory.entities.find((entity) => entity.name === "Mira")!;
     const sword = inventory.entities.find((entity) => entity.name === "Sword")!;
     const vault = inventory.entities.find((entity) => entity.name === "Vault")!;
-    const result = buildLeanGraphCore(inventory, [chunk], [{ chunkId: chunk.id, firstPass: [], completeness: [], firstPassUsage: null, completenessUsage: null, firstPassCheckpointStatus: "REUSE", completenessCheckpointStatus: "REUSE", relationships: [{ sourceInventoryId: vault.temporary_id, targetInventoryId: sword.temporary_id, sourceName: "Vault", targetName: "Sword", relationship: "contains", relationshipType: "located in", forwardLabel: "located in", inverseLabel: "contains", page: 1, semanticKey: `${sword.temporary_id}|${vault.temporary_id}|located in`, knownInverse: true }] }]);
+    const result = buildLeanGraphCore(inventory, [chunk], [{ chunkId: chunk.id, firstPass: [], completeness: [], firstPassUsage: null, completenessUsage: null, firstPassCheckpointStatus: "REUSE", completenessCheckpointStatus: "REUSE", relationships: [{ sourceInventoryId: vault.temporary_id, targetInventoryId: sword.temporary_id, sourceName: "Vault", targetName: "Sword", relationship: "contains", relationshipType: "located in", forwardLabel: "located in", inverseLabel: "contains", page: 1, semanticKey: `${sword.temporary_id}|${vault.temporary_id}|location_containment`, knownInverse: true, evidenceQuote: "The Sword is in the Vault.", matchedEvidenceText: "The Sword is in the Vault." }] }]);
     expect(result.relationships).toHaveLength(1);
-    expect(result.relationships[0]).toMatchObject({ sourceEntityKey: sword.temporary_id, targetEntityKey: vault.temporary_id, relationshipType: "located in" });
+    expect(result.relationships[0]).toMatchObject({ sourceEntityKey: vault.temporary_id, targetEntityKey: sword.temporary_id, relationshipType: "contains" });
     expect(result.relationships[0].sources[0].supporting_text).toContain("Sword is in the Vault");
     expect(result.facts).toEqual([]);
     expect(result.entities.map((entity) => entity.summary)).toEqual(["", "", ""]);
@@ -32,8 +32,8 @@ describe("graph core production adapter", () => {
 
   it("reuses first pass and completeness checkpoints, while a completeness model change invalidates only completeness", async () => {
     const store = memoryCheckpointStore();
-    const extraction = provider("first", [{ relationships: [{ source: "Mira", relationship: "owns", target: "Sword", page: 1 }] }]);
-    const completeness = provider("second", [{ relationships: [{ source: "Vault", relationship: "contains", target: "Sword", page: 1 }] }]);
+    const extraction = provider("first", [{ relationships: [{ source: "Mira", relationship: "owns", target: "Sword", page: 1, evidence_quote: "Mira owns the Sword." }] }]);
+    const completeness = provider("second", [{ relationships: [{ source: "Vault", relationship: "contains", target: "Sword", page: 1, evidence_quote: "The Sword is in the Vault." }] }]);
     const context = { campaignId: "campaign", documentId: "document", processingMode: "lean", store, finalInventoryFingerprint: "inventory", finalInventoryUpstreamFingerprint: "pass-a" };
     const first = await runGraphChunk(chunk, inventory, { extraction, completeness }, context);
     const reused = await runGraphChunk(chunk, inventory, { extraction, completeness }, context);
@@ -58,7 +58,7 @@ describe("graph core production adapter", () => {
     const first = graphExtractionCheckpointIdentity(chunk, inventory, extraction, context);
     const changedInventory = graphExtractionCheckpointIdentity(chunk, inventory, extraction, { ...context, finalInventoryFingerprint: "b" });
     expect(first.upstreamFingerprint).not.toBe(changedInventory.upstreamFingerprint);
-    const edge = { sourceInventoryId: inventory.entities[0].temporary_id, targetInventoryId: inventory.entities[1].temporary_id, sourceName: "Mira", targetName: "Sword", relationship: "owns", relationshipType: "owns", forwardLabel: "owns", inverseLabel: "owned by", page: 1, semanticKey: `${inventory.entities[0].temporary_id}|${inventory.entities[1].temporary_id}|owns`, knownInverse: true };
+    const edge = { sourceInventoryId: inventory.entities[0].temporary_id, targetInventoryId: inventory.entities[1].temporary_id, sourceName: "Mira", targetName: "Sword", relationship: "owns", relationshipType: "owns", forwardLabel: "owns", inverseLabel: "owned by", page: 1, semanticKey: `${inventory.entities[0].temporary_id}|${inventory.entities[1].temporary_id}|ownership`, knownInverse: true, evidenceQuote: "Mira owns the Sword.", matchedEvidenceText: "Mira owns the Sword." };
     const complete = graphCompletenessCheckpointIdentity(chunk, inventory, [edge], completeness, context);
     const changedFirst = graphCompletenessCheckpointIdentity(chunk, inventory, [], completeness, context);
     expect(complete.upstreamFingerprint).not.toBe(changedFirst.upstreamFingerprint);

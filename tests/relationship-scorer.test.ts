@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { CandidateRelationship, ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
 import { normalizeName } from "@/lib/graph/normalize";
-import { normalizeRelationshipFact } from "@/lib/relationships/normalize";
 import { canonicalizeRelationshipForScoring, relationshipsMatchForScoring, scoreWotbsRelationships, type WotbsGoldReference } from "../scripts/wotbs-stage1";
 
 const matches = (
@@ -20,7 +19,7 @@ describe("canonical graph relationship scoring", () => {
     [["relic", "owned by", "keeper"], ["keeper", "owns", "relic"]],
     [["guild", "has member", "scout"], ["scout", "member of", "guild"]],
   ] as Array<[[string, string, string], [string, string, string]]>)(
-    "matches production inverse normalization for %j",
+    "matches frozen evaluator-only inverse normalization for %j",
     (actual, expected) => expect(matches(actual, expected)).toBe(true),
   );
 
@@ -65,12 +64,11 @@ describe("canonical graph relationship scoring", () => {
         const sourceId = idsByName.get(normalizeName(relationship.source));
         const targetId = idsByName.get(normalizeName(relationship.target));
         if (!sourceId || !targetId || sourceId === targetId) return [];
-        const canonical = normalizeRelationshipFact(sourceId, targetId, relationship.relationship);
         return [{
-        source_temporary_id: canonical.sourceId,
-        target_temporary_id: canonical.targetId,
-        relationship_type: canonical.canonicalType,
-        description: canonical.canonicalType,
+        source_temporary_id: sourceId,
+        target_temporary_id: targetId,
+        relationship_type: relationship.relationship,
+        description: relationship.relationship,
         confidence: 1,
         sources: [{ page_number: relationship.page, supporting_text: "Saved graph-proof fixture." }],
         __index: index,

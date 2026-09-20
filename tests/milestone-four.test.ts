@@ -94,7 +94,7 @@ describe("Milestone 4 recursive location hierarchy", () => {
     expect(hierarchy.buildTree()).toHaveLength(3);
   });
 
-  it("normalizes located_in and contains into one canonical containment fact with all sources", () => {
+  it("projects distinct located_in and contains instances into one hierarchy edge", () => {
     const graph = buildCanonicalGraph({
       entities: [
         candidateEntity("c1:tavern", "Tavern"),
@@ -108,8 +108,8 @@ describe("Milestone 4 recursive location hierarchy", () => {
       ],
     });
     expect(graph.relationships).toHaveLength(1);
-    expect(graph.relationships[0].relationshipType).toBe("located in");
-    expect(graph.relationships[0].sources.map((source) => source.page_number)).toEqual([4, 9]);
+    expect(graph.relationships[0].relationshipType).toBe("located_in");
+    expect(graph.relationships[0].sources.map((source) => source.page_number)).toEqual([4]);
   });
 
   it("preserves containment after cross-type canonical entity remapping", () => {
@@ -153,7 +153,7 @@ describe("Milestone 4 recursive location hierarchy", () => {
     });
     expect(graph.entities).toHaveLength(2);
     expect(graph.relationships).toHaveLength(1);
-    expect(graph.relationships[0].sources.map((source) => source.page_number)).toEqual([5, 8]);
+    expect(graph.relationships[0].sources.map((source) => source.page_number)).toEqual([5]);
   });
 
   it("deduplicates children and records duplicate containment edges", () => {
@@ -282,7 +282,7 @@ describe("Milestone 4 recursive location hierarchy", () => {
         candidateRelationship("c1:r2", "c1:tavern", "c1:owner", "owned_by"),
       ],
     });
-    expect(graph.relationships.map((relationship) => relationship.relationshipType)).toEqual(["located in", "owns"]);
+    expect(graph.relationships.map((relationship) => relationship.relationshipType)).toEqual(["located_in", "owned_by"]);
   });
 
   it("keeps deeply nested locations directly searchable and addressable", () => {

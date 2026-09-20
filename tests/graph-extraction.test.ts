@@ -20,7 +20,8 @@ const inventory: ValidatedExtractionInventoryOutput = { entities: [
 
 describe("v0-style graph extraction proof", () => {
   it("uses a strict relationship-only schema and a narrow semantic prompt", () => {
-    expect(graphExtractionOutputSchema.safeParse({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1 }] }).success).toBe(true);
+    expect(graphExtractionOutputSchema.safeParse({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." }] }).success).toBe(true);
+    expect(graphExtractionOutputSchema.safeParse({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1 }] }).success).toBe(false);
     expect(graphExtractionOutputSchema.safeParse({ relationships: [], facts: [] }).success).toBe(false);
     expect(GRAPH_EXTRACTION_SYSTEM_PROMPT).toContain("explicit semantic support");
     expect(GRAPH_EXTRACTION_SYSTEM_PROMPT).toContain("Only use endpoint names from KNOWN ENTITIES");
@@ -41,10 +42,10 @@ describe("v0-style graph extraction proof", () => {
   it("maps unique names, rejects unknown/ambiguous/self endpoints, and cannot create entities", () => {
     const ambiguous: ValidatedExtractionInventoryOutput = { entities: [...inventory.entities, { temporary_id: "inv_other_mira", name: "Duke Mira", type: "other", sources: [{ page_number: 1, supporting_text: "Duke Mira commands the Dawn Compact." }] }] };
     const raw = { relationships: [
-      { source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1 },
-      { source: "Nobody", relationship: "commands", target: "Dawn Compact", page: 1 },
-      { source: "Dawn Compact", relationship: "located in", target: "Dawn Compact", page: 1 },
-      { source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 2 },
+      { source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." },
+      { source: "Nobody", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." },
+      { source: "Dawn Compact", relationship: "located in", target: "Dawn Compact", page: 1, evidence_quote: "The Dawn Compact is located in Ashfall." },
+      { source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 2, evidence_quote: "Duke Mira commands the Dawn Compact." },
     ] };
     const valid = validateGraphExtraction(raw, inventory, chunk);
     expect(valid.relationships).toHaveLength(1);
@@ -52,21 +53,30 @@ describe("v0-style graph extraction proof", () => {
     expect(valid.unknownEndpointRejections).toBe(1);
     expect(valid.selfEdgeRejections).toBe(1);
     expect(valid.diagnostics.some((item) => item.reason.includes("page 2"))).toBe(true);
-    expect(validateGraphExtraction({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1 }] }, ambiguous, chunk).ambiguousEndpointRejections).toBe(1);
+    expect(validateGraphExtraction({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." }] }, ambiguous, chunk).ambiguousEndpointRejections).toBe(1);
     expect(inventory.entities).toHaveLength(3);
   });
 
-  it("retains current inverse normalization, semantic dedupe, and freeform fallback", () => {
+  it("keeps arbitrary labels and directions as separate evidence-backed instances before reconciliation", () => {
     const raw = { relationships: [
-      { source: "Dawn Compact", relationship: "located in", target: "Ashfall", page: 1 },
-      { source: "Ashfall", relationship: "contains", target: "Dawn Compact", page: 1 },
-      { source: "Duke Mira", relationship: "seeks", target: "Ashfall", page: 1 },
+      { source: "Dawn Compact", relationship: "located in", target: "Ashfall", page: 1, evidence_quote: "The Dawn Compact is located in Ashfall." },
+      { source: "Ashfall", relationship: "contains", target: "Dawn Compact", page: 1, evidence_quote: "The Dawn Compact is located in Ashfall." },
+      { source: "Duke Mira", relationship: "seeks", target: "Ashfall", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." },
     ] };
     const valid = validateGraphExtraction(raw, inventory, chunk);
-    expect(valid.relationships).toHaveLength(2);
-    expect(valid.duplicateSemanticEdges).toBe(1);
-    expect(valid.relationships[0]).toMatchObject({ relationshipType: "located in", inverseLabel: "contains", sourceInventoryId: "inv_compact", targetInventoryId: "inv_ashfall" });
-    expect(valid.relationships[1]).toMatchObject({ relationshipType: "seeks", knownInverse: false });
+    expect(valid.relationships).toHaveLength(3);
+    expect(valid.duplicateSemanticEdges).toBe(0);
+    expect(valid.relationships[0]).toMatchObject({ relationshipType: "located in", inverseLabel: "located in", sourceInventoryId: "inv_compact", targetInventoryId: "inv_ashfall" });
+    expect(valid.relationships[2]).toMatchObject({ relationshipType: "seeks", knownInverse: false });
+  });
+
+  it("requires a verbatim raw-page quote and preserves the exact raw match", () => {
+    const wrappedChunk = { id: "quote", characterCount: 60, pages: [{ pageNumber: 1, text: "Duke Mira commands\n  the Dawn Compact." }] };
+    const accepted = validateGraphExtraction({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." }] }, inventory, wrappedChunk);
+    expect(accepted.relationships[0].matchedEvidenceText).toBe("Duke Mira commands\n  the Dawn Compact.");
+    const rejected = validateGraphExtraction({ relationships: [{ source: "Duke Mira", relationship: "commands", target: "Dawn Compact", page: 1, evidence_quote: "Mira leads the Compact." }] }, inventory, wrappedChunk);
+    expect(rejected.relationships).toEqual([]);
+    expect(rejected.validationRecords[0].outcome).toBe("REJECTED_EVIDENCE_NOT_FOUND");
   });
 
   it("uses the shared provider abstraction without dispatching during construction", async () => {

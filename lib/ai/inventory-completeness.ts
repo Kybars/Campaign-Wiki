@@ -2,6 +2,7 @@ import { extractionInventoryOutputSchema, type ExtractionInventoryOutput, type V
 import { validateExtractionInventory, type ValidationDiagnostic } from "@/lib/ai/source-validation";
 import { normalizeName } from "@/lib/graph/normalize";
 import type { PageChunk } from "@/lib/pdf/types";
+import { pageTextForModel } from "@/lib/pdf/model-text";
 
 export const INVENTORY_COMPLETENESS_SYSTEM_PROMPT = `You are checking a completed campaign entity inventory for omissions.
 
@@ -46,7 +47,7 @@ export function serializeCompactInventory(inventory: ValidatedExtractionInventor
 }
 
 export function buildCompletenessSweepInput(chunk: PageChunk, inventory: ValidatedExtractionInventoryOutput): string {
-  const pages = chunk.pages.map((page) => `<campaign-page number="${page.pageNumber}">\n${page.text}\n</campaign-page>`).join("\n\n");
+  const pages = chunk.pages.map((page) => `<campaign-page number="${page.pageNumber}">\n${pageTextForModel(page)}\n</campaign-page>`).join("\n\n");
   const existing = serializeCompactInventory(inventory) || "(none)";
   return `Find only clearly supported campaign entities missing from the inventory.\n\nAlready extracted:\n${existing}\n\n${pages}`;
 }

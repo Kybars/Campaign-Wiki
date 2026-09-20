@@ -3,7 +3,6 @@ import { buildEvaluationMetrics } from "@/lib/evaluation/metrics";
 import { buildCanonicalGraph } from "@/lib/graph/build";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { aggregateCachedChunks } from "@/lib/processing/replay-cache";
-import { relationshipsForEntity } from "@/lib/relationships/view";
 import { describe, expect, it } from "vitest";
 
 function replayFixture() {
@@ -16,7 +15,7 @@ describe("Milestone 7 deterministic regression and replay fixture", () => {
     const { aggregate, graph } = replayFixture();
     expect(aggregate.entities).toHaveLength(19);
     expect(graph.entities).toHaveLength(15);
-    expect(graph.relationships).toHaveLength(5);
+    expect(graph.relationships).toHaveLength(6);
   });
 
   it("locks in the confirmed cross-type Demonplague findings and the confirmed non-duplicate pair", () => {
@@ -39,15 +38,13 @@ describe("Milestone 7 deterministic regression and replay fixture", () => {
     expect(graph.entities.filter((entity) => entity.roles.includes("enemy")).map((entity) => entity.type)).toEqual(["deity", "npc", "faction"]);
   });
 
-  it("normalizes the Colinus and Kylar inverse relationship once while retaining both source pages", () => {
+  it("keeps the Colinus and Kylar inverse instances separate without a semantic decision", () => {
     const { graph } = replayFixture();
     const colinus = graph.entities.find((entity) => entity.name === "Colinus Birthwitch")!;
     const kylar = graph.entities.find((entity) => entity.name === "Kylar Birthwitch")!;
-    const relationship = graph.relationships.find((candidate) => candidate.relationshipType === "uncle of")!;
-    expect(relationship.sources.map((source) => source.page_number)).toEqual([6, 7]);
-    const rows = relationshipsForEntity([{ id: relationship.key, source_entity_id: relationship.sourceEntityKey, target_entity_id: relationship.targetEntityKey, relationship_type: relationship.relationshipType, description: relationship.description, confidence: relationship.confidence }], kylar.key);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ relatedEntityId: colinus.key, displayLabel: "uncle of" });
+    const relationships = graph.relationships.filter((candidate) => [candidate.sourceEntityKey, candidate.targetEntityKey].includes(colinus.key) && [candidate.sourceEntityKey, candidate.targetEntityKey].includes(kylar.key));
+    expect(relationships).toHaveLength(2);
+    expect(relationships.flatMap((item) => item.sources.map((source) => source.page_number)).sort((a, b) => a - b)).toEqual([6, 7]);
   });
 
   it("retains the full location chain and source-backed normalized containment after replay", () => {
@@ -69,7 +66,7 @@ describe("Milestone 7 deterministic regression and replay fixture", () => {
       canonicalEntityCount: 15,
       duplicateCandidatesResolved: 4,
       candidateRelationshipCount: 6,
-      relationshipsCreated: 5,
+      relationshipsCreated: 6,
       relationshipSourceEvidenceCount: 6,
       hierarchyEdges: 4,
       roleCounts: { enemy: 3 },

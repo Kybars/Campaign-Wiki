@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { describe, expect, it, vi } from "vitest";
 import {
   adjudicateDuplicateCandidates,
@@ -5,6 +6,7 @@ import {
   applyExplicitIdentityRelationships,
   buildDuplicateCandidates,
   duplicateAdjudicationCheckpointIdentity,
+  duplicateAdjudicationSchema,
   validateDuplicateAdjudication,
   type DuplicateAdjudication,
   type GraphInventory,
@@ -12,14 +14,14 @@ import {
 import { resolveRawRelationships } from "@/lib/ai/graph-extraction";
 import { memoryCheckpointStore } from "@/lib/ai/operation-checkpoint";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
-import { buildLeanGraphCore } from "@/lib/processing/graph-core";
+import { buildLeanGraphCore, finalizeRawRelationshipPasses } from "@/lib/processing/graph-core";
 import { canonicalGraphPersistencePayload } from "@/lib/graph/persistence";
 
 const source = (page: number, text: string) => ({ page_number: page, supporting_text: text.padEnd(8, ".") });
 const entity = (temporary_id: string, name: string, type: GraphInventory["entities"][number]["type"], page = 1) => ({ temporary_id, name, type, aliases: [], memberIds: [temporary_id], sources: [source(page, `${name} appears here`)] });
 
 const rawChunks = [{ chunkId: "chunk", raw: { relationships: [
-  { source: "The Masked One", relationship: "is also known as", target: "Nerezza", page: 1 },
+  { source: "The Masked One", relationship: "is also known as", target: "Nerezza", page: 1, evidence_quote: "The Masked One is also known as Nerezza." },
 ] } }];
 
 describe("deterministic duplicate candidates", () => {
@@ -49,7 +51,7 @@ describe("deterministic duplicate candidates", () => {
     expect(pair("silver", "golden")).toBeUndefined();
   });
 
-  it("offers short/formal polity variants to adjudication without treating generic subgroups as duplicates", () => {
+  it("offers short/formal polity and qualified subgroup names to conservative adjudication", () => {
     const candidates = buildDuplicateCandidates({ entities: [
       entity("ragesia", "Ragesia", "faction"),
       entity("empire", "Ragesian Empire", "faction"),
@@ -57,8 +59,42 @@ describe("deterministic duplicate candidates", () => {
       entity("ragesian-inquisitors", "Ragesian Inquisitors", "faction"),
       entity("scourge", "The Scourge", "faction"),
     ] }, []);
-    expect(candidates.pairs).toContainEqual(expect.objectContaining({ leftId: "empire", rightId: "ragesia", reasons: ["polity_formal_variant"] }));
-    expect(candidates.pairs.some((pair) => [pair.leftId, pair.rightId].includes("inquisitors") && [pair.leftId, pair.rightId].includes("ragesian-inquisitors"))).toBe(false);
+    expect(candidates.pairs.find((pair) => pair.leftId === "empire" && pair.rightId === "ragesia")?.reasons).toContain("polity_formal_variant");
+    expect(candidates.pairs.find((pair) => [pair.leftId, pair.rightId].includes("inquisitors") && [pair.leftId, pair.rightId].includes("ragesian-inquisitors"))?.reasons).toContain("name_contains_distinctive");
+  });
+
+  it("uses bounded high-recall blocking for organization, place, cross-type, and title variants without hard-merging them", () => {
+    const candidates = buildDuplicateCandidates({ entities: [
+      entity("watchers", "Watchers", "faction"),
+      entity("ashen-watchers", "Ashen Watchers", "faction"),
+      entity("knights", "Knights of the Dawn Cross", "faction"),
+      entity("order", "Order of the Dawn Cross", "faction"),
+      entity("wood", "Elarin", "location"),
+      entity("forest", "Fire Forest of Elarin", "location"),
+      entity("war-event", "War of Falling Stars", "event"),
+      entity("war-other", "War of Falling Stars", "other"),
+      entity("mira", "Mira", "npc"),
+      entity("supreme-mira", "Supreme Inquisitor Mira", "npc"),
+      entity("army", "Ashen Army", "faction"),
+      entity("empire", "Ashen Empire", "faction"),
+    ] }, []);
+    const hasPair = (left: string, right: string) => candidates.pairs.find((pair) => [left, right].every((id) => [pair.leftId, pair.rightId].includes(id)));
+    expect(hasPair("watchers", "ashen-watchers")?.reasons).toContain("name_contains_distinctive");
+    expect(hasPair("knights", "order")?.reasons).toContain("organization_qualifier_variant");
+    expect(hasPair("wood", "forest")?.reasons).toContain("name_contains_distinctive");
+    expect(hasPair("war-event", "war-other")?.reasons).toContain("exact_name");
+    expect(hasPair("mira", "supreme-mira")?.reasons).toContain("npc_title_variant");
+    expect(hasPair("army", "empire")).toBeDefined();
+    expect(candidates.pairs.length).toBeLessThanOrEqual(500);
+  });
+
+  it("caps broad lexical blocks globally and per entity", () => {
+    const crowded: GraphInventory = { entities: Array.from({ length: 30 }, (_, index) => entity(`guard-${index}`, `Azure Guard ${index}`, "faction")) };
+    const candidates = buildDuplicateCandidates(crowded, []);
+    const counts = new Map<string, number>();
+    for (const pair of candidates.pairs) for (const id of [pair.leftId, pair.rightId]) counts.set(id, (counts.get(id) ?? 0) + 1);
+    expect(candidates.pairs.length).toBeLessThanOrEqual(500);
+    expect(Math.max(0, ...counts.values())).toBeLessThanOrEqual(16);
   });
 });
 
@@ -66,17 +102,76 @@ describe("duplicate adjudication validation", () => {
   const inventory: GraphInventory = { entities: [entity("a", "The Trial of Echoed Souls", "event"), entity("b", "Trial of Echoed Souls", "event"), entity("c", "Trial Echoed Souls", "event")] };
   const candidates = buildDuplicateCandidates(inventory, []);
 
-  it("accepts a valid merge group and a valid review-only decision", () => {
-    expect(validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b" }], review_pairs: [] }, candidates).merge_groups).toHaveLength(1);
-    expect(validateDuplicateAdjudication({ merge_groups: [], review_pairs: [{ left_id: "b", right_id: "c" }] }, candidates).review_pairs).toHaveLength(1);
+  it("accepts authoritative pair decisions independent of proposed merge groups", () => {
+    const decisions = (outcome: "MERGE" | "KEEP_SEPARATE" | "REVIEW") => candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome, reason_code: "NAME_VARIANT_STRONG" as const, evidence_pages: [1], explanation: null }));
+    const accepted = validateDuplicateAdjudication({ merge_groups: [], review_pairs: [], pair_decisions: decisions("MERGE") }, candidates, inventory);
+    expect(applyEntityMerges(inventory, accepted).inventory.entities).toHaveLength(1);
+    expect(validateDuplicateAdjudication({ merge_groups: [], review_pairs: [{ left_id: "b", right_id: "c" }], pair_decisions: decisions("REVIEW") }, candidates).review_pairs).toHaveLength(1);
   });
 
-  it("rejects unknown IDs, overlapping groups, out-of-candidate merges, and invented canonicals", () => {
-    expect(() => validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "unknown"], canonical_member_id: "a" }], review_pairs: [] }, candidates)).toThrow(/candidate component/);
-    expect(() => validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "a" }, { member_ids: ["b", "c"], canonical_member_id: "b" }], review_pairs: [] }, candidates)).toThrow(/overlapping/);
-    expect(() => validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "separate"], canonical_member_id: "a" }], review_pairs: [] }, candidates)).toThrow(/candidate component/);
-    expect(() => validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "invented" }], review_pairs: [] }, candidates)).toThrow(/invented/);
-    expect(() => validateDuplicateAdjudication({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "a" }], review_pairs: [{ left_id: "b", right_id: "c" }] }, candidates)).toThrow(/review pair/);
+  it("rejects unknown, missing, repeated, and inconsistent pair decisions", () => {
+    const decisions = (outcome: "MERGE" | "REVIEW") => candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome, reason_code: "NAME_VARIANT_STRONG" as const, evidence_pages: [1], explanation: null }));
+    expect(() => validateDuplicateAdjudication({ merge_groups: [], review_pairs: [], pair_decisions: [...decisions("MERGE"), { left_id: "a", right_id: "unknown", outcome: "MERGE", reason_code: "NAME_VARIANT_STRONG", evidence_pages: [1], explanation: null }] }, candidates)).toThrow(/not offered/);
+    expect(() => validateDuplicateAdjudication({ merge_groups: [], review_pairs: [], pair_decisions: decisions("MERGE").slice(1) }, candidates)).toThrow(/decide every/);
+    expect(() => validateDuplicateAdjudication({ merge_groups: [], review_pairs: [], pair_decisions: [...decisions("MERGE"), decisions("MERGE")[0]] }, candidates)).toThrow(/repeated/);
+    expect(() => validateDuplicateAdjudication({ merge_groups: [], review_pairs: [{ left_id: "b", right_id: "c" }], pair_decisions: decisions("MERGE") }, candidates)).toThrow(/Review pair/);
+  });
+
+  it("merges a transitive component even when the model omits merge_groups", () => {
+    const decisions = candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome: "MERGE" as const, reason_code: "NAME_VARIANT_STRONG" as const, evidence_pages: [1], explanation: null }));
+    const decision = validateDuplicateAdjudication({
+      merge_groups: [],
+      review_pairs: [],
+      pair_decisions: decisions,
+    }, candidates, inventory);
+    const applied = applyEntityMerges(inventory, decision);
+    expect(applied.inventory.entities).toEqual([expect.objectContaining({ temporary_id: "a", name: "The Trial of Echoed Souls", type: "event", memberIds: ["a", "b", "c"] })]);
+    expect(applied.applications.every((item) => item.outcome === "APPLIED")).toBe(true);
+  });
+
+  it("keeps a conflicted overlapping component separate and escalates its explicit keep-separate pair", () => {
+    const decisions = candidates.pairs.map((pair) => ({
+      left_id: pair.leftId,
+      right_id: pair.rightId,
+      outcome: pair.leftId === "a" && pair.rightId === "c" ? "KEEP_SEPARATE" as const : "MERGE" as const,
+      reason_code: pair.leftId === "a" && pair.rightId === "c" ? "DISTINCT_ENTITY_TYPE_CONTEXT" as const : "NAME_VARIANT_STRONG" as const,
+      evidence_pages: [1],
+      explanation: null,
+    }));
+    const decision = validateDuplicateAdjudication({
+      merge_groups: [
+        { member_ids: ["a", "b"], canonical_member_id: "a", canonical_name: "The Trial of Echoed Souls", canonical_type: "event" },
+        { member_ids: ["b", "c"], canonical_member_id: "b", canonical_name: "Trial of Echoed Souls", canonical_type: "event" },
+      ],
+      review_pairs: [],
+      pair_decisions: decisions,
+    }, candidates, inventory);
+    expect(decision.pair_decisions.find((pair) => pair.left_id === "a" && pair.right_id === "c")?.outcome).toBe("KEEP_SEPARATE");
+    const applied = applyEntityMerges(inventory, decision);
+    expect(applied.inventory.entities).toHaveLength(3);
+    expect(applied.reviewPairs).toContainEqual({ left_id: "a", right_id: "c" });
+    expect(applied.applications.filter((item) => item.outcome === "CONFLICT_BLOCKED")).toHaveLength(2);
+    expect(applied.applications.every((item) => item.conflict_reason === "KEEP_SEPARATE_INSIDE_TRANSITIVE_COMPONENT")).toBe(true);
+  });
+});
+
+describe("duplicate adjudication OpenAI schema", () => {
+  it("has no unsupported optional object properties", () => {
+    const schema = z.toJSONSchema(duplicateAdjudicationSchema) as unknown;
+    const visit = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(visit);
+        return;
+      }
+      if (!value || typeof value !== "object") return;
+      const record = value as Record<string, unknown>;
+      if (record.type === "object" && record.properties && typeof record.properties === "object") {
+        const propertyNames = Object.keys(record.properties);
+        expect(record.required).toEqual(propertyNames);
+      }
+      Object.values(record).forEach(visit);
+    };
+    visit(schema);
   });
 });
 
@@ -88,7 +183,10 @@ describe("merge application and raw relationship recovery", () => {
     entity("dassen-a", "Dassen", "location", 1),
     entity("dassen-b", "Dassen", "faction", 1),
   ] };
-  const decision: DuplicateAdjudication = { merge_groups: [{ member_ids: ["drakus", "emperor"], canonical_member_id: "drakus" }, { member_ids: ["dassen-a", "dassen-b"], canonical_member_id: "dassen-a" }], review_pairs: [] };
+  const decision: DuplicateAdjudication = { merge_groups: [], review_pairs: [], pair_decisions: [
+    { left_id: "drakus", right_id: "emperor", outcome: "MERGE", reason_code: "SAME_REFERENT_CONTEXTUAL", evidence_pages: [1, 2], explanation: null },
+    { left_id: "dassen-a", right_id: "dassen-b", outcome: "MERGE", reason_code: "SAME_REFERENT_CONTEXTUAL", evidence_pages: [1], explanation: null },
+  ] };
   const chunk = { id: "chunk", characterCount: 200, pages: [{ pageNumber: 2, text: "Emperor Coaltongue owns the Torch. Drakus Coaltongue owns the Torch. Nobody owns the Torch." }] };
 
   it("preserves the canonical member, type, member names, provenance, and deterministic output", () => {
@@ -101,31 +199,39 @@ describe("merge application and raw relationship recovery", () => {
     expect(first.resolutionKeys.get("emperor coaltongue")).toEqual(["drakus"]);
   });
 
+  it("chooses canonical name and type deterministically from existing members", () => {
+    const crossType: GraphInventory = { entities: [entity("fallback", "War of Falling Stars", "other"), entity("event", "The War of Falling Stars", "event")] };
+    const pairs: DuplicateAdjudication["pair_decisions"] = [{ left_id: "fallback", right_id: "event", outcome: "MERGE", reason_code: "SAME_REFERENT_CONTEXTUAL", evidence_pages: [1], explanation: null }];
+    const merged = applyEntityMerges(crossType, { merge_groups: [{ member_ids: ["fallback", "event"], canonical_member_id: "fallback", canonical_name: "Invented War", canonical_type: "other" }], review_pairs: [], pair_decisions: pairs });
+    expect(merged.inventory.entities).toEqual([expect.objectContaining({ temporary_id: "event", name: "The War of Falling Stars", type: "event", aliases: ["War of Falling Stars"] })]);
+  });
+
   it("deterministically merges only explicit NPC same-person relationships before adjudication", () => {
     const identity = applyExplicitIdentityRelationships(inventory, [{ chunkId: "chunk", validPages: [2], raw: { relationships: [
-      { source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2 },
-      { source: "Dassen", relationship: "same person as", target: "Torch", page: 2 },
+      { source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." },
+      { source: "Dassen", relationship: "same person as", target: "Torch", page: 2, evidence_quote: "Nobody owns the Torch." },
     ] } }]);
     const drakus = identity.inventory.entities.find((item) => item.temporary_id === "drakus")!;
     expect(identity.inventory.entities.filter((item) => item.type === "npc")).toHaveLength(1);
     expect(drakus.aliases).toContain("Emperor Coaltongue");
     expect(drakus.sources.map((item) => item.page_number)).toEqual([1, 2]);
-    const resolved = resolveRawRelationships({ relationships: [{ source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2 }] }, identity.inventory, chunk);
+    const resolved = resolveRawRelationships({ relationships: [{ source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." }] }, identity.inventory, chunk);
     expect(resolved.relationships).toEqual([]);
     expect(resolved.selfEdgeRejections).toBe(1);
   });
 
   it("recovers ambiguous and alias-named endpoints, rejects unknown/self edges, and dedupes recovered edges", () => {
-    expect(resolveRawRelationships({ relationships: [{ source: "Dassen", relationship: "owns", target: "Torch", page: 2 }] }, inventory, chunk).ambiguousEndpointRejections).toBe(1);
+    expect(resolveRawRelationships({ relationships: [{ source: "Dassen", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Nobody owns the Torch." }] }, inventory, chunk).ambiguousEndpointRejections).toBe(1);
     const merged = applyEntityMerges(inventory, decision).inventory;
     const validation = resolveRawRelationships({ relationships: [
-      { source: "Emperor Coaltongue", relationship: "owns", target: "Torch", page: 2 },
-      { source: "Drakus Coaltongue", relationship: "owns", target: "Torch", page: 2 },
-      { source: "Nobody", relationship: "owns", target: "Torch", page: 2 },
-      { source: "Drakus Coaltongue", relationship: "is also known as", target: "Emperor Coaltongue", page: 2 },
-      { source: "Dassen", relationship: "owns", target: "Torch", page: 2 },
+      { source: "Emperor Coaltongue", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." },
+      { source: "Drakus Coaltongue", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Drakus Coaltongue owns the Torch." },
+      { source: "Nobody", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Nobody owns the Torch." },
+      { source: "Drakus Coaltongue", relationship: "is also known as", target: "Emperor Coaltongue", page: 2, evidence_quote: "Drakus Coaltongue owns the Torch." },
+      { source: "Dassen", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Nobody owns the Torch." },
     ] }, merged, chunk);
-    expect(validation.relationships).toHaveLength(2);
+    // Both quote-backed raw proposals survive validation so graph aggregation can union provenance.
+    expect(validation.relationships).toHaveLength(3);
     expect(validation.relationships[0]).toMatchObject({ sourceInventoryId: "drakus", targetInventoryId: "torch" });
     expect(validation.duplicateSemanticEdges).toBe(1);
     expect(validation.unknownEndpointRejections).toBe(1);
@@ -134,20 +240,31 @@ describe("merge application and raw relationship recovery", () => {
   });
 
   it("keeps an exact endpoint ambiguous when its candidate was not merged", () => {
-    const unmerged = applyEntityMerges(inventory, { merge_groups: [], review_pairs: [{ left_id: "dassen-a", right_id: "dassen-b" }] }).inventory;
-    const validation = resolveRawRelationships({ relationships: [{ source: "Dassen", relationship: "owns", target: "Torch", page: 2 }] }, unmerged, chunk);
+    const unmerged = applyEntityMerges(inventory, { merge_groups: [], review_pairs: [{ left_id: "dassen-a", right_id: "dassen-b" }], pair_decisions: [] }).inventory;
+    const validation = resolveRawRelationships({ relationships: [{ source: "Dassen", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Nobody owns the Torch." }] }, unmerged, chunk);
     expect(validation.relationships).toEqual([]);
     expect(validation.ambiguousEndpointRejections).toBe(1);
   });
 
   it("replay of the same merge and raw first pass yields an identical final graph", () => {
-    const raw = { relationships: [{ source: "Emperor Coaltongue", relationship: "owns", target: "Torch", page: 2 }] };
+    const raw = { relationships: [{ source: "Emperor Coaltongue", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." }] };
     const build = () => {
       const merged = applyEntityMerges(inventory, decision).inventory;
       const firstPass = resolveRawRelationships(raw, merged, chunk).relationships;
       return canonicalGraphPersistencePayload(buildLeanGraphCore(merged, [chunk], [{ chunkId: "chunk", rawFirstPass: raw, firstPass, completeness: [], relationships: firstPass, firstPassUsage: null, completenessUsage: null, firstPassCheckpointStatus: "REUSE", completenessCheckpointStatus: "REUSE" }]));
     };
     expect(build()).toEqual(build());
+  });
+
+  it("finalizes raw passes against merged IDs, audits resulting self-edges, and retains no stale endpoint IDs", () => {
+    const merged = applyEntityMerges(inventory, decision).inventory;
+    const finalized = finalizeRawRelationshipPasses([{ chunkId: "chunk", raw: { relationships: [
+      { source: "Emperor Coaltongue", relationship: "same person as", target: "Drakus Coaltongue", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." },
+      { source: "Emperor Coaltongue", relationship: "owns", target: "Torch", page: 2, evidence_quote: "Emperor Coaltongue owns the Torch." },
+    ] } }], [chunk], merged)[0];
+    expect(finalized.validationRecords[0]).toMatchObject({ outcome: "REJECTED_SELF_EDGE", resolvedSourceEntityId: "drakus", resolvedTargetEntityId: "drakus" });
+    expect(finalized.relationships).toEqual([expect.objectContaining({ sourceInventoryId: "drakus", targetInventoryId: "torch" })]);
+    expect(finalized.relationships.flatMap((relationship) => [relationship.sourceInventoryId, relationship.targetInventoryId])).not.toContain("emperor");
   });
 });
 
@@ -161,15 +278,17 @@ describe("duplicate adjudication checkpointing and call suppression", () => {
   it("reuses a validated adjudication and includes first-pass/candidate fingerprints in identity", async () => {
     const inventory: GraphInventory = { entities: [entity("a", "The Chasm", "location"), entity("b", "Chasm", "location")] };
     const candidates = buildDuplicateCandidates(inventory, []);
-    const model = provider({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b" }], review_pairs: [] });
+    const model = provider({ merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b", canonical_name: "Chasm", canonical_type: "location" }], review_pairs: [], pair_decisions: candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome: "MERGE" as const, reason_code: "NAME_VARIANT_STRONG" as const, evidence_pages: [1], explanation: null })) });
     const store = memoryCheckpointStore();
     const context = { campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store };
-    const first = await adjudicateDuplicateCandidates(inventory, candidates, [], model, context);
-    const replay = await adjudicateDuplicateCandidates(inventory, candidates, [], model, context);
+    const rawEvidence = [{ chunkId: "chunk", pages: [{ pageNumber: 1, text: "The Chasm, also called Chasm, lies below." }], raw: { relationships: [{ source: "The Chasm", relationship: "also known as", target: "Chasm", page: 1, evidence_quote: "The Chasm, also called Chasm" }] } }];
+    const first = await adjudicateDuplicateCandidates(inventory, candidates, rawEvidence, model, context);
+    const replay = await adjudicateDuplicateCandidates(inventory, candidates, rawEvidence, model, context);
     expect(first.checkpointStatus).toBe("RUN");
     expect(replay.checkpointStatus).toBe("REUSE");
     expect(model.parseStructured).toHaveBeenCalledOnce();
-    const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, [], model, context);
+    expect(model.parseStructured).toHaveBeenCalledWith(expect.objectContaining({ payload: expect.objectContaining({ components: [expect.objectContaining({ candidate_pairs: [expect.objectContaining({ source_page_overlap: [1] })], relevant_first_pass_relationships: [expect.objectContaining({ relationship: "also known as" })], explicit_identity_alias_evidence: [expect.any(Object)] })] }) }));
+    const identity = duplicateAdjudicationCheckpointIdentity(inventory, candidates, rawEvidence, model, context);
     const changed = duplicateAdjudicationCheckpointIdentity(inventory, candidates, [{ chunkId: "x", raw: { relationships: [] } }], model, context);
     expect(identity.upstreamFingerprint).not.toBe(changed.upstreamFingerprint);
   });
@@ -177,7 +296,7 @@ describe("duplicate adjudication checkpointing and call suppression", () => {
   it("makes zero model calls when there are no candidates", async () => {
     const inventory: GraphInventory = { entities: [entity("a", "Silver Guard", "faction"), entity("b", "Golden Guard", "faction")] };
     const candidates = buildDuplicateCandidates(inventory, []);
-    const model = provider({ merge_groups: [], review_pairs: [] });
+    const model = provider({ merge_groups: [], review_pairs: [], pair_decisions: [] });
     const result = await adjudicateDuplicateCandidates(inventory, candidates, [], model, { campaignId: "campaign", documentId: "document", processingMode: "lean", sourceIdentity: "source", store: memoryCheckpointStore() });
     expect(result.checkpointStatus).toBe("REUSE");
     expect(model.parseStructured).not.toHaveBeenCalled();

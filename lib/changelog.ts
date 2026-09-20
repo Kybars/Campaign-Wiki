@@ -12,12 +12,12 @@ export const CHANGELOG_PATH = "/changelog";
 export const changelog = [
   {
     version: packageMetadata.version,
-    date: "2026-09-19",
-    title: "Lean graph correctness",
+    date: "2026-09-20",
+    title: "Graph pipeline hardening",
     changes: [
-      "Reconciled explicit NPC same-person relationships before duplicate adjudication and expanded conservative polity duplicate candidacy.",
-      "Unified exact source-occurrence provenance with deterministic prominence and preserved inventory-derived evidence.",
-      "Added conservative canonical display capitalization and safe relationship grammar deduplication.",
+      "Graph pipeline hardening: authoritative entity merge application, semantic-text coverage, model-driven relationship reconciliation, and bounded adaptive gap recovery.",
+      "Preserved exact raw-source provenance while excluding recurring page boilerplate from semantic extraction, mentions, prominence, and coverage.",
+      "Added versioned audit traces for pair-level merge conflicts, relationship validation and semantic reconciliation, adaptive gaps, final dedupe, and provenance union.",
     ],
   },
   {

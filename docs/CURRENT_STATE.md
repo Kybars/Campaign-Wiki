@@ -4,12 +4,12 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.6.0`
+- Package version: `0.6.1`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
 - Manual entity type, prominence, visibility, quest status, and relationship visibility use explicit typed values plus manual-state flags. Graph replay refreshes document-derived data, then restores flagged GM choices by stable row identity.
 - Category pages organize entities by prominence, with hierarchy/chronology alternatives and quest-status grouping. Player View hides empty categories and redirects known hidden pages to a non-leaking campaign notice.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: v0.5.2 campaign organization, deterministic prominence, and Player View safety
+- Latest completed milestone: v0.6.1 graph pipeline hardening
 - Imported canonical graphs now receive deterministic, per-entity-type prominence from conservative source mention/page counts plus unique canonical relationship counts. Fresh quests default to `not_started`; durable manual prominence and quest-status overrides remain replay-safe. The normal UI exposes only Major/Supporting/Minor and Ongoing/Not started/Finished, with legacy nulls displayed as Minor/Not started.
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - v0.5 migration: `20260916192058_v05_durable_gm_curation.sql`, committed locally; remote application is pending because the linked CLI could not initialize its login role over the current network.
@@ -257,15 +257,17 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Active lean graph core
 
-New lean imports now use the required graph-first path: Pass A initial inventory → Pass A completeness → final deterministic inventory → minimal graph extraction for each source chunk → one minimal graph-completeness sweep → deterministic canonical normalization, source-page provenance, global dedupe, and persistence. A graph-stage failure fails the import; an entity-only campaign is not published as complete.
+New lean imports use the graph-first path: semantic-text inventory → final deterministic inventory → one relationship extraction per semantic chunk → authoritative pair-decision entity merging → deterministic semantic coverage analysis → one bounded adaptive page-window gap round → evidence-aware relationship reconciliation for repeated endpoint pairs → exact raw-source provenance union and persistence. The former unconditional per-chunk relationship-completeness sweep is not part of production.
 
 The active lean path does not call Rich facts, Rich relationships, reconciliation, or enrichment. It persists no atomic rich facts and no generated summaries. The legacy Rich/enrichment path remains available only for explicit `full` compatibility/reference runs, and existing stored campaigns remain readable.
 
-Graph extraction and completeness each have independent server-side provider/model selection, provider-aware operation checkpoints, and OpenAI call-budget accounting. First-pass checkpoints depend on the finalized Pass-A inventory and source chunk; completeness checkpoints additionally depend on the canonical first-pass graph. Deterministic graph aggregation is also checkpointed. Local stages retain the existing `LOCAL_AI_ALLOW_PERSISTENCE` guard and never fall back to OpenAI.
+Graph extraction, entity reconciliation, adaptive gap recovery, and relationship semantic reconciliation use provider-aware operation checkpoints and OpenAI call-budget accounting. Gap calls are planned from suspicious semantic source windows before dispatch; each window is attempted at most once and no recursive rescue occurs. Single relationship instances bypass semantic reconciliation. Local stages retain the existing `LOCAL_AI_ALLOW_PERSISTENCE` guard and never fall back to OpenAI.
 
-Relationship provenance is a bounded, verbatim excerpt from the cited supplied page, selected deterministically around a resolved endpoint when possible. It is page-backed source text, never model-generated evidence.
+Raw page text remains unchanged and is used only for quote verification and exact provenance. Cleaned, recurring-boilerplate-masked semantic text drives extraction, reconciliation context, occurrence counts, prominence, coverage, nearby-entity detection, and gap inputs. Relationship provenance is always an exact raw-page slice, never model-generated evidence.
 
-The validated WotBS development pairing is local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-luna` for completeness. It is a documented configuration, not a hard-coded product default. The private saved artifacts deterministically reproduce the prior Qwen-plus-Terra 26 + 23 diagnostic union without a model call; the Luna benchmark artifact remains local-only.
+v0.6.1 internal identities: entity reconciliation contract 5; graph extraction contract 3; adaptive relationship rescue contract 2; relationship semantic reconciliation contract 1; graph-core contract 2; lean observability audit schema 3. Behavior identities use the `v0.6.1-*` versions declared with each stage so stale checkpoints cannot mask changed semantics.
+
+The historical WotBS development pairing was local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-luna` for blanket completeness. v0.6.1 retains that benchmark history but production now uses the configured graph-completeness provider only for bounded adaptive gap recovery and relationship semantic reconciliation. The private saved artifacts remain local-only.
 
 ## Next milestone
 

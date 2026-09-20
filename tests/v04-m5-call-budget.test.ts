@@ -58,7 +58,7 @@ describe("v0.4 M5 paid-call guards", () => {
       { temporary_id: "b", name: "Chasm", type: "location", sources: [{ page_number: 1, supporting_text: "Chasm appears here." }] },
     ] };
     const candidates = buildDuplicateCandidates(inventory, []);
-    const parseStructured = vi.fn(async () => ({ output: { merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b" }], review_pairs: [] }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage }));
+    const parseStructured = vi.fn(async () => ({ output: { merge_groups: [{ member_ids: ["a", "b"], canonical_member_id: "b", canonical_name: "Chasm", canonical_type: "location" }], review_pairs: [], pair_decisions: candidates.pairs.map((pair) => ({ left_id: pair.leftId, right_id: pair.rightId, outcome: "MERGE", reason_code: "NAME_VARIANT_STRONG", evidence_pages: [1], explanation: null })) }, providerId: "openai" as const, modelId: "model-a", responseId: "r", usage }));
     const provider = withOpenAICallBudget({ providerId: "openai", modelId: "model-a", parseStructured: parseStructured as never }, new OpenAICallBudget(1));
     const store = memoryCheckpointStore();
     const context = { campaignId: "c", documentId: "d", processingMode: "lean", sourceIdentity: "source", store };

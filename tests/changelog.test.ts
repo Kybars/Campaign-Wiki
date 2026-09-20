@@ -30,10 +30,10 @@ describe("changelog", () => {
     expect(currentChangelog.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("records the 0.6.0 lean graph correctness release", () => {
-    expect(currentChangelog.version).toBe("0.6.0");
-    expect(currentChangelog.changes.join(" ")).toContain("same-person relationships");
-    expect(currentChangelog.changes.join(" ")).toContain("source-occurrence provenance");
+  it("records the 0.6.1 graph pipeline hardening release", () => {
+    expect(currentChangelog.version).toBe("0.6.1");
+    expect(currentChangelog.changes.join(" ")).toContain("authoritative entity merge application");
+    expect(currentChangelog.changes.join(" ")).toContain("bounded adaptive gap recovery");
   });
 
   it("renders the current badge as a changelog link with a focusable preview", () => {

@@ -1,4 +1,4 @@
-import { graphExtractionOutputSchema, GRAPH_EXTRACTION_BEHAVIOR_VERSION, GRAPH_EXTRACTION_CONTRACT_VERSION, GRAPH_EXTRACTION_SYSTEM_PROMPT, buildGraphExtractionInput, resolveRawRelationships, runGraphExtraction, type GraphExtractionOutput, type GraphValidationDiagnostic, type ValidatedGraphRelationship } from "@/lib/ai/graph-extraction";
+import { graphExtractionOutputSchema, GRAPH_EXTRACTION_BEHAVIOR_VERSION, GRAPH_EXTRACTION_CONTRACT_VERSION, GRAPH_EXTRACTION_SYSTEM_PROMPT, buildGraphExtractionInput, resolveRawRelationships, runGraphExtraction, type GraphExtractionOutput, type GraphValidationDiagnostic, type RelationshipValidationRecord, type ValidatedGraphRelationship } from "@/lib/ai/graph-extraction";
 import { GRAPH_COMPLETENESS_BEHAVIOR_VERSION, GRAPH_COMPLETENESS_CONTRACT_VERSION, GRAPH_COMPLETENESS_SYSTEM_PROMPT, buildGraphCompletenessInput, buildGraphCompletenessUnion, runGraphCompletenessSweep, validateGraphCompletenessSweep } from "@/lib/ai/graph-completeness";
 import type { GraphInventory } from "@/lib/ai/entity-reconciliation";
 import type { AIOperationCheckpointStore, AIOperationIdentity, CheckpointPlanStatus } from "@/lib/ai/operation-checkpoint";
@@ -11,11 +11,12 @@ import type { CanonicalGraph, CanonicalRelationship } from "@/lib/graph/types";
 import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipPresentation, normalizeRelationshipFact } from "@/lib/relationships/normalize";
 import type { PageChunk } from "@/lib/pdf/types";
+import type { RelationshipReconciliationResult } from "@/lib/ai/relationship-reconciliation";
 
 export interface GraphCheckpointContext { campaignId: string; documentId: string; processingMode: string; store: AIOperationCheckpointStore; finalInventoryFingerprint: string; finalInventoryUpstreamFingerprint: string; }
 export interface GraphPlanItem { chunkId: string; operationType: "graph_extraction" | "graph_completeness"; status: CheckpointPlanStatus; reason: string; }
-export interface GraphFirstPassResult { chunkId: string; raw: GraphExtractionOutput; relationships: ValidatedGraphRelationship[]; diagnostics: GraphValidationDiagnostic[]; usage: ModelCallUsage | null; checkpointStatus: "REUSE" | "RUN"; identity: AIOperationIdentity; }
-export interface GraphCompletenessResult { chunkId: string; relationships: ValidatedGraphRelationship[]; usage: ModelCallUsage | null; checkpointStatus: "REUSE" | "RUN"; }
+export interface GraphFirstPassResult { chunkId: string; raw: GraphExtractionOutput; relationships: ValidatedGraphRelationship[]; diagnostics: GraphValidationDiagnostic[]; validationRecords: RelationshipValidationRecord[]; usage: ModelCallUsage | null; checkpointStatus: "REUSE" | "RUN"; identity: AIOperationIdentity; }
+export interface GraphCompletenessResult { chunkId: string; raw: GraphExtractionOutput; relationships: ValidatedGraphRelationship[]; validationRecords: RelationshipValidationRecord[]; usage: ModelCallUsage | null; checkpointStatus: "REUSE" | "RUN"; identity: AIOperationIdentity; }
 export interface GraphChunkResult { chunkId: string; rawFirstPass?: GraphExtractionOutput; firstPass: ValidatedGraphRelationship[]; completeness: ValidatedGraphRelationship[]; relationships: ValidatedGraphRelationship[]; firstPassUsage: ModelCallUsage | null; completenessUsage: ModelCallUsage | null; firstPassCheckpointStatus: "REUSE" | "RUN"; completenessCheckpointStatus: "REUSE" | "RUN"; }
 
 const emptyGraph: CanonicalGraph["factAggregationDiagnostics"] = { candidateFactCount: 0, canonicalFactCount: 0, deduplicatedFactCount: 0, factEvidenceCount: 0 };
@@ -44,7 +45,7 @@ async function loadFirstPass(identity: AIOperationIdentity, chunk: PageChunk, in
   try {
     const raw = graphExtractionOutputSchema.parse(cached.output.raw);
     const validation = resolveRawRelationships(raw, inventory, chunk);
-    return { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, usage: cached.usage[0] ?? null };
+    return { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: cached.usage[0] ?? null };
   } catch (error) {
     await checkpoint.store.saveFailed(identity, cached.usage, "Stored graph extraction invalid: " + (error instanceof Error ? error.message : "unknown"), cached.attemptCount);
     return null;
@@ -54,7 +55,7 @@ async function loadFirstPass(identity: AIOperationIdentity, chunk: PageChunk, in
 async function loadCompleteness(identity: AIOperationIdentity, chunk: PageChunk, inventory: GraphInventory, firstPass: ValidatedGraphRelationship[], checkpoint: GraphCheckpointContext) {
   const cached = await checkpoint.store.load<GraphCheckpointOutput>(identity);
   if (!cached) return null;
-  try { return { relationships: validateGraphCompletenessSweep(graphExtractionOutputSchema.parse(cached.output.raw), inventory, chunk, firstPassKeys(firstPass)).novelRelationships, usage: cached.usage[0] ?? null }; }
+  try { const raw = graphExtractionOutputSchema.parse(cached.output.raw); const validated = validateGraphCompletenessSweep(raw, inventory, chunk, firstPassKeys(firstPass)); return { raw, relationships: validated.novelRelationships, validationRecords: validated.validation.validationRecords, usage: cached.usage[0] ?? null }; }
   catch (error) { await checkpoint.store.saveFailed(identity, cached.usage, "Stored graph completeness invalid: " + (error instanceof Error ? error.message : "unknown"), cached.attemptCount); return null; }
 }
 
@@ -72,7 +73,7 @@ export async function runGraphFirstPass(chunk: PageChunk, inventory: GraphInvent
     const response = await runGraphExtraction(chunk, inventory, provider);
     const raw = graphExtractionOutputSchema.parse(response.output);
     const validation = resolveRawRelationships(raw, inventory, chunk);
-    loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, usage: response.usage };
+    loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: response.usage };
     await checkpoint.store.saveValidated({ identity, output: { raw }, usage: [response.usage], attemptCount: 1 });
   }
   return { chunkId: chunk.id, ...loaded, usage: status === "RUN" ? loaded.usage : null, checkpointStatus: status, identity };
@@ -90,11 +91,18 @@ export function runGraphFirstPassLimited(chunks: PageChunk[], inventory: GraphIn
 }
 
 export function reResolveGraphFirstPass(firstPass: GraphFirstPassResult[], chunks: PageChunk[], inventory: GraphInventory): GraphFirstPassResult[] {
+  return finalizeRawRelationshipPasses(firstPass, chunks, inventory);
+}
+
+/** Shared post-reconciliation resolver for first-pass and future rescue raw outputs. */
+export function finalizeRawRelationshipPasses<T extends { chunkId: string; raw: GraphExtractionOutput }>(passes: T[], chunks: PageChunk[], inventory: GraphInventory): Array<T & { relationships: ValidatedGraphRelationship[]; diagnostics: GraphValidationDiagnostic[]; validationRecords: RelationshipValidationRecord[] }> {
   const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
-  return firstPass.map((result) => {
+  const validEntityIds = new Set(inventory.entities.map((entity) => entity.temporary_id));
+  return passes.map((result) => {
     const chunk = chunkById.get(result.chunkId); if (!chunk) throw new Error(`Missing graph chunk ${result.chunkId}`);
     const validation = resolveRawRelationships(result.raw, inventory, chunk);
-    return { ...result, relationships: validation.relationships, diagnostics: validation.diagnostics };
+    if (validation.relationships.some((relationship) => !validEntityIds.has(relationship.sourceInventoryId) || !validEntityIds.has(relationship.targetInventoryId))) throw new Error("Final relationship resolution retained a stale pre-merge endpoint");
+    return { ...result, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords };
   });
 }
 
@@ -116,10 +124,10 @@ export async function runGraphCompleteness(chunk: PageChunk, inventory: GraphInv
   if (!loaded) {
     const response = await runGraphCompletenessSweep(chunk, inventory, firstPass, provider);
     const validated = validateGraphCompletenessSweep(response.output, inventory, chunk, firstPassKeys(firstPass));
-    loaded = { relationships: validated.novelRelationships, usage: response.usage };
+    loaded = { raw: response.output, relationships: validated.novelRelationships, validationRecords: validated.validation.validationRecords, usage: response.usage };
     await checkpoint.store.saveValidated({ identity, output: { raw: response.output }, usage: [response.usage], attemptCount: 1 });
   }
-  return { chunkId: chunk.id, relationships: loaded.relationships, usage: status === "RUN" ? loaded.usage : null, checkpointStatus: status };
+  return { chunkId: chunk.id, raw: loaded.raw, relationships: loaded.relationships, validationRecords: loaded.validationRecords, usage: status === "RUN" ? loaded.usage : null, checkpointStatus: status, identity };
 }
 
 export function runGraphCompletenessLimited(chunks: PageChunk[], inventory: GraphInventory, firstPass: GraphFirstPassResult[], provider: StructuredModelProvider, checkpoint: GraphCheckpointContext, concurrency: number) {
@@ -133,8 +141,8 @@ export function runGraphCompletenessLimited(chunks: PageChunk[], inventory: Grap
 export function combineGraphPasses(firstPass: GraphFirstPassResult[], completeness: GraphCompletenessResult[]): GraphChunkResult[] {
   const completenessByChunk = new Map(completeness.map((result) => [result.chunkId, result]));
   return firstPass.map((first) => {
-    const second = completenessByChunk.get(first.chunkId); if (!second) throw new Error(`Missing graph completeness for ${first.chunkId}`);
-    return { chunkId: first.chunkId, rawFirstPass: first.raw, firstPass: first.relationships, completeness: second.relationships, relationships: buildGraphCompletenessUnion(first.relationships, second.relationships), firstPassUsage: first.usage, completenessUsage: second.usage, firstPassCheckpointStatus: first.checkpointStatus, completenessCheckpointStatus: second.checkpointStatus };
+    const second = completenessByChunk.get(first.chunkId);
+    return { chunkId: first.chunkId, rawFirstPass: first.raw, firstPass: first.relationships, completeness: second?.relationships ?? [], relationships: buildGraphCompletenessUnion(first.relationships, second?.relationships ?? []), firstPassUsage: first.usage, completenessUsage: second?.usage ?? null, firstPassCheckpointStatus: first.checkpointStatus, completenessCheckpointStatus: second?.checkpointStatus ?? "REUSE" };
   });
 }
 
@@ -175,24 +183,40 @@ export function buildFinalGraphInventory(inventories: ValidatedExtractionInvento
   return { entities };
 }
 
-/** Exact, bounded page text only; it is an excerpt for provenance, never model-generated evidence. */
+/** Exact raw text matched during quote validation; never model-generated evidence. */
 export function relationshipPageExcerpt(chunk: PageChunk, relationship: ValidatedGraphRelationship): SourceEvidence {
   const page = chunk.pages.find((item) => item.pageNumber === relationship.page);
   if (!page) throw new Error(`Validated relationship page ${relationship.page} is unavailable`);
-  const text = page.text.replace(/\s+/g, " ").trim();
-  const lowered = text.toLocaleLowerCase("en-US");
-  const anchors = [relationship.sourceName, relationship.targetName].map((name) => lowered.indexOf(name.toLocaleLowerCase("en-US"))).filter((index) => index >= 0);
-  const anchor = anchors.length ? Math.min(...anchors) : 0;
-  const start = Math.max(0, anchor - 360);
-  const excerpt = text.slice(start, start + 1200).trim();
-  if (excerpt.length < 8) throw new Error(`Page ${relationship.page} does not contain enough source text for relationship provenance`);
-  return { page_number: relationship.page, supporting_text: excerpt };
+  if (!relationship.matchedEvidenceText || !page.text.includes(relationship.matchedEvidenceText)) throw new Error(`Validated relationship evidence is unavailable on raw page ${relationship.page}`);
+  return { page_number: relationship.page, supporting_text: relationship.matchedEvidenceText };
 }
 
-export function buildLeanGraphCore(inventory: GraphInventory, chunks: PageChunk[], chunkResults: GraphChunkResult[]): CanonicalGraph {
+export function buildLeanGraphCore(inventory: GraphInventory, chunks: PageChunk[], chunkResults: GraphChunkResult[], reconciliation?: RelationshipReconciliationResult[]): CanonicalGraph {
   const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
   const entityById = new Map(inventory.entities.map((entity) => [entity.temporary_id, entity]));
   const byKey = new Map<string, CanonicalRelationship>();
+  if (reconciliation) {
+    const instances = new Map(reconciliation.flatMap((result) => result.inputInstances.map((instance) => [instance.id, instance] as const)));
+    for (const decision of reconciliation.flatMap((result) => result.groups)) {
+      const canonical = instances.get(decision.canonicalInstanceId);
+      if (!canonical) throw new Error("Relationship reconciliation selected an unknown canonical instance");
+      const relationship = canonical.relationship;
+      const source = entityById.get(relationship.sourceInventoryId); const target = entityById.get(relationship.targetInventoryId);
+      if (!source || !target) throw new Error("Reconciled relationship has an unknown final-inventory endpoint");
+      const members = decision.instanceIds.map((id) => { const item = instances.get(id); if (!item) throw new Error("Relationship reconciliation group contains an unknown instance"); return item; });
+      const provenance = uniqueSources(members.map((instance) => {
+        const chunk = chunkById.get(instance.chunkId); if (!chunk) throw new Error(`Missing graph chunk ${instance.chunkId}`);
+        return relationshipPageExcerpt(chunk, instance.relationship);
+      }));
+      const label = relationship.relationship.trim().replace(/\s+/gu, " ");
+      byKey.set(decision.groupId, {
+        key: `relationship-${byKey.size + 1}`, sourceEntityKey: relationship.sourceInventoryId, targetEntityKey: relationship.targetInventoryId,
+        relationshipType: label, description: "", confidence: 1, sources: provenance, candidateRelationshipIds: decision.instanceIds,
+        normalization: { semanticType: `reconciled:${decision.groupId}`, forwardLabel: label, inverseLabel: label, originalRelationshipTypes: [...new Set(members.map((instance) => instance.relationship.relationship))], descriptions: [] },
+      });
+    }
+  }
+  else
   for (const result of chunkResults) for (const relationship of result.relationships) {
     const chunk = chunkById.get(result.chunkId); if (!chunk) throw new Error(`Missing graph chunk ${result.chunkId}`);
     const source = entityById.get(relationship.sourceInventoryId); const target = entityById.get(relationship.targetInventoryId);

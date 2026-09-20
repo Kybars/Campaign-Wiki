@@ -1,4 +1,5 @@
 import type { PageChunk } from "@/lib/pdf/types";
+import { pageTextForModel } from "@/lib/pdf/model-text";
 import { FACT_FIELD_KEYS_BY_ENTITY_TYPE, RELATIONSHIP_BACKED_CONCEPTS } from "@/lib/knowledge/fields";
 
 const factFieldGuide = Object.entries(FACT_FIELD_KEYS_BY_ENTITY_TYPE)
@@ -60,13 +61,13 @@ export const EXTRACTION_SYSTEM_PROMPT = `${EXTRACTION_INVENTORY_SYSTEM_PROMPT}\n
 
 export function buildExtractionInput(chunk: PageChunk): string {
   const pages = chunk.pages.map(
-    (page) => `<campaign-page number="${page.pageNumber}">\n${page.text}\n</campaign-page>`,
+    (page) => `<campaign-page number="${page.pageNumber}">\n${pageTextForModel(page)}\n</campaign-page>`,
   );
   return `Extract meaningful campaign entities, their explicit source facts, and explicit relationships from these pages. Omit unsupported fields.\n\n${pages.join("\n\n")}`;
 }
 
 export function buildInventoryInput(chunk: PageChunk): string {
-  const pages = chunk.pages.map((page) => `<campaign-page number="${page.pageNumber}">\n${page.text}\n</campaign-page>`);
+  const pages = chunk.pages.map((page) => `<campaign-page number="${page.pageNumber}">\n${pageTextForModel(page)}\n</campaign-page>`);
   return `Index every clearly source-supported campaign entity in these pages.\n\n${pages.join("\n\n")}`;
 }
 
@@ -74,7 +75,7 @@ export function buildRichExtractionInput(chunk: PageChunk, inventory: unknown): 
   return {
     instruction: "Attach supported aliases, facts, summaries, roles, and relationships to every authoritative inventory ID.",
     validated_inventory: inventory,
-    campaign_pages: chunk.pages.map((page) => ({ page_number: page.pageNumber, text: page.text })),
+    campaign_pages: chunk.pages.map((page) => ({ page_number: page.pageNumber, text: pageTextForModel(page) })),
   };
 }
 
