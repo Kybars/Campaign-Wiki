@@ -79,15 +79,15 @@ export async function runGraphFirstPass(chunk: PageChunk, inventory: GraphInvent
   return { chunkId: chunk.id, ...loaded, usage: status === "RUN" ? loaded.usage : null, checkpointStatus: status, identity };
 }
 
-async function runLimited<T>(items: PageChunk[], concurrency: number, operation: (chunk: PageChunk) => Promise<T>) {
+async function runLimited<T>(items: PageChunk[], concurrency: number, operation: (chunk: PageChunk) => Promise<T>, onCompleted?: (result: T, chunk: PageChunk, index: number) => Promise<void>) {
   const results = new Array<T>(items.length); let cursor = 0;
-  async function worker() { while (cursor < items.length) { const index = cursor++; results[index] = await operation(items[index]); } }
+  async function worker() { while (cursor < items.length) { const index = cursor++; const result = await operation(items[index]); if (onCompleted) await onCompleted(result, items[index], index); results[index] = result; } }
   await Promise.all(Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, () => worker()));
   return results;
 }
 
-export function runGraphFirstPassLimited(chunks: PageChunk[], inventory: GraphInventory, provider: StructuredModelProvider, checkpoint: GraphCheckpointContext, concurrency: number) {
-  return runLimited(chunks, concurrency, (chunk) => runGraphFirstPass(chunk, inventory, provider, checkpoint));
+export function runGraphFirstPassLimited(chunks: PageChunk[], inventory: GraphInventory, provider: StructuredModelProvider, checkpoint: GraphCheckpointContext, concurrency: number, onCompleted?: (result: GraphFirstPassResult, chunk: PageChunk, index: number) => Promise<void>) {
+  return runLimited(chunks, concurrency, (chunk) => runGraphFirstPass(chunk, inventory, provider, checkpoint), onCompleted);
 }
 
 export function reResolveGraphFirstPass(firstPass: GraphFirstPassResult[], chunks: PageChunk[], inventory: GraphInventory): GraphFirstPassResult[] {

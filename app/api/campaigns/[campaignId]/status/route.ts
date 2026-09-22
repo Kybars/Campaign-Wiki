@@ -8,6 +8,7 @@ export async function GET(_request: Request, context: { params: Promise<{ campai
     return NextResponse.json({
       status: campaign.status,
       stage: campaign.processing_stage,
+      progress: campaign.processing_progress,
       error: campaign.status === "failed" ? "We couldn't finish processing this campaign. Please try again." : null,
     });
   } catch {

@@ -9,6 +9,15 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.5",
+    date: "2026-09-22",
+    title: "Granular import progress",
+    changes: [
+      "Added deterministic work-unit progress across campaign import stages.",
+      "Import progress now survives refresh and retry while reflecting reused processing checkpoints.",
+    ],
+  },
+  {
     version: "0.6.4",
     date: "2026-09-22",
     title: "Semantic coverage recovery",

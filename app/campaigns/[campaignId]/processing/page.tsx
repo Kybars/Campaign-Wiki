@@ -18,7 +18,7 @@ export default async function ProcessingPage({ params }: { params: Promise<{ cam
         <ProcessingStatus
           campaignId={campaignId}
           initialStatus={campaign.status}
-          initialStage={campaign.processing_stage}
+          initialProgress={campaign.processing_progress}
           initialError={campaign.status === "failed" ? "We couldn't finish processing this campaign. Please try again." : null}
         />
       </section>

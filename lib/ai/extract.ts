@@ -406,11 +406,11 @@ export async function planInventoryExtraction(chunks: PageChunk[], provider: Str
   return plan;
 }
 
-export async function extractInventoryChunksLimited(chunks: PageChunk[], concurrency?: number, provider?: StructuredModelProvider | Pick<ExtractionProviders, "inventory" | "completeness">, checkpoint?: ExtractionCheckpointContext) {
+export async function extractInventoryChunksLimited(chunks: PageChunk[], concurrency?: number, provider?: StructuredModelProvider | Pick<ExtractionProviders, "inventory" | "completeness">, checkpoint?: ExtractionCheckpointContext, onExtracted?: (result: InventoryExtractedChunk, chunk: PageChunk, index: number) => Promise<void>) {
   const providers = await resolveInventoryProviders(provider);
   const configuredConcurrency = concurrency ?? (providers.inventory.providerId === "local" ? getProcessingEnv().LOCAL_AI_EXTRACTION_CONCURRENCY : getProcessingEnv().AI_EXTRACTION_CONCURRENCY);
   const results = new Array<InventoryExtractedChunk>(chunks.length); let cursor = 0;
-  async function worker() { while (cursor < chunks.length) { const index = cursor++; results[index] = await extractInventoryChunk(chunks[index], { inventory: providers.inventory, completeness: providers.completeness }, checkpoint); } }
+  async function worker() { while (cursor < chunks.length) { const index = cursor++; const result = await extractInventoryChunk(chunks[index], { inventory: providers.inventory, completeness: providers.completeness }, checkpoint); if (onExtracted) await onExtracted(result, chunks[index], index); results[index] = result; } }
   await Promise.all(Array.from({ length: Math.min(configuredConcurrency, chunks.length) }, () => worker()));
   return results;
 }

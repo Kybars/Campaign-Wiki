@@ -17,6 +17,7 @@ import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 import { getStructuredModelProvider } from "@/lib/ai/structured-model-provider-runtime";
 import { OpenAICallBudget, OpenAICallBudgetExceededError, summarizePaidCallPlan, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
 import { applyDeterministicProminence } from "@/lib/graph/prominence";
+import { campaignProgress, parseCampaignProgress } from "@/lib/campaign-progress";
 
 export const TEST_THREE_CAMPAIGN_ID = "d14f9875-5ebf-46c6-b07e-d65a3e65c5f4";
 const TEST_TWO_CAMPAIGN_ID = "a13d54b5-74e6-45e3-9f7f-9dcad214d7d3";
@@ -62,7 +63,9 @@ export async function recoverCampaignFromCachedExtraction(campaignId: string, op
   if (provider) assertAIProviderPersistenceAllowed(provider);
   const checkpointStore = databaseCheckpointStore();
   await recordProcessingRun(campaignId, "cached_recovery", "started", { input: { processingMode: preflight.processingMode, extractionCacheId: preflight.cache.run.id, extractionApiCalls: 0, reconciliationApiCalls: 0 } });
-  await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Reusing cached campaign knowledge", error_message: null });
+  const previousProgress = parseCampaignProgress(preflight.campaign.processing_progress).percentage;
+  const reusedProgress = campaignProgress("checking_connections", 1, 1, "batch", previousProgress);
+  await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Checking for missing connections", processing_progress: reusedProgress as unknown as Json, error_message: null });
   let cacheId: string | undefined;
   try {
     await recordProcessingRun(campaignId, "cached_extraction_reuse", "complete", { output: { cacheRunId: preflight.cache.run.id, apiCalls: 0 } });
@@ -87,10 +90,10 @@ export async function recoverCampaignFromCachedExtraction(campaignId: string, op
       modeDiagnostics = buildEnrichmentDiagnostics(graph);
       await recordProcessingRun(campaignId, "recovery_enrichment", "complete", { output: { processingMode: "full", enrichmentRequired: true, enrichmentCalls: enriched.usage.length, reusedOperations: enriched.checkpointReport.filter((item) => item.status === "REUSE").length, checkpointReport: enriched.checkpointReport, modelUsage: usage, ...modeDiagnostics } as unknown as Json });
     }
-    await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki from cached campaign knowledge" });
+    await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki", processing_progress: campaignProgress("building_wiki", 0, 1, "step", reusedProgress.percentage) as unknown as Json });
     await persistCanonicalGraph(campaignId, preflight.document.id, graph);
     const diagnostics = { ...report, mode: "cached-recovery", originalExtractionCacheId: preflight.cache.run.id, originalReconciliationReused: true, enrichmentCalls: usage.apiCalls, openAIGenerationCallsAfterReconciliation: provider?.providerId === "openai" ? usage.apiCalls : 0, modelUsage: usage, ...modeDiagnostics, initialFailedEnrichmentUsage: "unmeasured historical usage" };
-    await updateCampaign(campaignId, { status: "complete", processing_stage: "Wiki generated", error_message: null, processing_diagnostics: diagnostics as unknown as Json });
+    await updateCampaign(campaignId, { status: "complete", processing_stage: "Campaign wiki ready", processing_progress: campaignProgress("complete") as unknown as Json, error_message: null, processing_diagnostics: diagnostics as unknown as Json });
     await recordProcessingRun(campaignId, "cached_recovery", "complete", { output: diagnostics as unknown as Json });
     return { ...diagnostics, enrichmentCacheId: cacheId ?? null };
   } catch (error) {

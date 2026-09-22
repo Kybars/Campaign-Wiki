@@ -115,6 +115,9 @@ describe("v0.4 processing orchestration", () => {
     expect(result).toMatchObject({ processingMode: "lean", finalInventoryEntities: 1, relationshipCount: 0 });
     const completeCall = mocks.updateCampaign.mock.calls.find(([, values]) => values.status === "complete");
     expect(completeCall).toBeDefined();
+    expect(mocks.updateCampaign.mock.calls.some(([, values]) => values.processing_progress?.phase === "finding_information")).toBe(true);
+    expect(mocks.updateCampaign.mock.calls.some(([, values]) => values.processing_progress?.phase === "building_wiki")).toBe(true);
+    expect(completeCall?.[1].processing_progress).toMatchObject({ phase: "complete", percentage: 100 });
     expect(mocks.persistCanonicalGraph.mock.invocationCallOrder[0]).toBeLessThan(mocks.updateCampaign.mock.invocationCallOrder.at(-1)!);
   });
 
@@ -144,5 +147,7 @@ describe("v0.4 processing orchestration", () => {
     await expect(processCampaign("campaign")).rejects.toThrow("transaction failed");
     expect(mocks.updateCampaign.mock.calls.some(([, values]) => values.status === "complete")).toBe(false);
     expect(mocks.updateCampaign).toHaveBeenCalledWith("campaign", expect.objectContaining({ status: "failed", error_message: "transaction failed" }));
+    const failedCall = mocks.updateCampaign.mock.calls.find(([, values]) => values.status === "failed");
+    expect(failedCall?.[1].processing_progress).toBeUndefined();
   });
 });

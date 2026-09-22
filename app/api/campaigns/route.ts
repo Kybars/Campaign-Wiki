@@ -43,7 +43,8 @@ export async function POST(request: Request) {
       id: campaignId,
       name,
       status: "extracting_pages",
-      processing_stage: "Uploading PDF",
+      processing_stage: "Preparing campaign",
+      processing_progress: { phase: "preparing", completedUnits: 0, totalUnits: 1, unitType: "step", percentage: 0 },
     }).select("id").single();
     if (campaignResult.error) throw new Error(`Create campaign: ${campaignResult.error.message}`);
 
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       const pageResult = await client.from("document_pages").insert(batch);
       if (pageResult.error) throw new Error(`Save PDF pages: ${pageResult.error.message}`);
     }
-    await client.from("campaigns").update({ status: "uploaded", processing_stage: `${pages.length} pages extracted` }).eq("id", campaignId);
+    await client.from("campaigns").update({ status: "uploaded", processing_stage: "Reading campaign", processing_progress: { phase: "reading", completedUnits: pages.length, totalUnits: pages.length, unitType: "pages", percentage: 15 } }).eq("id", campaignId);
     return NextResponse.redirect(new URL(`/campaigns/${campaignId}/processing`, request.url), 303);
   } catch (error) {
     const message = error instanceof PdfExtractionError ? error.message : "We couldn't finish uploading this campaign. Check your setup and try again.";

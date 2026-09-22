@@ -12,11 +12,17 @@ import { ENRICHMENT_CACHE_SCHEMA_VERSION, ENRICHMENT_PROMPT_VERSION, RICH_EXTRAC
 import type { CampaignEnrichmentOutput } from "@/lib/ai/enrichment-schemas";
 import { entityCurationUpdate, type EntityCurationPatch } from "@/lib/curation";
 import type { KnowledgeVisibility } from "@/lib/knowledge/types";
+import { campaignProgress, parseCampaignProgress, type CampaignProgressPhase } from "@/lib/campaign-progress";
 
 export async function updateCampaign(campaignId: string, values: Database["public"]["Tables"]["campaigns"]["Update"]) {
   const client = createAdminClient();
   const { error } = await client.from("campaigns").update(values).eq("id", campaignId);
   if (error) throw new Error(`Update campaign: ${error.message}`);
+}
+
+export function campaignProgressUpdate(current: unknown, phase: CampaignProgressPhase, completedUnits: number, totalUnits: number | null, unitType: string | null) {
+  const previous = parseCampaignProgress(current);
+  return campaignProgress(phase, completedUnits, totalUnits, unitType, previous.percentage);
 }
 
 export async function updateEntityCuration(campaignId: string, entityId: string, patch: EntityCurationPatch) {
@@ -42,7 +48,7 @@ export async function claimCampaignForProcessing(campaignId: string): Promise<bo
   const client = createAdminClient();
   const { data, error } = await client
     .from("campaigns")
-    .update({ status: "extracting_candidates", processing_stage: "Finding campaign entities", error_message: null })
+    .update({ status: "extracting_candidates", processing_stage: "Finding campaign information", error_message: null })
     .eq("id", campaignId)
     .in("status", ["uploaded", "failed"])
     .select("id")

@@ -41,9 +41,22 @@ import { adjudicateDuplicateCandidates, applyEntityMerges, applyExplicitIdentity
 import { buildLeanObservabilityAudit } from "@/lib/processing/lean-observability";
 import { buildGraphCoverageAudit, buildRelationshipRescueBatches, coverageFingerprint, planRelationshipRescue, runRelationshipRescueBatches, validateRelationshipRescue } from "@/lib/processing/relationship-rescue";
 import { buildRelationshipInstances, planRelationshipReconciliation, runRelationshipReconciliation } from "@/lib/ai/relationship-reconciliation";
+import { campaignProgress, parseCampaignProgress, type CampaignProgressPhase } from "@/lib/campaign-progress";
 
-async function processLeanGraphCampaign(args: { campaignId: string; documentId: string; pages: import("@/lib/pdf/types").DocumentPage[]; startedAt: number }) {
-  const { campaignId, documentId, pages, startedAt } = args;
+function progressReporter(campaignId: string, initial: unknown) {
+  let previous = parseCampaignProgress(initial).percentage;
+  let writes = Promise.resolve();
+  return (phase: CampaignProgressPhase, completed: number, total: number | null, unitType: string | null, status?: "extracting_candidates" | "reconciling" | "persisting" | "complete") => {
+    const progress = campaignProgress(phase, completed, total, unitType, previous);
+    previous = progress.percentage;
+    writes = writes.then(() => updateCampaign(campaignId, { status, processing_stage: progress.phase === "complete" ? "Campaign wiki ready" : progress.phase.replaceAll("_", " "), processing_progress: progress as unknown as Json }));
+    return writes;
+  };
+}
+
+async function processLeanGraphCampaign(args: { campaignId: string; documentId: string; pages: import("@/lib/pdf/types").DocumentPage[]; startedAt: number; initialProgress: unknown }) {
+  const { campaignId, documentId, pages, startedAt, initialProgress } = args;
+  const reportProgress = progressReporter(campaignId, initialProgress);
   const checkpointStore = databaseCheckpointStore();
   const processingMode = "lean" as const;
   const budget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
@@ -63,7 +76,9 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const plannedInventoryCalls = inventoryPlan.filter((item) => item.status !== "REUSE" && inventoryProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedInventoryCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, plannedInventoryCalls);
   await recordProcessingRun(campaignId, "graph_inventory", "started", { input: { processingMode, pageCount: pages.length, chunkCount: chunks.length, modelTextCleaning: { removedLineCount: cleaning.removedLineCount }, checkpointPlan: inventoryPlan } as unknown as Json });
-  const inventories = await extractInventoryChunksLimited(chunks, undefined, { inventory: inventoryProvider }, extractionContext);
+  let inventoryCompleted = 0;
+  await reportProgress("finding_information", 0, inventoryPlan.length, "steps", "extracting_candidates");
+  const inventories = await extractInventoryChunksLimited(chunks, undefined, { inventory: inventoryProvider }, extractionContext, async () => reportProgress("finding_information", inventoryCompleted += 2, inventoryPlan.length, "steps", "extracting_candidates"));
   const finalInventory = buildFinalGraphInventory(inventories.map((item) => item.inventory));
   // Keep first-pass checkpoint identity compatible with the v0.4 inventory shape;
   // reconciliation-only aliases and additional provenance do not change its model input.
@@ -74,10 +89,11 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const plannedFirstPassCalls = firstPassPlan.filter((item) => item.status !== "REUSE" && graphExtractionProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedFirstPassCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedFirstPassCalls);
   await recordProcessingRun(campaignId, "graph_inventory", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, inventoryCacheHits: inventories.filter((item) => item.inventoryCheckpointStatus === "REUSE" && item.completenessCheckpointStatus === "REUSE").length } as unknown as Json });
-  await updateCampaign(campaignId, { status: "reconciling", processing_stage: "Extracting campaign relationships" });
+  let graphCompleted = 0;
+  await reportProgress("extracting_connections", 0, firstPassPlan.length, "sections", "reconciling");
   await recordProcessingRun(campaignId, "graph_extraction", "started", { input: { chunkCount: chunks.length, finalInventoryFingerprint, checkpointPlan: firstPassPlan } as unknown as Json });
   const graphConcurrency = graphExtractionProvider.providerId === "local" || graphCompletenessProvider.providerId === "local" ? getProcessingEnv().LOCAL_AI_EXTRACTION_CONCURRENCY : getProcessingEnv().AI_EXTRACTION_CONCURRENCY;
-  const rawFirstPass = await runGraphFirstPassLimited(chunks, finalInventory, graphExtractionProvider, graphContext, graphConcurrency);
+  const rawFirstPass = await runGraphFirstPassLimited(chunks, finalInventory, graphExtractionProvider, graphContext, graphConcurrency, async () => reportProgress("extracting_connections", graphCompleted += 1, firstPassPlan.length, "sections", "reconciling"));
   const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
   const rawChunks = rawFirstPass.map((result) => ({ chunkId: result.chunkId, raw: result.raw, validPages: chunkById.get(result.chunkId)?.pages.map((page) => page.pageNumber), pages: chunkById.get(result.chunkId)?.pages.map((page) => ({ pageNumber: page.pageNumber, text: page.text, modelText: page.modelText })) }));
   const identityReconciled = applyExplicitIdentityRelationships(finalInventory, rawChunks);
@@ -86,7 +102,9 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const duplicatePlan = await planDuplicateAdjudication(identityReconciled.inventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
   const plannedDuplicateCalls = duplicatePlan.filter((item) => item.status !== "REUSE" && entityReconciliationProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedDuplicateCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedDuplicateCalls);
-  const duplicateAdjudication = await adjudicateDuplicateCandidates(identityReconciled.inventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext);
+  let duplicateCompleted = 0;
+  await reportProgress("matching_entities", 0, duplicatePlan.length, "batches", "reconciling");
+  const duplicateAdjudication = await adjudicateDuplicateCandidates(identityReconciled.inventory, duplicateCandidates, rawChunks, entityReconciliationProvider, duplicateContext, async () => reportProgress("matching_entities", duplicateCompleted += 1, duplicatePlan.length, "batches", "reconciling"));
   let merged: ReturnType<typeof applyEntityMerges>;
   try { merged = applyEntityMerges(identityReconciled.inventory, duplicateAdjudication.decision); }
   catch (error) {
@@ -106,7 +124,9 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const rescuePlan = await planRelationshipRescue(rescueBatches, graphCompletenessProvider, rescueContext);
   const plannedRescueCalls = rescuePlan.filter((item) => item.status !== "REUSE" && graphCompletenessProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedRescueCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedRescueCalls);
-  const rescue = await runRelationshipRescueBatches(rescueBatches, merged.inventory, graphCompletenessProvider, rescueContext, graphConcurrency);
+  let rescueCompleted = 0;
+  await reportProgress("checking_connections", 0, rescuePlan.length, "batches", "reconciling");
+  const rescue = await runRelationshipRescueBatches(rescueBatches, merged.inventory, graphCompletenessProvider, rescueContext, graphConcurrency, async () => reportProgress("checking_connections", rescueCompleted += 1, rescuePlan.length, "batches", "reconciling"));
 
   // Only quote-validated rescue identity evidence may change identity here.
   const acceptedRescueIdentityRaw = rescue.map((result) => ({
@@ -131,7 +151,9 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const relationshipReconciliationPlan = await planRelationshipReconciliation(relationshipInstances, graphCompletenessProvider, relationshipReconciliationContext);
   const plannedRelationshipReconciliationCalls = relationshipReconciliationPlan.filter((item) => item.status !== "REUSE" && graphCompletenessProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedRelationshipReconciliationCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedRelationshipReconciliationCalls);
-  const relationshipReconciliation = await runRelationshipReconciliation(relationshipInstances, graphCompletenessProvider, relationshipReconciliationContext, graphConcurrency);
+  let relationshipCompleted = 0;
+  await reportProgress("tidying_connections", 0, relationshipReconciliationPlan.length, "batches", "reconciling");
+  const relationshipReconciliation = await runRelationshipReconciliation(relationshipInstances, graphCompletenessProvider, relationshipReconciliationContext, graphConcurrency, async () => reportProgress("tidying_connections", relationshipCompleted += 1, relationshipReconciliationPlan.length, "batches", "reconciling"));
   const canonicalGraph = buildLeanGraphCore(postRescueInventory, graphSourceChunks, graphChunks, relationshipReconciliation);
   const finalCoverage = buildGraphCoverageAudit(canonicalGraph, cleaning.pages);
   const finalGraphContext = { ...mergedGraphContext, finalInventoryFingerprint: finalIdentity.fingerprint };
@@ -145,14 +167,15 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   const graphCalls = [...graphChunks.flatMap((item) => [item.firstPassUsage, item.completenessUsage].filter((usage): usage is ModelCallUsage => usage !== null)), ...duplicateAdjudication.usages, ...relationshipReconciliation.flatMap((item) => item.usage ? [item.usage] : [])];
   await recordProcessingRun(campaignId, "graph_extraction", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, reconciledInventoryEntities: postRescueInventory.entities.length, duplicateCandidatePairs: duplicateCandidates.pairs.length, duplicateAdjudicationBatches: duplicateAdjudication.batches.length, duplicateAdjudicationCheckpointPlan: duplicatePlan, duplicateMergeComponentsApplied: new Set(merged.applications.filter((item) => item.outcome === "APPLIED").map((item) => item.canonical_member_id)).size, duplicateMergePairsConflictBlocked: merged.applications.filter((item) => item.outcome === "CONFLICT_BLOCKED").length, duplicateReviewPairs: merged.reviewPairs.length, duplicateAdjudicationCheckpointStatus: duplicateAdjudication.checkpointStatus, graphExtractionCacheHits: finalFirstPass.filter((item) => item.checkpointStatus === "REUSE").length, graphCompletenessCalls: 0, firstPassRelationships: finalFirstPass.reduce((count, item) => count + item.relationships.length, 0), rescueTargets: rescueBatches.reduce((count, batch) => count + batch.targets.length, 0), rescueBatches: rescueBatches.length, rescueCacheHits: finalRescue.filter((item) => item.checkpointStatus === "REUSE").length, rescueRelationships: finalRescue.reduce((count, item) => count + item.relationships.length, 0), relationshipReconciliationCalls: relationshipReconciliation.filter((item) => item.checkpointStatus === "RUN").length, canonicalRelationships: graph.relationships.length, graphExtractionProvider: graphExtractionProvider.providerId, graphExtractionModel: graphExtractionProvider.modelId, entityReconciliationProvider: entityReconciliationProvider.providerId, entityReconciliationModel: entityReconciliationProvider.modelId, graphCompletenessProvider: graphCompletenessProvider.providerId, graphCompletenessModel: graphCompletenessProvider.modelId } as unknown as Json });
   await recordProcessingRun(campaignId, "enrichment", "complete", { output: { ...buildLeanDiagnostics(graph), mode: "not_part_of_graph_core", modelUsage: summarizeModelUsage("enrichment", []) } as unknown as Json });
-  await updateCampaign(campaignId, { status: "persisting", processing_stage: "Building wiki" });
+  await reportProgress("building_wiki", 0, 1, "step", "persisting");
   await persistCanonicalGraph(campaignId, documentId, graph);
   await recordProcessingRun(campaignId, "lean_observability", "complete", {
     output: buildLeanObservabilityAudit({ inventories, finalInventory, candidates: duplicateCandidates, adjudication: duplicateAdjudication.decision, entityMergeApplications: [...merged.applications, ...finalIdentity.applications], mergedInventory: postRescueInventory, firstPass: finalFirstPass, completeness: finalCompleteness, graph, sourceChunks: chunks, preRescueCoverage, finalCoverage, rescue: finalRescue, relationshipReconciliation }) as unknown as Json,
   });
   const durationMs = Date.now() - startedAt;
   const diagnostics = { processingMode, pageCount: pages.length, chunkCount: chunks.length, finalInventoryEntities: finalInventory.entities.length, reconciledInventoryEntities: postRescueInventory.entities.length, canonicalEntityCount: graph.entities.length, relationshipCount: graph.relationships.length, factCandidateCount: 0, canonicalFactCount: 0, graphExtractionCalls: finalFirstPass.filter((item) => item.checkpointStatus === "RUN").length, duplicateAdjudicationCalls: duplicateAdjudication.batches.filter((item) => item.checkpointStatus === "RUN").length, graphCompletenessCalls: 0, relationshipRescueCalls: finalRescue.filter((item) => item.checkpointStatus === "RUN").length, relationshipRescueTargets: rescueBatches.reduce((count, batch) => count + batch.targets.length, 0), relationshipReconciliationCalls: relationshipReconciliation.filter((item) => item.checkpointStatus === "RUN").length, graphExtractionProvider: `${graphExtractionProvider.providerId}:${graphExtractionProvider.modelId}`, entityReconciliationProvider: `${entityReconciliationProvider.providerId}:${entityReconciliationProvider.modelId}`, graphCompletenessProvider: `${graphCompletenessProvider.providerId}:${graphCompletenessProvider.modelId}`, modelUsage: [summarizeModelUsage("candidate_extraction", inventoryCalls), summarizeModelUsage("candidate_extraction", graphCalls)], durationMs };
-  await updateCampaign(campaignId, { status: "complete", processing_stage: "Wiki generated", processing_diagnostics: diagnostics as unknown as Json });
+  await reportProgress("building_wiki", 1, 1, "step", "persisting");
+  await updateCampaign(campaignId, { status: "complete", processing_stage: "Campaign wiki ready", processing_progress: campaignProgress("complete") as unknown as Json, processing_diagnostics: diagnostics as unknown as Json });
   return diagnostics;
 }
 
@@ -170,7 +193,7 @@ export async function processCampaign(campaignId: string, options: { processingM
 
     if (!(await claimCampaignForProcessing(campaignId))) throw new Error("Campaign was claimed by another processing request");
     ownsProcessing = true;
-    if (Boolean(processingMode === "lean")) return await processLeanGraphCampaign({ campaignId, documentId: document.id, pages, startedAt });
+    if (Boolean(processingMode === "lean")) return await processLeanGraphCampaign({ campaignId, documentId: document.id, pages, startedAt, initialProgress: campaign.processing_progress });
     const checkpointStore = databaseCheckpointStore();
     const openAIBudget = new OpenAICallBudget(getProcessingEnv().OPENAI_MAX_CALLS_PER_RUN ?? 40);
     const inventoryProvider = withOpenAICallBudget(getStructuredModelProvider("extraction_inventory"), openAIBudget);

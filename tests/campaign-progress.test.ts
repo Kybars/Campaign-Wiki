@@ -1,20 +1,39 @@
-import { campaignProgress, isCampaignProcessingActive, keepProgressMonotonic, processingMessages } from "@/lib/campaign-progress";
+import { campaignProgress, campaignProgressDisplay, isCampaignProcessingActive, keepProgressMonotonic, parseCampaignProgress, processingMessages } from "@/lib/campaign-progress";
 import { describe, expect, it } from "vitest";
 
 describe("campaign progress", () => {
-  it("maps the existing import stages to increasing progress anchors", () => {
-    expect(campaignProgress("uploaded", "12 pages extracted").value).toBeGreaterThanOrEqual(5);
-    expect(campaignProgress("extracting_pages", "Uploading PDF").value).toBeGreaterThan(campaignProgress("uploaded", null).value);
-    expect(campaignProgress("extracting_candidates", "Finding campaign entities").value).toBeGreaterThan(campaignProgress("extracting_pages", null).value);
-    expect(campaignProgress("reconciling", "Extracting campaign relationships").value).toBeGreaterThan(campaignProgress("extracting_candidates", null).value);
-    expect(campaignProgress("persisting", "Building wiki").value).toBeGreaterThan(campaignProgress("reconciling", null).value);
+  it("calculates each measurable phase within its stable range", () => {
+    expect(campaignProgress("preparing", 1, 1).percentage).toBe(5);
+    expect(campaignProgress("reading", 1, 2).percentage).toBe(10);
+    expect(campaignProgress("finding_information", 5, 8).percentage).toBe(27);
+    expect(campaignProgress("extracting_connections", 3, 4).percentage).toBe(46);
+    expect(campaignProgress("matching_entities", 6, 10).percentage).toBe(60);
+    expect(campaignProgress("checking_connections", 3, 5).percentage).toBe(76);
+    expect(campaignProgress("tidying_connections", 4, 7).percentage).toBe(88);
+    expect(campaignProgress("building_wiki", 1, 1).percentage).toBe(99);
   });
 
-  it("finishes only completed imports and never regresses during active polling", () => {
-    expect(campaignProgress("complete", "Wiki generated").value).toBe(100);
-    expect(keepProgressMonotonic(78, campaignProgress("extracting_candidates", "Finding campaign entities").value, "extracting_candidates")).toBe(78);
-    expect(keepProgressMonotonic(78, campaignProgress("failed", "Processing failed").value, "failed")).toBe(78);
-    expect(campaignProgress("failed", "Processing failed").value).not.toBe(100);
+  it("keeps phase transitions and later-discovered totals monotonic", () => {
+    const finding = campaignProgress("finding_information", 8, 8);
+    const connections = campaignProgress("extracting_connections", 0, 12, "sections", finding.percentage);
+    const gaps = campaignProgress("checking_connections", 0, 5, "batches", connections.percentage);
+    expect(connections.percentage).toBeGreaterThanOrEqual(finding.percentage);
+    expect(gaps.percentage).toBeGreaterThanOrEqual(connections.percentage);
+    expect(keepProgressMonotonic(76, campaignProgress("checking_connections", 0, 20).percentage, "reconciling")).toBe(76);
+  });
+
+  it("retains persisted progress on failure, refresh, and completes only at 100", () => {
+    const stored = { phase: "checking_connections", completedUnits: 3, totalUnits: 5, unitType: "batches", percentage: 76 };
+    expect(parseCampaignProgress(stored, "failed")).toMatchObject(stored);
+    expect(campaignProgressDisplay(stored, "failed").label).toBe("Import paused");
+    expect(campaignProgressDisplay(stored).detail).toBe("3 / 5 batches");
+    expect(keepProgressMonotonic(76, 50, "failed")).toBe(76);
+    expect(parseCampaignProgress(stored, "complete").percentage).toBe(100);
+  });
+
+  it("handles zero and unknown totals without pretending work completed", () => {
+    expect(campaignProgress("matching_entities", 0, 0, "batches").percentage).toBe(50);
+    expect(campaignProgress("tidying_connections", 0, null, "batches").percentage).toBe(82);
   });
 
   it("uses only product-facing loading copy and stops rotating after terminal statuses", () => {

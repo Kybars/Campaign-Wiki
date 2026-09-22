@@ -545,15 +545,16 @@ async function adjudicateBatch(inventory: GraphInventory, batch: DuplicateAdjudi
   return { decision, result: { batch, identity, usage: response.usage, checkpointStatus: "RUN" } };
 }
 
-export async function adjudicateDuplicateCandidates(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext): Promise<{ decision: DuplicateAdjudication; usage: ModelCallUsage | null; usages: ModelCallUsage[]; batches: DuplicateAdjudicationBatchResult[]; checkpointStatus: "REUSE" | "RUN" }> {
+export async function adjudicateDuplicateCandidates(inventory: GraphInventory, candidates: DuplicateCandidates, rawChunks: RawGraphChunk[], provider: StructuredModelProvider, context: DuplicateCheckpointContext, onCompleted?: (result: DuplicateAdjudicationBatchResult, index: number, total: number) => Promise<void>): Promise<{ decision: DuplicateAdjudication; usage: ModelCallUsage | null; usages: ModelCallUsage[]; batches: DuplicateAdjudicationBatchResult[]; checkpointStatus: "REUSE" | "RUN" }> {
   const batches = buildDuplicateAdjudicationBatches(inventory, candidates, rawChunks);
   if (!batches.length) return { decision: { merge_groups: [], review_pairs: [], pair_decisions: [] }, usage: null, usages: [], batches: [], checkpointStatus: "REUSE" };
   const results: DuplicateAdjudicationBatchResult[] = [];
   const decisions: DuplicateAdjudication[] = [];
-  for (const batch of batches) {
+  for (const [index, batch] of batches.entries()) {
     const adjudicated = await adjudicateBatch(inventory, batch, rawChunks, provider, context);
     decisions.push(adjudicated.decision);
     results.push(adjudicated.result);
+    if (onCompleted) await onCompleted(adjudicated.result, index, batches.length);
   }
   const usages = results.flatMap((result) => result.usage ? [result.usage] : []);
   return { decision: combineDuplicateAdjudications(candidates, decisions), usage: usages.length === 1 ? usages[0]! : null, usages, batches: results, checkpointStatus: results.some((result) => result.checkpointStatus === "RUN") ? "RUN" : "REUSE" };

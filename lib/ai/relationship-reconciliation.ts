@@ -142,10 +142,10 @@ async function runGroup(endpointKey: string, instances: RelationshipInstance[], 
   return { endpointKey, inputInstances: instances, groups, usage: response.usage, checkpointStatus: "RUN", identity: operationIdentity };
 }
 
-export async function runRelationshipReconciliation(instances: RelationshipInstance[], provider: StructuredModelProvider, context: RelationshipReconciliationContext, concurrency: number) {
+export async function runRelationshipReconciliation(instances: RelationshipInstance[], provider: StructuredModelProvider, context: RelationshipReconciliationContext, concurrency: number, onCompleted?: (result: RelationshipReconciliationResult, index: number, total: number) => Promise<void>) {
   const endpointGroups = groupRelationshipInstances(instances);
   const results = new Array<RelationshipReconciliationResult>(endpointGroups.length); let cursor = 0;
-  async function worker() { while (cursor < endpointGroups.length) { const index = cursor++; const group = endpointGroups[index]!; results[index] = await runGroup(group.endpointKey, group.instances, provider, context); } }
+  async function worker() { while (cursor < endpointGroups.length) { const index = cursor++; const group = endpointGroups[index]!; const result = await runGroup(group.endpointKey, group.instances, provider, context); if (onCompleted) await onCompleted(result, index, endpointGroups.length); results[index] = result; } }
   await Promise.all(Array.from({ length: Math.min(Math.max(1, concurrency), Math.max(1, endpointGroups.length)) }, () => worker()));
   return results;
 }

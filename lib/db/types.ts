@@ -29,8 +29,8 @@ export interface Database {
   public: {
     Tables: {
       campaigns: Table<
-        { id: string; name: string; status: CampaignStatus; error_message: string | null; processing_stage: string | null; processing_diagnostics: Json; gm_overview: string | null; player_overview: string | null; created_at: string; updated_at: string },
-        { id?: string; name: string; status?: CampaignStatus; error_message?: string | null; processing_stage?: string | null; processing_diagnostics?: Json; gm_overview?: string | null; player_overview?: string | null }
+        { id: string; name: string; status: CampaignStatus; error_message: string | null; processing_stage: string | null; processing_progress: Json; processing_diagnostics: Json; gm_overview: string | null; player_overview: string | null; created_at: string; updated_at: string },
+        { id?: string; name: string; status?: CampaignStatus; error_message?: string | null; processing_stage?: string | null; processing_progress?: Json; processing_diagnostics?: Json; gm_overview?: string | null; player_overview?: string | null }
       >;
       documents: Table<
         { id: string; campaign_id: string; filename: string; storage_path: string; page_count: number | null; created_at: string },

@@ -249,9 +249,9 @@ export async function runRelationshipRescueBatch(batch: RelationshipRescueBatch,
   return { batch, raw, relationships: validation.relationships, validationRecords: validation.validationRecords, diagnostics: validation.diagnostics, usage, checkpointStatus, identity };
 }
 
-export async function runRelationshipRescueBatches(batches: RelationshipRescueBatch[], inventory: GraphInventory, provider: StructuredModelProvider, context: RescueCheckpointContext, concurrency: number) {
+export async function runRelationshipRescueBatches(batches: RelationshipRescueBatch[], inventory: GraphInventory, provider: StructuredModelProvider, context: RescueCheckpointContext, concurrency: number, onCompleted?: (result: RelationshipRescueResult, index: number, total: number) => Promise<void>) {
   const results = new Array<RelationshipRescueResult>(batches.length); let cursor = 0;
-  async function worker() { while (cursor < batches.length) { const index = cursor++; results[index] = await runRelationshipRescueBatch(batches[index], inventory, provider, context); } }
+  async function worker() { while (cursor < batches.length) { const index = cursor++; const result = await runRelationshipRescueBatch(batches[index], inventory, provider, context); if (onCompleted) await onCompleted(result, index, batches.length); results[index] = result; } }
   await Promise.all(Array.from({ length: Math.min(Math.max(1, concurrency), batches.length) }, () => worker()));
   return results;
 }
