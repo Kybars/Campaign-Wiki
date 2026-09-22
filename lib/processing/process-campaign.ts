@@ -180,7 +180,8 @@ export async function processCampaign(campaignId: string, options: { processingM
     assertAIProviderPersistenceAllowed(getAIProviderConfig("extraction_rich"));
     assertAIProviderPersistenceAllowed(getAIProviderConfig("reconciliation"));
     const chunking = { targetCharacters: getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS, overlapPages: 1 };
-    const chunks = chunkPages(cleanDocumentPagesForModel(pages).pages, chunking);
+    const cleaning = cleanDocumentPagesForModel(pages);
+    const chunks = chunkPages(cleaning.pages, chunking);
     const extractionCheckpointContext = { campaignId, documentId: document.id, processingMode, store: checkpointStore };
     const extractionPlan = await planTwoPassExtraction(chunks, { inventory: inventoryProvider, rich: richProvider }, extractionCheckpointContext);
     const plannedOpenAIExtractionCalls = extractionPlan.filter((item) => item.status !== "REUSE" && (item.operationType === "inventory" ? inventoryProvider.providerId : richProvider.providerId) === "openai").length;
@@ -297,7 +298,7 @@ export async function processCampaign(campaignId: string, options: { processingM
           throw error;
         }
       }
-      graph = applyDeterministicProminence(graph, pages);
+      graph = applyDeterministicProminence(graph, cleaning.pages);
       enrichmentDiagnostics = buildEnrichmentDiagnostics(graph);
       const enrichmentUsage = summarizeModelUsage("enrichment", enrichmentCalls);
       openAIGenerationCallsAfterReconciliation = enrichmentProvider.providerId === "openai" ? enrichmentCalls.length : 0;

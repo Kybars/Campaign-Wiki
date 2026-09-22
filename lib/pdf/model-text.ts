@@ -1,7 +1,7 @@
 import type { DocumentPage } from "@/lib/pdf/types";
 
 const HEADER_FOOTER_LINES = 2;
-const MIN_RECURRING_PAGES = 3;
+const MIN_RECURRING_PAGES = 2;
 
 function compactLine(line: string) { return line.replace(/[\t ]+/g, " ").trim(); }
 function recurrenceKey(line: string) {

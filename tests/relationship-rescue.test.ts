@@ -18,6 +18,7 @@ const inventory: GraphInventory = { entities: [
 const chunks = pages.map((page) => ({ id: `page-${page.pageNumber}`, pages: [page], characterCount: page.text.length }));
 const emptyGraph = buildLeanGraphCore(inventory, chunks, chunks.map((chunk) => ({ chunkId: chunk.id, firstPass: [], completeness: [], relationships: [], firstPassUsage: null, completenessUsage: null, firstPassCheckpointStatus: "REUSE" as const, completenessCheckpointStatus: "REUSE" as const })));
 const usage = { model: "model", responseId: "response", inputTokens: 1, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 1, totalTokens: 2, estimatedCostUsd: null };
+const coverageItem = (entity_id: string, canonical_name: string) => ({ entity_id, canonical_name, type: "location", aliases: [], mention_count: 2, mention_page_count: 2, relationship_degree: 0, relationship_evidence_page_count: 0, source_occurrence_excerpt_count: 2, nearby_known_entity_count: 1, nearby_known_entity_ids: ["sindaire"], occurrence_excerpts: [{ page: 1, excerpt: `${canonical_name} appears.`, nearby_entity_ids: ["sindaire"] }, { page: 2, excerpt: `${canonical_name} returns.`, nearby_entity_ids: ["sindaire"] }], flags: ["SUSPICIOUS_ZERO_RELATIONSHIPS" as const] });
 
 describe("deterministic relationship coverage and rescue", () => {
   it("flags repeated, connected-context zero-degree entities while leaving a one-off minor item sparse-ok", () => {
@@ -40,13 +41,23 @@ describe("deterministic relationship coverage and rescue", () => {
     expect(buildRelationshipRescueBatches(coverage, graph, [busyPage]).some((batch) => batch.targets.some((target) => target.entity_id === "lone"))).toBe(false);
   });
 
-  it("scales gap-call planning with suspicious windows rather than entity count", () => {
+  it("scales gap-call planning with suspicious windows while covering every bounded target", () => {
     const metric = (index: number) => ({ entity_id: `entity-${index}`, canonical_name: `Entity ${index}`, type: "npc", aliases: [], mention_count: 2, mention_page_count: 2, relationship_degree: 0, relationship_evidence_page_count: 0, source_occurrence_excerpt_count: 2, nearby_known_entity_count: 2, nearby_known_entity_ids: ["turinn"], occurrence_excerpts: [{ page: 1, excerpt: `Entity ${index} appears.`, nearby_entity_ids: ["turinn"] }, { page: 2, excerpt: `Entity ${index} returns.`, nearby_entity_ids: ["turinn"] }], flags: ["SUSPICIOUS_ZERO_RELATIONSHIPS" as const] });
     const small = buildRelationshipRescueBatches(Array.from({ length: 4 }, (_, index) => metric(index)), emptyGraph, pages);
     const large = buildRelationshipRescueBatches(Array.from({ length: 200 }, (_, index) => metric(index)), emptyGraph, pages);
     expect(small).toHaveLength(1);
-    expect(large).toHaveLength(1);
+    expect(large).toHaveLength(Math.ceil(200 / COVERAGE_THRESHOLDS.maximumTargetsPerBatch));
     expect(large[0].targets.length).toBeLessThanOrEqual(COVERAGE_THRESHOLDS.maximumTargetsPerBatch);
+    expect(large.flatMap((batch) => batch.targets).map((target) => target.entity_id).sort()).toEqual(Array.from({ length: 200 }, (_, index) => `entity-${index}`).sort());
+  });
+
+  it("does not drop Turinn-style multi-page zero-degree targets when a window exceeds its target cap", () => {
+    const target = coverageItem("turinn", "Turinn");
+    const crowded = [...Array.from({ length: COVERAGE_THRESHOLDS.maximumTargetsPerBatch }, (_, index) => coverageItem(`a-${index}`, `Crowd ${index}`)), target];
+    const batches = buildRelationshipRescueBatches(crowded, emptyGraph, pages);
+    const turinn = batches.flatMap((batch) => batch.targets).find((item) => item.entity_id === "turinn");
+    expect(turinn?.occurrence_excerpts.map((excerpt) => excerpt.page)).toEqual([1, 2]);
+    expect(batches.flatMap((batch) => batch.targets)).toHaveLength(crowded.length);
   });
 
   it("batches targets sharing pages into a bounded focused evidence pack", () => {

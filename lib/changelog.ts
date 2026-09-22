@@ -9,6 +9,15 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.4",
+    date: "2026-09-22",
+    title: "Semantic coverage recovery",
+    changes: [
+      "Made occurrence and prominence scans consistently use boilerplate-masked semantic text, including callers that provide raw document pages.",
+      "Split overloaded adaptive-recovery windows into bounded target batches so every suspicious multi-page zero-degree entity is considered.",
+    ],
+  },
+  {
     version: "0.6.3",
     date: "2026-09-20",
     title: "Bounded entity reconciliation",

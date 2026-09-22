@@ -28,6 +28,13 @@ describe("deterministic model page text cleaning", () => {
     expect(cleaned.pages.every((page) => page.modelText?.includes("A refrain spoken in the middle."))).toBe(true);
   });
 
+  it("masks repeated edge boilerplate in a two-page document before semantic occurrence scans", () => {
+    const rawPages = [1, 2].map((pageNumber) => ({ pageNumber, text: `MIRA CAMPAIGN GUIDE\nChapter ${pageNumber}\n\n${pageNumber === 1 ? "Mira enters the keep." : "The keep stands empty."}\n\n${pageNumber}` }));
+    const scan = scanSourceOccurrences({ name: "Mira", aliases: [] }, rawPages);
+    expect(scan).toMatchObject({ mentionCount: 1, mentionPageCount: 1 });
+    expect(scan.pageEvidence[0].supporting_text).toContain("Mira enters the keep.");
+  });
+
   it("uses cleaned text for model input but raw text for exact relationship provenance validation", () => {
     const [page] = cleanDocumentPagesForModel(pages).pages;
     const chunk = { id: "chunk", pages: [page], characterCount: page.text.length };

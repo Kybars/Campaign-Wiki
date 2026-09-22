@@ -3,7 +3,7 @@ import type { CanonicalEntity, CanonicalGraph } from "@/lib/graph/types";
 import { normalizeName } from "@/lib/graph/normalize";
 import type { EntityProminence } from "@/lib/knowledge/types";
 import type { DocumentPage } from "@/lib/pdf/types";
-import { pageTextForModel } from "@/lib/pdf/model-text";
+import { cleanDocumentPagesForModel, pageTextForModel } from "@/lib/pdf/model-text";
 
 export const PROMINENCE_SCORE_WEIGHTS = {
   mentionPageCount: 3,
@@ -48,7 +48,10 @@ function occurrenceExcerpt(text: string, matchStart: number) {
 }
 
 /** Semantic counting uses cleaned text; emitted evidence remains an exact raw-page slice. */
-export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: Array<{ pageNumber: number; text: string }>): SourceOccurrenceScan {
+export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "aliases">, pages: Array<{ pageNumber: number; text: string; modelText?: string }>): SourceOccurrenceScan {
+  // Full-mode callers historically pass raw document pages. Preserve supplied semantic text,
+  // but derive it here when it has not already been prepared by the graph pipeline.
+  const semanticPages = pages.every((page) => page.modelText !== undefined) ? pages : cleanDocumentPagesForModel(pages).pages;
   const names = [...new Map([entity.name, ...entity.aliases]
     .filter(isSafeMentionAlias)
     .map((name) => [normalizeName(name), name])).values()]
@@ -57,7 +60,7 @@ export function scanSourceOccurrences(entity: Pick<CanonicalEntity, "name" | "al
   let mentionCount = 0;
   const pageEvidence: SourceOccurrenceScan["pageEvidence"] = [];
 
-  for (const page of pages) {
+  for (const page of semanticPages) {
     const semanticText = pageTextForModel(page);
     const spans: Array<{ start: number; end: number }> = [];
     for (const expression of expressions) for (const match of semanticText.matchAll(expression)) spans.push({ start: match.index, end: match.index + match[0].length });

@@ -10,9 +10,9 @@ import type { CanonicalGraph } from "@/lib/graph/types";
 import type { DocumentPage, PageChunk } from "@/lib/pdf/types";
 import { pageTextForModel } from "@/lib/pdf/model-text";
 
-export const GRAPH_COVERAGE_BEHAVIOR_VERSION = "v0.6.1-semantic-window-coverage-1";
-export const RELATIONSHIP_RESCUE_BEHAVIOR_VERSION = "v0.6.1-adaptive-window-gap-recovery-1";
-export const RELATIONSHIP_RESCUE_CONTRACT_VERSION = 2;
+export const GRAPH_COVERAGE_BEHAVIOR_VERSION = "v0.6.4-semantic-window-coverage-2";
+export const RELATIONSHIP_RESCUE_BEHAVIOR_VERSION = "v0.6.4-adaptive-window-gap-recovery-2";
+export const RELATIONSHIP_RESCUE_CONTRACT_VERSION = 3;
 
 export const COVERAGE_THRESHOLDS = {
   repeatedMentionPages: 2,
@@ -124,7 +124,7 @@ export interface RelationshipRescueBatch {
   knownRelationships: Array<{ source: string; relationship: string; target: string }>;
 }
 
-/** Page-window batching: every suspicious semantic page appears in at most one call. */
+/** Page-window batching covers every suspicious target, splitting overloaded windows into bounded calls. */
 export function buildRelationshipRescueBatches(coverage: EntityCoverageAudit[], graph: CanonicalGraph, pages: DocumentPage[]): RelationshipRescueBatch[] {
   const pageList = uniquePages(pages);
   const candidates: RescueTarget[] = coverage.filter((item) => item.flags.some((flag) => flag !== "SPARSE_OK")).map((item) => ({
@@ -139,24 +139,27 @@ export function buildRelationshipRescueBatches(coverage: EntityCoverageAudit[], 
   const suspiciousPages = [...targetIdsByPage.keys()].sort((a, b) => a - b);
   const windows: number[][] = [];
   for (let index = 0; index < suspiciousPages.length; index += COVERAGE_THRESHOLDS.maximumPagesPerBatch) windows.push(suspiciousPages.slice(index, index + COVERAGE_THRESHOLDS.maximumPagesPerBatch));
-  return windows.map((windowPages) => {
-    const targetIds = [...new Set(windowPages.flatMap((page) => [...(targetIdsByPage.get(page) ?? [])]))].sort().slice(0, COVERAGE_THRESHOLDS.maximumTargetsPerBatch);
-    const targets = targetIds.map((id) => candidateById.get(id)!);
-    const selectedPages = pageList.filter((page) => windowPages.includes(page.pageNumber));
-    const selectedPageNumbers = new Set(selectedPages.map((page) => page.pageNumber));
-    const selectedTargetIds = new Set(targets.map((target) => target.entity_id));
-    const relevance = new Map<string, number>();
-    for (const target of targets) for (const excerpt of target.occurrence_excerpts) if (selectedPageNumbers.has(excerpt.page)) for (const id of excerpt.nearby_entity_ids) if (!selectedTargetIds.has(id)) relevance.set(id, (relevance.get(id) ?? 0) + 1);
-    const entityById = new Map(graph.entities.map((entity) => [entity.key, entity]));
-    const relevantEntities = [...relevance].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, COVERAGE_THRESHOLDS.maximumRelevantEntitiesPerBatch).flatMap(([id]) => {
-      const entity = entityById.get(id); return entity ? [{ id, name: entity.name, type: entity.type, aliases: [...entity.aliases].sort() }] : [];
+  return windows.flatMap((windowPages) => {
+    const targetIds = [...new Set(windowPages.flatMap((page) => [...(targetIdsByPage.get(page) ?? [])]))].sort();
+    const targetIdGroups = Array.from({ length: Math.ceil(targetIds.length / COVERAGE_THRESHOLDS.maximumTargetsPerBatch) }, (_, index) => targetIds.slice(index * COVERAGE_THRESHOLDS.maximumTargetsPerBatch, (index + 1) * COVERAGE_THRESHOLDS.maximumTargetsPerBatch));
+    return targetIdGroups.map((targetIdGroup, groupIndex) => {
+      const targets = targetIdGroup.map((id) => candidateById.get(id)!);
+      const selectedPages = pageList.filter((page) => windowPages.includes(page.pageNumber));
+      const selectedPageNumbers = new Set(selectedPages.map((page) => page.pageNumber));
+      const selectedTargetIds = new Set(targets.map((target) => target.entity_id));
+      const relevance = new Map<string, number>();
+      for (const target of targets) for (const excerpt of target.occurrence_excerpts) if (selectedPageNumbers.has(excerpt.page)) for (const id of excerpt.nearby_entity_ids) if (!selectedTargetIds.has(id)) relevance.set(id, (relevance.get(id) ?? 0) + 1);
+      const entityById = new Map(graph.entities.map((entity) => [entity.key, entity]));
+      const relevantEntities = [...relevance].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, COVERAGE_THRESHOLDS.maximumRelevantEntitiesPerBatch).flatMap(([id]) => {
+        const entity = entityById.get(id); return entity ? [{ id, name: entity.name, type: entity.type, aliases: [...entity.aliases].sort() }] : [];
+      });
+      const knownRelationships = graph.relationships.filter((relationship) => selectedTargetIds.has(relationship.sourceEntityKey) || selectedTargetIds.has(relationship.targetEntityKey)).map((relationship) => ({
+        source: entityById.get(relationship.sourceEntityKey)?.name ?? relationship.sourceEntityKey,
+        relationship: relationship.relationshipType,
+        target: entityById.get(relationship.targetEntityKey)?.name ?? relationship.targetEntityKey,
+      })).sort((left, right) => `${left.source}|${left.relationship}|${left.target}`.localeCompare(`${right.source}|${right.relationship}|${right.target}`));
+      return { batchId: `rescue-pages-${windowPages.join("-")}-targets-${groupIndex + 1}`, targets, pages: selectedPages, relevantEntities, knownRelationships };
     });
-    const knownRelationships = graph.relationships.filter((relationship) => selectedTargetIds.has(relationship.sourceEntityKey) || selectedTargetIds.has(relationship.targetEntityKey)).map((relationship) => ({
-      source: entityById.get(relationship.sourceEntityKey)?.name ?? relationship.sourceEntityKey,
-      relationship: relationship.relationshipType,
-      target: entityById.get(relationship.targetEntityKey)?.name ?? relationship.targetEntityKey,
-    })).sort((left, right) => `${left.source}|${left.relationship}|${left.target}`.localeCompare(`${right.source}|${right.relationship}|${right.target}`));
-    return { batchId: `rescue-pages-${windowPages.join("-")}`, targets, pages: selectedPages, relevantEntities, knownRelationships };
   });
 }
 

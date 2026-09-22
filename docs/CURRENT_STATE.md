@@ -4,17 +4,18 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.6.3`
+- Package version: `0.6.4`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
 - Manual entity type, prominence, visibility, quest status, and relationship visibility use explicit typed values plus manual-state flags. Graph replay refreshes document-derived data, then restores flagged GM choices by stable row identity.
 - Category pages organize entities by prominence, with hierarchy/chronology alternatives and quest-status grouping. Player View hides empty categories and redirects known hidden pages to a non-leaking campaign notice.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: v0.6.3 bounded entity reconciliation
+- Latest completed milestone: v0.6.4 semantic coverage recovery
 - Imported canonical graphs now receive deterministic, per-entity-type prominence from conservative source mention/page counts plus unique canonical relationship counts. Fresh quests default to `not_started`; durable manual prominence and quest-status overrides remain replay-safe. The normal UI exposes only Major/Supporting/Minor and Ongoing/Not started/Finished, with legacy nulls displayed as Minor/Not started.
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - v0.5 migration: `20260916192058_v05_durable_gm_curation.sql`, committed locally; remote application is pending because the linked CLI could not initialize its login role over the current network.
 - v0.5.2 migration: `20260917091332_deterministic_entity_prominence.sql`, committed locally; it has not been applied remotely.
 - Latest targeted work: dogfooding showed that duplicate entity names could make otherwise valid first-pass relationship endpoints ambiguous and discard those edges. Lean processing now reconciles only high-confidence duplicate candidates after graph first pass, preserves the raw first-pass output, re-resolves it through canonical names and approved aliases, and runs completeness against the reconciled inventory. Uncertain candidates remain separate for later manual review; duplicate detection is intentionally conservative, not complete.
+- v0.6.4 prevents repeated edge boilerplate from inflating semantic occurrence, prominence, or coverage metrics even for raw-page callers. Adaptive recovery now partitions overloaded page windows by bounded target groups, so every suspicious multi-page zero-degree entity receives a recovery opportunity; coverage and rescue checkpoint identities were advanced accordingly.
 - Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
 
 ## Experimental status — do not misread as production behavior
@@ -265,7 +266,7 @@ Graph extraction, entity reconciliation, adaptive gap recovery, and relationship
 
 Raw page text remains unchanged and is used only for quote verification and exact provenance. Cleaned, recurring-boilerplate-masked semantic text drives extraction, reconciliation context, occurrence counts, prominence, coverage, nearby-entity detection, and gap inputs. Relationship provenance is always an exact raw-page slice, never model-generated evidence.
 
-v0.6.1 internal identities: entity reconciliation contract 5; graph extraction contract 3; adaptive relationship rescue contract 2; relationship semantic reconciliation contract 1; graph-core contract 2; lean observability audit schema 3. Behavior identities use the `v0.6.1-*` versions declared with each stage so stale checkpoints cannot mask changed semantics.
+v0.6.4 internal identities: entity reconciliation contract 5; graph extraction contract 3; adaptive relationship rescue contract 3; relationship semantic reconciliation contract 1; graph-core contract 2; lean observability audit schema 3. Behavior identities use the version declared with each stage so stale checkpoints cannot mask changed semantics.
 
 The historical WotBS development pairing was local `qwen3.5:9b` for first-pass graph extraction and OpenAI `gpt-5.6-luna` for blanket completeness. v0.6.1 retains that benchmark history but production now uses the configured graph-completeness provider only for bounded adaptive gap recovery and relationship semantic reconciliation. The private saved artifacts remain local-only.
 
