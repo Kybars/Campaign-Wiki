@@ -32,6 +32,7 @@ import type { CanonicalGraph } from "@/lib/graph/types";
 import { buildDeterministicGroups } from "@/lib/graph/reconcile";
 import { chunkPages } from "@/lib/pdf/chunk-pages";
 import { cleanDocumentPagesForModel } from "@/lib/pdf/model-text";
+import { buildSemanticEvidenceUnits, packSemanticEvidenceUnits } from "@/lib/ai/span-graph-extraction";
 import { resolveProcessingMode, type ProcessingMode } from "@/lib/processing/mode";
 import { databaseCheckpointStore } from "@/lib/processing/checkpoint-store";
 import { OpenAICallBudget, OpenAICallBudgetExceededError, withOpenAICallBudget } from "@/lib/ai/openai-call-budget";
@@ -84,17 +85,21 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   // reconciliation-only aliases and additional provenance do not change its model input.
   const finalInventoryFingerprint = semanticInputHash({ entities: finalInventory.entities.map((entity) => ({ temporary_id: entity.temporary_id, name: entity.name, type: entity.type, sources: [entity.sources[0]] })) });
   const finalInventoryUpstreamFingerprint = semanticInputHash(inventories.map((item) => ({ chunkId: item.chunkId, inventory: item.inventory })));
+  const semanticUnits = buildSemanticEvidenceUnits(cleaning.pages, finalInventory);
+  const spanRequests = packSemanticEvidenceUnits(semanticUnits, cleaning.pages);
+  // A one-entity synthetic/test document cannot possibly have a supported edge.
+  const graphWindows = spanRequests.length ? spanRequests : chunks;
   const graphContext = { campaignId, documentId, processingMode, store: checkpointStore, finalInventoryFingerprint, finalInventoryUpstreamFingerprint };
-  const firstPassPlan = await planGraphFirstPass(chunks, finalInventory, graphExtractionProvider, graphContext);
+  const firstPassPlan = await planGraphFirstPass(graphWindows, finalInventory, graphExtractionProvider, graphContext);
   const plannedFirstPassCalls = firstPassPlan.filter((item) => item.status !== "REUSE" && graphExtractionProvider.providerId === "openai").length;
   if (!budget.allowPlanned(plannedFirstPassCalls)) throw new OpenAICallBudgetExceededError(budget.maximumAttempts, budget.usedAttempts + plannedFirstPassCalls);
   await recordProcessingRun(campaignId, "graph_inventory", "complete", { output: { finalInventoryEntities: finalInventory.entities.length, inventoryCacheHits: inventories.filter((item) => item.inventoryCheckpointStatus === "REUSE" && item.completenessCheckpointStatus === "REUSE").length } as unknown as Json });
   let graphCompleted = 0;
   await reportProgress("extracting_connections", 0, firstPassPlan.length, "sections", "reconciling");
-  await recordProcessingRun(campaignId, "graph_extraction", "started", { input: { chunkCount: chunks.length, finalInventoryFingerprint, checkpointPlan: firstPassPlan } as unknown as Json });
+  await recordProcessingRun(campaignId, "graph_extraction", "started", { input: { chunkCount: graphWindows.length, finalInventoryFingerprint, spanDiagnostics: { units: semanticUnits.length, requests: spanRequests.map((request) => ({ id: request.id, units: request.units.length, semanticCharacters: request.characterCount, entities: request.entityIds.length, evidenceSpans: request.evidenceSpanCount })) }, checkpointPlan: firstPassPlan } as unknown as Json });
   const graphConcurrency = graphExtractionProvider.providerId === "local" || graphCompletenessProvider.providerId === "local" ? getProcessingEnv().LOCAL_AI_EXTRACTION_CONCURRENCY : getProcessingEnv().AI_EXTRACTION_CONCURRENCY;
-  const rawFirstPass = await runGraphFirstPassLimited(chunks, finalInventory, graphExtractionProvider, graphContext, graphConcurrency, async () => reportProgress("extracting_connections", graphCompleted += 1, firstPassPlan.length, "sections", "reconciling"));
-  const chunkById = new Map(chunks.map((chunk) => [chunk.id, chunk]));
+  const rawFirstPass = await runGraphFirstPassLimited(graphWindows, finalInventory, graphExtractionProvider, graphContext, graphConcurrency, async () => reportProgress("extracting_connections", graphCompleted += 1, firstPassPlan.length, "sections", "reconciling"));
+  const chunkById = new Map(graphWindows.map((chunk) => [chunk.id, chunk]));
   const rawChunks = rawFirstPass.map((result) => ({ chunkId: result.chunkId, raw: result.raw, validPages: chunkById.get(result.chunkId)?.pages.map((page) => page.pageNumber), pages: chunkById.get(result.chunkId)?.pages.map((page) => ({ pageNumber: page.pageNumber, text: page.text, modelText: page.modelText })) }));
   const identityReconciled = applyExplicitIdentityRelationships(finalInventory, rawChunks);
   const duplicateCandidates = buildDuplicateCandidates(identityReconciled.inventory, rawChunks);
@@ -111,13 +116,13 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
     await recordProcessingRun(campaignId, "entity_merge_application", "failed", { input: { pairDecisions: duplicateAdjudication.decision.pair_decisions } as unknown as Json, error: error instanceof Error ? error.message : "Deterministic entity merge application failed" });
     throw error;
   }
-  const resolvedFirstPass = reResolveGraphFirstPass(rawFirstPass, chunks, merged.inventory);
+  const resolvedFirstPass = reResolveGraphFirstPass(rawFirstPass, graphWindows, merged.inventory);
   const mergedGraphContext = { ...graphContext, finalInventoryFingerprint: merged.fingerprint };
   // The former unconditional per-chunk completeness sweep is intentionally absent.
   // Coverage below plans one bounded, non-recursive adaptive gap round instead.
   const completeness: GraphCompletenessResult[] = [];
   const preRescueChunks = combineGraphPasses(resolvedFirstPass, completeness);
-  const preRescueGraph = buildLeanGraphCore(merged.inventory, chunks, preRescueChunks);
+  const preRescueGraph = buildLeanGraphCore(merged.inventory, graphWindows, preRescueChunks);
   const preRescueCoverage = buildGraphCoverageAudit(preRescueGraph, cleaning.pages);
   const rescueBatches = buildRelationshipRescueBatches(preRescueCoverage, preRescueGraph, cleaning.pages);
   const rescueContext = { campaignId, documentId, processingMode, store: checkpointStore, upstreamFingerprint: semanticInputHash({ mergedInventory: merged.fingerprint, coverage: coverageFingerprint(preRescueCoverage), graph: preRescueGraph.relationships.map((relationship) => [relationship.sourceEntityKey, relationship.normalization.semanticType, relationship.targetEntityKey]) }) };
@@ -137,7 +142,7 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   }));
   const finalIdentity = applyExplicitIdentityRelationships(merged.inventory, acceptedRescueIdentityRaw);
   const postRescueInventory = finalIdentity.inventory;
-  const finalFirstPass = finalizeRawRelationshipPasses(rawFirstPass, chunks, postRescueInventory);
+  const finalFirstPass = finalizeRawRelationshipPasses(rawFirstPass, graphWindows, postRescueInventory);
   const finalCompleteness: GraphCompletenessResult[] = [];
   const finalRescue = rescue.map((result) => {
     const validation = validateRelationshipRescue(result.raw, postRescueInventory, result.batch);
@@ -145,7 +150,7 @@ async function processLeanGraphCampaign(args: { campaignId: string; documentId: 
   });
   const rescueChunks: GraphChunkResult[] = finalRescue.map((result) => ({ chunkId: result.batch.batchId, rawFirstPass: result.raw, firstPass: result.relationships, completeness: [], relationships: result.relationships, firstPassUsage: result.usage, completenessUsage: null, firstPassCheckpointStatus: result.checkpointStatus, completenessCheckpointStatus: "REUSE" }));
   const graphChunks = [...combineGraphPasses(finalFirstPass, finalCompleteness), ...rescueChunks];
-  const graphSourceChunks = [...chunks, ...finalRescue.map((result) => ({ id: result.batch.batchId, pages: result.batch.pages, characterCount: result.batch.pages.reduce((count, page) => count + page.text.length, 0) }))];
+  const graphSourceChunks = [...graphWindows, ...finalRescue.map((result) => ({ id: result.batch.batchId, pages: result.batch.pages, characterCount: result.batch.pages.reduce((count, page) => count + page.text.length, 0) }))];
   const relationshipInstances = buildRelationshipInstances(graphChunks);
   const relationshipReconciliationContext = { campaignId, documentId, processingMode, store: checkpointStore, upstreamFingerprint: semanticInputHash({ finalInventory: finalIdentity.fingerprint, instances: relationshipInstances.map((instance) => [instance.id, instance.relationship.sourceInventoryId, instance.relationship.relationship, instance.relationship.targetInventoryId, instance.relationship.page, instance.relationship.matchedEvidenceText]) }) };
   const relationshipReconciliationPlan = await planRelationshipReconciliation(relationshipInstances, graphCompletenessProvider, relationshipReconciliationContext);

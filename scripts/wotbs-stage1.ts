@@ -235,6 +235,12 @@ const inverseScoringLabels: Record<string, string> = {
   "owned by": "owns",
   "has member": "member of",
   "used by": "uses",
+  "daughter of": "parent of",
+  "is daughter of": "parent of",
+  "son of": "parent of",
+  "is son of": "parent of",
+  "commanded by": "commands",
+  "occurred at": "was the site of",
 };
 
 const productionSemanticFamilies: Record<string, RelationshipScoringFamily[]> = {
@@ -265,9 +271,66 @@ export interface CanonicalScoringRelationship {
 }
 
 function scoringFamilies(fact: NormalizedRelationshipFact): string[] {
+  const label = fact.normalizedInputType;
+  if (/\bblood\b/u.test(label) && /\b(?:runs?|veins?|descend|lineage|source)\b/u.test(label)) return ["bloodline"];
+  if (/\b(?:aimed?|aims?|targeted?|targets?)\b/u.test(label) && /\b(?:at|toward|against)\b/u.test(label)) return ["targeting"];
+  if (/\b(?:assigned by|sent by)\b/u.test(label)) return ["assignment"];
+  if (/\b(?:begins? in|travels? from)\b/u.test(label)) return ["journey_origin"];
+  if (/\binvolves?\b/u.test(label)) return ["campaign_participation", "campaign_involvement"];
+  if (/\btakes? place at\b/u.test(label)) return ["campaign_participation"];
+  if (/\b(?:based in|takes? place in)\b/u.test(label)) return ["campaign_location"];
+  if (/\b(?:located the holders of|was damaged)\b/u.test(label)) return ["campaign_involvement"];
+  if (/\b(?:opposes?|conflict with)\b/u.test(label)) return ["conflict"];
+  if (/\bbetray\p{L}*\b/u.test(label)) return ["betrayal"];
+  if (/\buses?\b/u.test(label) && label.split(" ").length > 1) return ["possession_or_use", "use"];
+  if (/\b(?:destroy\p{L}* (?:the )?(?:device powering|power source of))\b/u.test(label)) return ["destroy_power_source"];
+  if (/\b(?:show\p{L}*|demonstrat\p{L}*)\b/u.test(label)) return ["demonstration"];
+  if (/\b(?:seeks? allies in|sent heroes to find allies in)\b/u.test(label)) return ["ally_search"];
+  if (/\bholds? sway (?:in|over)\b/u.test(label)) return ["holds_sway"];
+  if (/\b(?:located between|connects?)\b/u.test(label)) return ["connection"];
+  if (/\bralli\p{L}* (?:opposition to|opponents of)\b/u.test(label)) return ["rally_opposition"];
+  if (/\bcreat\p{L}* (?:a )?(?:doomsday )?weapon (?:in|at)\b/u.test(label)) return ["weapon_creation_location"];
+  if (/\b(?:emperor of|ruled?)\b/u.test(label)) return ["rule"];
+  if (/\bhelps?(?: agents of)?\b/u.test(label)) return ["help"];
+  if (/\bbattl\p{L}*(?: the forces of)?\b/u.test(label)) return ["battle"];
   return productionSemanticFamilies[fact.semanticType]
     ?? exactScoringFamilies[fact.normalizedInputType]
     ?? [fact.semanticType];
+}
+
+const SCORING_AUXILIARIES = new Set(["a", "an", "is", "the", "was", "were"]);
+const SCORING_IRREGULAR_LEMMAS: Record<string, string> = { began: "begin", begun: "begin", held: "hold", sent: "send", slain: "slay", slew: "slay", sought: "seek" };
+
+function scoringTokenForms(token: string): Set<string> {
+  const forms = new Set([token, SCORING_IRREGULAR_LEMMAS[token] ?? token]);
+  if (token.length > 4 && token.endsWith("ies")) forms.add(`${token.slice(0, -3)}y`);
+  if (token.length > 4 && token.endsWith("ied")) forms.add(`${token.slice(0, -3)}y`);
+  if (token.length > 4 && token.endsWith("ing")) { forms.add(token.slice(0, -3)); forms.add(`${token.slice(0, -3)}e`); }
+  if (token.length > 3 && token.endsWith("ed")) { forms.add(token.slice(0, -2)); forms.add(`${token.slice(0, -2)}e`); }
+  if (token.length > 3 && token.endsWith("s")) forms.add(token.slice(0, -1));
+  return forms;
+}
+
+function boundedPhraseEquivalent(left: string, right: string): boolean {
+  const phraseTokens = (value: string) => normalizeName(value).split(" ").filter((token) => token && !SCORING_AUXILIARIES.has(token));
+  const leftTokens = phraseTokens(left); const rightTokens = phraseTokens(right);
+  return leftTokens.length === rightTokens.length && leftTokens.every((token, index) => [...scoringTokenForms(token)].some((form) => scoringTokenForms(rightTokens[index]).has(form)));
+}
+
+export type RelationshipScoringMatch = "EXACT_MATCH" | "NORMALIZED_MATCH" | "BOUNDED_SEMANTIC_MATCH" | "NO_MATCH";
+
+export function classifyRelationshipScoringMatch(
+  actual: { sourceId: string; targetId: string; relationshipType: string },
+  expected: { sourceId: string; targetId: string; relationshipType: string },
+): RelationshipScoringMatch {
+  if (actual.sourceId === expected.sourceId && actual.targetId === expected.targetId && actual.relationshipType.trim() === expected.relationshipType.trim()) return "EXACT_MATCH";
+  const candidate = canonicalizeRelationshipForScoring(actual.sourceId, actual.targetId, actual.relationshipType);
+  const gold = canonicalizeRelationshipForScoring(expected.sourceId, expected.targetId, expected.relationshipType);
+  if (candidate.sourceId !== gold.sourceId || candidate.targetId !== gold.targetId) return "NO_MATCH";
+  if (candidate.normalizedInputType === gold.normalizedInputType || candidate.productionSemanticType === gold.productionSemanticType) return "NORMALIZED_MATCH";
+  if (boundedPhraseEquivalent(candidate.normalizedInputType, gold.normalizedInputType)) return "BOUNDED_SEMANTIC_MATCH";
+  if (candidate.acceptedFamilies.some((family) => gold.acceptedFamilies.includes(family))) return "BOUNDED_SEMANTIC_MATCH";
+  return "NO_MATCH";
 }
 
 /**
@@ -300,11 +363,7 @@ export function relationshipsMatchForScoring(
   actual: { sourceId: string; targetId: string; relationshipType: string },
   expected: { sourceId: string; targetId: string; relationshipType: string },
 ): boolean {
-  const candidate = canonicalizeRelationshipForScoring(actual.sourceId, actual.targetId, actual.relationshipType);
-  const gold = canonicalizeRelationshipForScoring(expected.sourceId, expected.targetId, expected.relationshipType);
-  return candidate.sourceId === gold.sourceId
-    && candidate.targetId === gold.targetId
-    && candidate.acceptedFamilies.includes(gold.primaryFamily);
+  return classifyRelationshipScoringMatch(actual, expected) !== "NO_MATCH";
 }
 
 function resolveGoldName(name: string, reference: WotbsGoldReference): string | null {

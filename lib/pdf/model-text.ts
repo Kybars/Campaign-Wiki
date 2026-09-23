@@ -27,6 +27,22 @@ function recurringEdgeKeys(pages: DocumentPage[], edge: "header" | "footer") {
   const threshold = Math.max(MIN_RECURRING_PAGES, Math.ceil(pages.length * 0.6));
   return new Set([...counts].filter(([, pageNumbers]) => pageNumbers.size >= threshold).map(([key]) => key));
 }
+function recurringEdgeSegments(pages: DocumentPage[], edge: "header" | "footer") {
+  const counts = new Map<string, Set<number>>();
+  for (const page of pages) {
+    const lines = page.text.split(/\r?\n/);
+    for (const index of edgeIndexes(lines, edge)) {
+      // A publisher title often shares a stable prefix but changes its trailing
+      // section name.  Only inspect the edge, so body prose remains countable.
+      const segment = compactLine(lines[index]).split(/[•|—–-]/u)[0] ?? "";
+      const key = recurrenceKey(segment);
+      if (!key || barePageOrnament(segment) || key.length < 8) continue;
+      const pageSet = counts.get(key) ?? new Set<number>(); pageSet.add(page.pageNumber); counts.set(key, pageSet);
+    }
+  }
+  const threshold = Math.max(MIN_RECURRING_PAGES, Math.ceil(pages.length * 0.6));
+  return new Set([...counts].filter(([, pageNumbers]) => pageNumbers.size >= threshold).map(([key]) => key));
+}
 function joinParagraphLines(lines: string[]) {
   const paragraphs: string[] = []; let current = "";
   const flush = () => { if (current) paragraphs.push(current.trim()); current = ""; };
@@ -49,14 +65,17 @@ export interface ModelTextCleaningResult {
 export function cleanDocumentPagesForModel(pages: DocumentPage[]): ModelTextCleaningResult {
   const headerKeys = recurringEdgeKeys(pages, "header");
   const footerKeys = recurringEdgeKeys(pages, "footer");
+  const headerSegments = recurringEdgeSegments(pages, "header");
+  const footerSegments = recurringEdgeSegments(pages, "footer");
   let removedLineCount = 0;
   const cleaned = pages.map((page) => {
     const lines = page.text.split(/\r?\n/);
     const headerIndexes = new Set(edgeIndexes(lines, "header"));
     const footerIndexes = new Set(edgeIndexes(lines, "footer"));
     const retained = lines.map((line, index) => {
-      const remove = (headerIndexes.has(index) && (barePageOrnament(line) || headerKeys.has(recurrenceKey(line))))
-        || (footerIndexes.has(index) && (barePageOrnament(line) || footerKeys.has(recurrenceKey(line))));
+      const segment = recurrenceKey((compactLine(line).split(/[•|—–-]/u)[0] ?? ""));
+      const remove = (headerIndexes.has(index) && (barePageOrnament(line) || headerKeys.has(recurrenceKey(line)) || headerSegments.has(segment)))
+        || (footerIndexes.has(index) && (barePageOrnament(line) || footerKeys.has(recurrenceKey(line)) || footerSegments.has(segment)));
       if (remove) { removedLineCount += 1; return ""; }
       return line;
     });

@@ -6,7 +6,12 @@ import {
   runGraphExtraction,
   serializeGraphInventory,
   validateGraphExtraction,
+  buildFocusedGraphWindows,
+  buildFocusedGraphExtractionInput,
+  validateFocusedGraphExtraction,
+  validateFocusedWindowAccounting,
 } from "@/lib/ai/graph-extraction";
+import { buildEntityOccurrenceIndex } from "@/lib/graph/occurrence-index";
 import { assertGoldReferenceIsolation } from "../scripts/wotbs-stage1";
 import type { StructuredModelProvider } from "@/lib/ai/structured-model-provider";
 import type { ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
@@ -91,5 +96,23 @@ describe("v0-style graph extraction proof", () => {
     const artifacts = [{ path: "private-gold.json", raw: "graph evaluator secret marker" }];
     expect(() => assertGoldReferenceIsolation([GRAPH_EXTRACTION_SYSTEM_PROMPT, input], artifacts)).not.toThrow();
     expect(() => assertGoldReferenceIsolation(["graph evaluator secret marker"], artifacts)).toThrow(/Gold reference leaked/);
+  });
+
+  it("builds bounded local windows and requires exact ID/window accounting", () => {
+    const pages = [
+      { pageNumber: 1, text: "Duke Mira commands the Dawn Compact." },
+      { pageNumber: 2, text: "The Dawn Compact is located in Ashfall." },
+      { pageNumber: 3, text: "Ashfall welcomes Duke Mira." },
+    ];
+    const index = buildEntityOccurrenceIndex(inventory.entities, pages);
+    const windows = buildFocusedGraphWindows(pages, inventory, index);
+    expect(windows).toHaveLength(1);
+    expect(windows[0]?.characterCount).toBeLessThanOrEqual(15_000);
+    expect(buildFocusedGraphExtractionInput(windows, inventory).evidence_windows[0]?.entities).toHaveLength(3);
+    const raw = { window_results: [{ window_id: windows[0]!.id, relationships: [{ source_id: "inv_mira", relationship: "commands", target_id: "inv_compact", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." }] }] };
+    expect(validateFocusedGraphExtraction(raw, windows, inventory).relationships[0]).toMatchObject({ sourceInventoryId: "inv_mira", targetInventoryId: "inv_compact" });
+    expect(() => validateFocusedWindowAccounting({ window_results: [] }, windows)).toThrow(/omitted/);
+    expect(() => validateFocusedWindowAccounting({ window_results: [{ window_id: "invented", relationships: [] }] }, windows)).toThrow(/invented/);
+    expect(() => validateFocusedGraphExtraction({ window_results: [{ window_id: windows[0]!.id, relationships: [{ source_id: "inv_mira", relationship: "commands", target_id: "unknown", page: 1, evidence_quote: "Duke Mira commands the Dawn Compact." }] }] }, windows, inventory)).toThrow(/outside window|unknown endpoint/);
   });
 });

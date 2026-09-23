@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { CandidateRelationship, ValidatedExtractionInventoryOutput } from "@/lib/ai/schemas";
 import { normalizeName } from "@/lib/graph/normalize";
-import { canonicalizeRelationshipForScoring, relationshipsMatchForScoring, scoreWotbsRelationships, type WotbsGoldReference } from "../scripts/wotbs-stage1";
+import { canonicalizeRelationshipForScoring, classifyRelationshipScoringMatch, relationshipsMatchForScoring, scoreWotbsRelationships, type WotbsGoldReference } from "../scripts/wotbs-stage1";
 
 const matches = (
   actual: [string, string, string],
@@ -43,6 +43,19 @@ describe("canonical graph relationship scoring", () => {
     const actual = canonicalizeRelationshipForScoring("relic", "keeper", "used by");
     expect(actual).toMatchObject({ sourceId: "keeper", targetId: "relic", primaryFamily: "possession_or_use" });
     expect(matches(["relic", "used by", "keeper"], ["keeper", "wielded or acquired", "relic"])).toBe(true);
+  });
+
+  it("classifies bounded family, bloodline, and target equivalences without fuzzy matching", () => {
+    expect(classifyRelationshipScoringMatch({ sourceId: "child", relationshipType: "is daughter of", targetId: "parent" }, { sourceId: "parent", relationshipType: "parent of", targetId: "child" })).toBe("NORMALIZED_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "spirit", relationshipType: "has blood running in the veins of", targetId: "witch" }, { sourceId: "spirit", relationshipType: "is elemental spirit whose blood runs in", targetId: "witch" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "pilot", relationshipType: "aims airship at", targetId: "city" }, { sourceId: "pilot", relationshipType: "aimed The Tempest at", targetId: "city" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "pilot", relationshipType: "visits", targetId: "city" }, { sourceId: "pilot", relationshipType: "aimed The Tempest at", targetId: "city" })).toBe("NO_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "army", relationshipType: "commanded by", targetId: "general" }, { sourceId: "general", relationshipType: "commands", targetId: "army" })).toBe("NORMALIZED_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "nation", relationshipType: "invades", targetId: "other" }, { sourceId: "nation", relationshipType: "invaded", targetId: "other" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "item", relationshipType: "was the source of power for", targetId: "emperor" }, { sourceId: "item", relationshipType: "was a source of power for", targetId: "emperor" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "quest", relationshipType: "sent by", targetId: "academy" }, { sourceId: "quest", relationshipType: "is assigned by", targetId: "academy" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "duke", relationshipType: "battled the forces of", targetId: "king" }, { sourceId: "duke", relationshipType: "battles", targetId: "king" })).toBe("BOUNDED_SEMANTIC_MATCH");
+    expect(classifyRelationshipScoringMatch({ sourceId: "duke", relationshipType: "travels to", targetId: "king" }, { sourceId: "duke", relationshipType: "battles", targetId: "king" })).toBe("NO_MATCH");
   });
 
   const repositoryRoot = new URL("../", import.meta.url);

@@ -35,6 +35,16 @@ describe("deterministic model page text cleaning", () => {
     expect(scan.pageEvidence[0].supporting_text).toContain("Mira enters the keep.");
   });
 
+  it("removes a recurring edge prefix even when its trailing section segment changes", () => {
+    const source = ["Prologue", "Campaign Saga Overview", "New Game Rules"].map((section, index) => ({
+      pageNumber: index + 1,
+      text: `War of the Burning Sky Campaign Guide • ${section}\n\n${index === 0 ? "Turinn is the capital of Sindaire." : "Turinn appears in body text."}`,
+    }));
+    const cleaned = cleanDocumentPagesForModel(source).pages;
+    expect(cleaned.every((page) => !page.modelText?.includes("War of the Burning Sky Campaign Guide"))).toBe(true);
+    expect(cleaned[0]?.modelText).toContain("Turinn is the capital of Sindaire.");
+  });
+
   it("uses cleaned text for model input but raw text for exact relationship provenance validation", () => {
     const [page] = cleanDocumentPagesForModel(pages).pages;
     const chunk = { id: "chunk", pages: [page], characterCount: page.text.length };

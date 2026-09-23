@@ -4,19 +4,26 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.6.5`
+- Package version: `0.6.6`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
 - Manual entity type, prominence, visibility, quest status, and relationship visibility use explicit typed values plus manual-state flags. Graph replay refreshes document-derived data, then restores flagged GM choices by stable row identity.
 - Category pages organize entities by prominence, with hierarchy/chronology alternatives and quest-status grouping. Player View hides empty categories and redirects known hidden pages to a non-leaking campaign notice.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed milestone: v0.6.5 granular import progress
+- Latest completed release: v0.6.6 graph extraction research checkpoint
 - Imported canonical graphs now receive deterministic, per-entity-type prominence from conservative source mention/page counts plus unique canonical relationship counts. Fresh quests default to `not_started`; durable manual prominence and quest-status overrides remain replay-safe. The normal UI exposes only Major/Supporting/Minor and Ongoing/Not started/Finished, with legacy nulls displayed as Minor/Not started.
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - v0.5 migration: `20260916192058_v05_durable_gm_curation.sql`, committed locally; remote application is pending because the linked CLI could not initialize its login role over the current network.
 - v0.5.2 migration: `20260917091332_deterministic_entity_prominence.sql`, committed locally; it has not been applied remotely.
 - Latest targeted work: dogfooding showed that duplicate entity names could make otherwise valid first-pass relationship endpoints ambiguous and discard those edges. Lean processing now reconciles only high-confidence duplicate candidates after graph first pass, preserves the raw first-pass output, re-resolves it through canonical names and approved aliases, and runs completeness against the reconciled inventory. Uncertain candidates remain separate for later manual review; duplicate detection is intentionally conservative, not complete.
 - v0.6.4 prevents repeated edge boilerplate from inflating semantic occurrence, prominence, or coverage metrics even for raw-page callers. Adaptive recovery now partitions overloaded page windows by bounded target groups, so every suspicious multi-page zero-degree entity receives a recovery opportunity; coverage and rescue checkpoint identities were advanced accordingly.
-- Commit status: the v3 identity/page-grounding checkpoint is committed and pushed at `e37b3a666b10aa83b15d863fe8f417eefd32a08c`; the v4 rejection record and v3 completeness experiment remain uncommitted. Generated local model artifacts and private fixtures remain ignored.
+- The graph research checkpoint includes V3, two-chunk, completeness, compact, span, and focused-window experiments. Generated model artifacts and private fixtures remain local-only.
+
+## v0.6.6 graph research checkpoint
+
+- On the frozen five-page Test 9 sample, single-call V3 accepted 82 relationships, touched 51/65 entities, and recovered 21/89 frozen relationships in 8,756 tokens. The original two-chunk run accepted 126 relationships, touched 61/65, and recovered 30/89 in 11,759 tokens; the hardened two-chunk prompt accepted 89, touched 54/65, and recovered 27/89 in 13,042 tokens. These are experimental results, not production quality claims.
+- A targeted completeness retry returned 21 proposed relationships; a blanket sweep added 19 novel validated relationships but changed frozen recovery only from 21/89 to 22/89. Neither justifies a production completeness change from this sample alone. Two-chunk planning and union tests cover page assignment, complete output accounting, endpoint and segment validation, and provenance.
+- Hardening work adds recurring variable-title edge masking, packed semantic evidence spans in the lean graph first pass, bounded occurrence-focused windows, segment/endpoint validation, checkpoint identities for request shapes, and explicit evaluator match classes. Raw-page provenance remains authoritative. Production model defaults are unchanged.
+- The next experiment is multi-entity Claims. No Claims implementation is included in this checkpoint.
 
 ## Experimental status — do not misread as production behavior
 
@@ -258,7 +265,7 @@ M5 treats a stored checkpoint that no longer passes schema or semantic validatio
 
 ## Active lean graph core
 
-New lean imports use the graph-first path: semantic-text inventory → final deterministic inventory → one relationship extraction per semantic chunk → authoritative pair-decision entity merging → deterministic semantic coverage analysis → one bounded adaptive page-window gap round → evidence-aware relationship reconciliation for repeated endpoint pairs → exact raw-source provenance union and persistence. The former unconditional per-chunk relationship-completeness sweep is not part of production.
+New lean imports use the graph-first path: semantic-text inventory → final deterministic inventory → relationship extraction over packed semantic evidence spans → authoritative pair-decision entity merging → deterministic semantic coverage analysis → one bounded adaptive page-window gap round → evidence-aware relationship reconciliation for repeated endpoint pairs → exact raw-source provenance union and persistence. The former unconditional per-chunk relationship-completeness sweep is not part of production.
 
 The active lean path does not call Rich facts, Rich relationships, reconciliation, or enrichment. It persists no atomic rich facts and no generated summaries. The legacy Rich/enrichment path remains available only for explicit `full` compatibility/reference runs, and existing stored campaigns remain readable.
 

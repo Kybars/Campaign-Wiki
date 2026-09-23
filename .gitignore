@@ -32,6 +32,8 @@
 /artifacts/wotbs-graph-completeness/
 /artifacts/wotbs-graph-completeness-terra/
 /artifacts/wotbs-graph-completeness-luna/
+/artifacts/wotbs-compact-graph/
+/artifacts/wotbs-graph-proof-terra/
 
 # Private / copyrighted benchmark material
 # Commercial campaign books, extracted source text, and source-derived

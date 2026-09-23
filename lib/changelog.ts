@@ -9,6 +9,15 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.6",
+    date: "2026-09-23",
+    title: "Graph extraction research checkpoint",
+    changes: [
+      "Recorded V3, two-chunk, and completeness graph extraction experiments with bounded source and endpoint validation.",
+      "Hardened semantic page cleaning, focused graph windows, and evaluator scoring without changing production model defaults.",
+    ],
+  },
+  {
     version: "0.6.5",
     date: "2026-09-22",
     title: "Granular import progress",

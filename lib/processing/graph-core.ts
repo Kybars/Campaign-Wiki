@@ -1,4 +1,4 @@
-import { graphExtractionOutputSchema, GRAPH_EXTRACTION_BEHAVIOR_VERSION, GRAPH_EXTRACTION_CONTRACT_VERSION, GRAPH_EXTRACTION_SYSTEM_PROMPT, buildGraphExtractionInput, resolveRawRelationships, runGraphExtraction, type GraphExtractionOutput, type GraphValidationDiagnostic, type RelationshipValidationRecord, type ValidatedGraphRelationship } from "@/lib/ai/graph-extraction";
+import { graphExtractionOutputSchema, GRAPH_EXTRACTION_BEHAVIOR_VERSION, GRAPH_EXTRACTION_CONTRACT_VERSION, GRAPH_EXTRACTION_SYSTEM_PROMPT, FOCUSED_GRAPH_EXTRACTION_SYSTEM_PROMPT, buildFocusedGraphExtractionInput, buildGraphExtractionInput, resolveRawRelationships, runFocusedGraphExtraction, runGraphExtraction, validateFocusedGraphExtraction, type FocusedGraphWindow, type GraphExtractionOutput, type GraphValidationDiagnostic, type RelationshipValidationRecord, type ValidatedGraphRelationship } from "@/lib/ai/graph-extraction";
 import { GRAPH_COMPLETENESS_BEHAVIOR_VERSION, GRAPH_COMPLETENESS_CONTRACT_VERSION, GRAPH_COMPLETENESS_SYSTEM_PROMPT, buildGraphCompletenessInput, buildGraphCompletenessUnion, runGraphCompletenessSweep, validateGraphCompletenessSweep } from "@/lib/ai/graph-completeness";
 import type { GraphInventory } from "@/lib/ai/entity-reconciliation";
 import type { AIOperationCheckpointStore, AIOperationIdentity, CheckpointPlanStatus } from "@/lib/ai/operation-checkpoint";
@@ -12,6 +12,7 @@ import { buildLocationHierarchy } from "@/lib/locations/hierarchy";
 import { relationshipPresentation, normalizeRelationshipFact } from "@/lib/relationships/normalize";
 import type { PageChunk } from "@/lib/pdf/types";
 import type { RelationshipReconciliationResult } from "@/lib/ai/relationship-reconciliation";
+import { SPAN_GRAPH_EXTRACTION_BEHAVIOR_VERSION, SPAN_GRAPH_EXTRACTION_CONTRACT_VERSION, SPAN_GRAPH_EXTRACTION_SYSTEM_PROMPT, buildSpanGraphExtractionInput, runSpanGraphExtraction, validateSpanGraphExtraction, type SpanGraphRequest } from "@/lib/ai/span-graph-extraction";
 
 export interface GraphCheckpointContext { campaignId: string; documentId: string; processingMode: string; store: AIOperationCheckpointStore; finalInventoryFingerprint: string; finalInventoryUpstreamFingerprint: string; }
 export interface GraphPlanItem { chunkId: string; operationType: "graph_extraction" | "graph_completeness"; status: CheckpointPlanStatus; reason: string; }
@@ -28,8 +29,11 @@ function checkpointStatus(store: AIOperationCheckpointStore, identity: AIOperati
 function firstPassKeys(relationships: ValidatedGraphRelationship[]) { return new Set(relationships.map((relationship) => relationship.semanticKey)); }
 
 export function graphExtractionCheckpointIdentity(chunk: PageChunk, inventory: GraphInventory, provider: StructuredModelProvider, checkpoint: GraphCheckpointContext): AIOperationIdentity {
-  const payload = buildGraphExtractionInput(chunk, inventory);
-  return { campaignId: checkpoint.campaignId, documentId: checkpoint.documentId, sourceExtractionCacheId: null, providerId: provider.providerId, modelId: provider.modelId, processingMode: checkpoint.processingMode, stage: "extraction", operationType: "graph_extraction", operationKey: chunk.id, inputHash: modelInputHash(GRAPH_EXTRACTION_SYSTEM_PROMPT, payload), upstreamFingerprint: semanticInputHash({ chunk: chunk.pages, finalInventory: checkpoint.finalInventoryFingerprint, inventoryUpstream: checkpoint.finalInventoryUpstreamFingerprint }), behaviorVersion: GRAPH_EXTRACTION_BEHAVIOR_VERSION, schemaVersion: GRAPH_EXTRACTION_CONTRACT_VERSION };
+  const spanRequest = "units" in chunk ? chunk as SpanGraphRequest : null;
+  const focused = "entityIds" in chunk ? chunk as FocusedGraphWindow : null;
+  const payload = spanRequest ? buildSpanGraphExtractionInput(spanRequest, inventory) : focused ? buildFocusedGraphExtractionInput([focused], inventory) : buildGraphExtractionInput(chunk, inventory);
+  const system = spanRequest ? SPAN_GRAPH_EXTRACTION_SYSTEM_PROMPT : focused ? FOCUSED_GRAPH_EXTRACTION_SYSTEM_PROMPT : GRAPH_EXTRACTION_SYSTEM_PROMPT;
+  return { campaignId: checkpoint.campaignId, documentId: checkpoint.documentId, sourceExtractionCacheId: null, providerId: provider.providerId, modelId: provider.modelId, processingMode: checkpoint.processingMode, stage: "extraction", operationType: "graph_extraction", operationKey: chunk.id, inputHash: modelInputHash(system, payload), upstreamFingerprint: semanticInputHash({ chunk: chunk.pages, finalInventory: checkpoint.finalInventoryFingerprint, inventoryUpstream: checkpoint.finalInventoryUpstreamFingerprint, units: spanRequest?.units.map((unit) => unit.unitId), focusedEntityIds: focused?.entityIds }), behaviorVersion: spanRequest ? SPAN_GRAPH_EXTRACTION_BEHAVIOR_VERSION : focused ? "v0.7.0-focused-occurrence-windows-1" : GRAPH_EXTRACTION_BEHAVIOR_VERSION, schemaVersion: spanRequest ? SPAN_GRAPH_EXTRACTION_CONTRACT_VERSION : focused ? 4 : GRAPH_EXTRACTION_CONTRACT_VERSION };
 }
 
 export function graphCompletenessCheckpointIdentity(chunk: PageChunk, inventory: GraphInventory, firstPass: ValidatedGraphRelationship[], provider: StructuredModelProvider, checkpoint: GraphCheckpointContext): AIOperationIdentity {
@@ -70,11 +74,26 @@ export async function runGraphFirstPass(chunk: PageChunk, inventory: GraphInvent
   let loaded = await loadFirstPass(identity, chunk, inventory, checkpoint);
   const status: "REUSE" | "RUN" = loaded ? "REUSE" : "RUN";
   if (!loaded) {
-    const response = await runGraphExtraction(chunk, inventory, provider);
-    const raw = graphExtractionOutputSchema.parse(response.output);
-    const validation = resolveRawRelationships(raw, inventory, chunk);
-    loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: response.usage };
-    await checkpoint.store.saveValidated({ identity, output: { raw }, usage: [response.usage], attemptCount: 1 });
+    const spanRequest = "units" in chunk ? chunk as SpanGraphRequest : null;
+    const focused = "entityIds" in chunk ? chunk as FocusedGraphWindow : null;
+    let raw: GraphExtractionOutput; let validation: ReturnType<typeof resolveRawRelationships>;
+    if (spanRequest) {
+      const response = await runSpanGraphExtraction(spanRequest, inventory, provider);
+      validation = validateSpanGraphExtraction(response.output, spanRequest, inventory);
+      raw = { relationships: validation.relationships.map((relationship) => ({ source: relationship.sourceName, relationship: relationship.relationship, target: relationship.targetName, page: relationship.page, evidence_quote: relationship.matchedEvidenceText })) };
+      loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: response.usage };
+    } else if (focused) {
+      const response = await runFocusedGraphExtraction([focused], inventory, provider);
+      validation = validateFocusedGraphExtraction(response.output, [focused], inventory);
+      raw = { relationships: validation.validationRecords.filter((record) => record.outcome === "ACCEPTED").map((record) => ({ source: record.rawSourceName, relationship: record.rawRelationshipLabel, target: record.rawTargetName, page: record.page, evidence_quote: record.evidenceQuote })) };
+      loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: response.usage };
+    } else {
+      const response = await runGraphExtraction(chunk, inventory, provider);
+      raw = graphExtractionOutputSchema.parse(response.output);
+      validation = resolveRawRelationships(raw, inventory, chunk);
+      loaded = { raw, relationships: validation.relationships, diagnostics: validation.diagnostics, validationRecords: validation.validationRecords, usage: response.usage };
+    }
+    await checkpoint.store.saveValidated({ identity, output: { raw }, usage: [loaded.usage], attemptCount: 1 });
   }
   return { chunkId: chunk.id, ...loaded, usage: status === "RUN" ? loaded.usage : null, checkpointStatus: status, identity };
 }
