@@ -1,0 +1,10 @@
+{
+  "totalTokenBudget": 32000,
+  "inputReserveMultiplier": 1.2,
+  "sdkMaxRetries": 0,
+  "stageBudgets": { "claims2_completeness": 32000 },
+  "requests": {
+    "test9-claims2-completeness-1": { "maxOutputTokens": 6000, "stage": "claims2_completeness" },
+    "test9-claims2-completeness-2": { "maxOutputTokens": 6000, "stage": "claims2_completeness" }
+  }
+}

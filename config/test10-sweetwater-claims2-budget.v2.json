@@ -1,0 +1,10 @@
+{
+  "totalTokenBudget": 32000,
+  "inputReserveMultiplier": 1.3,
+  "sdkMaxRetries": 0,
+  "stageBudgets": { "claims2": 32000 },
+  "requests": {
+    "test10-sweetwater-claims2-v2-1": { "maxOutputTokens": 9000, "stage": "claims2" },
+    "test10-sweetwater-claims2-v2-2": { "maxOutputTokens": 9000, "stage": "claims2" }
+  }
+}

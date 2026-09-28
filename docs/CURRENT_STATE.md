@@ -4,12 +4,12 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Package version: `0.6.6`
+- Package version: `0.6.7`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
 - Manual entity type, prominence, visibility, quest status, and relationship visibility use explicit typed values plus manual-state flags. Graph replay refreshes document-derived data, then restores flagged GM choices by stable row identity.
 - Category pages organize entities by prominence, with hierarchy/chronology alternatives and quest-status grouping. Player View hides empty categories and redirects known hidden pages to a non-leaking campaign notice.
 - Pushed baseline before v0.4.9: `3b439430463a6bb774bc10ca5ad90137b28649de`
-- Latest completed release: v0.6.6 graph extraction research checkpoint
+- Latest completed release: v0.6.7 Claims-2 development checkpoint; the normal wiki upload path still uses the lean graph extraction flow described below.
 - Imported canonical graphs now receive deterministic, per-entity-type prominence from conservative source mention/page counts plus unique canonical relationship counts. Fresh quests default to `not_started`; durable manual prominence and quest-status overrides remain replay-safe. The normal UI exposes only Major/Supporting/Minor and Ongoing/Not started/Finished, with legacy nulls displayed as Minor/Not started.
 - M4 migration: `20260911120000_v04_m4_ai_operation_checkpoints.sql`, applied to the linked Supabase project on 2026-09-12
 - v0.5 migration: `20260916192058_v05_durable_gm_curation.sql`, committed locally; remote application is pending because the linked CLI could not initialize its login role over the current network.
@@ -23,7 +23,14 @@ Update this disposable implementation snapshot after every completed milestone. 
 - On the frozen five-page Test 9 sample, single-call V3 accepted 82 relationships, touched 51/65 entities, and recovered 21/89 frozen relationships in 8,756 tokens. The original two-chunk run accepted 126 relationships, touched 61/65, and recovered 30/89 in 11,759 tokens; the hardened two-chunk prompt accepted 89, touched 54/65, and recovered 27/89 in 13,042 tokens. These are experimental results, not production quality claims.
 - A targeted completeness retry returned 21 proposed relationships; a blanket sweep added 19 novel validated relationships but changed frozen recovery only from 21/89 to 22/89. Neither justifies a production completeness change from this sample alone. Two-chunk planning and union tests cover page assignment, complete output accounting, endpoint and segment validation, and provenance.
 - Hardening work adds recurring variable-title edge masking, packed semantic evidence spans in the lean graph first pass, bounded occurrence-focused windows, segment/endpoint validation, checkpoint identities for request shapes, and explicit evaluator match classes. Raw-page provenance remains authoritative. Production model defaults are unchanged.
-- The next experiment is multi-entity Claims. No Claims implementation is included in this checkpoint.
+
+## v0.6.7 Claims-2 development checkpoint
+
+- The separate Claims harness leaves existing V3 artifacts and production graph extraction unchanged. Claims require exact canonical or alias participant resolution, or unique leading-`The` normalization. Any unknown or ambiguous participant rejects the entire claim. Duplicate participants reject the claim. Dedupe merges only case/whitespace-normalized identical statements with the same canonical participant set, retaining each raw segment provenance. Generic heading or hypothetical-context inheritance is not available from the packed `ExtractionContext` segments; the prototype leaves that context in the source text and does not add it to the Claim schema.
+- Claims-2, its optional completeness experiment, bounded paid-call ledgers, and Test 9/10/11 runners are isolated development tools. They are not called by normal browser uploads, do not persist wiki claims, and have not replaced lean graph extraction. The Test 9 frozen run yielded 147 structurally valid claims, 381 entity participations, and 60 distinct entities touched in 17,168 model tokens. The completeness review retained 13 candidates for review; structural validation is not a semantic recall or accuracy score.
+- Sweetwater Test 10 v1 was prepared offline. Its two-chunk v2 proposal remains blocked by source-scoped identity context across chunks and a page 6–7 citation gap. A separate single-chunk v3 request completed with 104/104 structurally valid claims in 10,822 tokens, using the unchanged Claims-2 prompt, schema, and validator. Tales Test 11 completed with 145/155 structurally valid claims in 13,451 tokens; 10 proposals had unknown participants. These counts do not establish proposition truth, completeness, or suitability for upload integration. Source PDFs, extracted text, inventories, outputs, and paid-call checkpoints remain gitignored under `fixtures/private/`.
+- A separate narrative tournament runner, scoring audits, reading-copy builder, and offline citation pilot support development comparisons. The acceptance phase made three extraction requests and one judge request, then stopped because the judge returned seven nonverbatim citations. No validated quality score, full tournament result, or holdout result exists. The reading copy and citation-ID pilot are development artifacts; neither changes production PDF cleaning, extraction, or citation validation.
+- Known limits include source-scoped identity resolution, heading and hypothetical context inheritance, nonadjacent evidence across a page break, unsupported or misattributed propositions despite valid citation shape, and model-generated nonverbatim judge quotations. Proposed context and citation repairs remain unimplemented. An end-to-end browser upload test of the normal wiki workflow is pending; the deterministic suite and build do not substitute for it.
 
 ## Experimental status — do not misread as production behavior
 

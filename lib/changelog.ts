@@ -9,6 +9,16 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.7",
+    date: "2026-09-28",
+    title: "Claims-2 development checkpoint",
+    changes: [
+      "Added isolated Claims-2 and completeness experiments with source-backed participant validation, bounded run budgets, and Test 9/10/11 development runners.",
+      "Recorded narrative extraction and citation audits, including the stopped acceptance test and known context limits.",
+      "Kept Claims experiments outside normal wiki uploads; the end-to-end browser upload test remains pending.",
+    ],
+  },
+  {
     version: "0.6.6",
     date: "2026-09-23",
     title: "Graph extraction research checkpoint",

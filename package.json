@@ -1,6 +1,6 @@
 {
   "name": "campaign-wiki",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "private": true,
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
@@ -11,6 +11,7 @@
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest --configLoader runner",
     "evaluate": "tsx scripts/evaluate-extraction.ts",
+    "evaluate:narrative-tournament": "node --conditions=react-server --import tsx scripts/narrative-tournament.ts",
     "evaluate:replay": "tsx scripts/evaluate-replay-fixture.ts",
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",
     "evaluate:enrichment-workload": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-enrichment-workload.ts",
