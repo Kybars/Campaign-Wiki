@@ -34,8 +34,9 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Claims-3 offline experiment
 
-- An isolated Claims-3 harness now reconstructs the exact four frozen Claims-2 requests across Test 9, Test 10 v3, and Test 11, with source/fixture/inventory/evidence/output checks. Its default mode is offline; no Claims-3 model calls or campaign writes have occurred. The completed Sweetwater single-request v3 output is the baseline; v1 and v2 have no saved result.
-- Claims-3 retains raw source spans and request boundaries, changes prompt/schema/entity context, and repairs deterministic Sweetwater room context. The full preflight, assumptions and limitations are in `docs/audits/claims3_offline_preflight.md`. This implementation is ready for a separate live-authorization review; no semantic Claims-3 score exists.
+- An isolated Claims-3 harness reconstructs the exact four frozen Claims-2 requests across Test 9, Test 10 v3, and Test 11, with source/fixture/inventory/evidence/output checks. Its default mode is offline, and it has made no campaign writes. The completed Sweetwater single-request v3 output is the baseline; v1 and v2 have no saved result.
+- Claims-3 retains raw source spans and request boundaries, changes prompt/schema/entity context, and repairs deterministic Sweetwater room context. The original offline preflight, assumptions and limitations are in `docs/audits/claims3_offline_preflight.md`. No semantic Claims-3 score exists.
+- A later authorized `test9-claims3-1` attempt failed with `Connection error.` and unknown usage; the other three requests were not sent. Offline TLS diagnostics reproduced certificate-chain rejection under Node default trust and success with system CA. A versioned, offline-only recovery path now preserves and references the original failed checkpoint, requires a new recovery authorization, and launches with system CA. See `docs/audits/claims3_recovery_preparation.md`; no retry has been made.
 
 ## Experimental status — do not misread as production behavior
 
