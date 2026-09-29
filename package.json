@@ -14,6 +14,7 @@
     "evaluate:narrative-tournament": "node --conditions=react-server --import tsx scripts/narrative-tournament.ts",
     "evaluate:claims3": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-claims3.ts",
     "evaluate:claims4": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-claims4.ts",
+    "evaluate:claims4-1": "node --conditions=react-server --import tsx scripts/evaluate-claims4-1.ts",
     "evaluate:claims4:coverage": "node --use-system-ca --conditions=react-server --import tsx scripts/evaluate-claims4-coverage.ts",
     "evaluate:replay": "tsx scripts/evaluate-replay-fixture.ts",
     "evaluate:enrichment": "tsx scripts/evaluate-enrichment-fixture.ts",

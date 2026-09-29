@@ -44,6 +44,11 @@ Update this disposable implementation snapshot after every completed milestone. 
 - Offline preflight: four planned Luna calls, 511 evidence units, 20,538 estimated input tokens (24,647 reserved), 58,000 maximum output tokens, and $0.054628 at historical planning rates. No Claims-4 model call has been made. A fresh Claims-4 authorization, exact request allowlist, hard attempt cap, and system-CA launch are required for future dispatch.
 - Reconciliation preserves original proposals and distinguishes ready, identity, evidence, source-status, and GM-review states. Offline coverage comparison and non-executable targeted rescue planning are prepared. The frozen Tales `p30.u004` unit omits the PDF's “meaningless scribbles” qualifier; that claim remains pending evidence, not verified. See `docs/audits/claims4_offline_preflight.md`.
 
+## Claims-4.1 offline implementation
+
+- Separate fine-grained extraction prompt and reconciliation preserve Claims-3 context and Claims-4 proposal retention. Party references, independent evidence/identity/status decisions, and safe duplicate selection have focused regressions. Existing Claims-4 artifacts and production paths are unchanged.
+- An offline-only one-request preflight targets frozen WotBS physical pages 13–14. It has made zero LLM calls and uses a distinct Claims-4.1 identity and ignored artifact directory. See `docs/audits/claims4_1_offline_preflight.md`.
+
 ## Experimental status — do not misread as production behavior
 
 - The two-pass architecture is implemented and covered by deterministic tests.
