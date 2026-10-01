@@ -9,6 +9,16 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.8",
+    date: "2026-10-01",
+    title: "Claims-4.1 extraction research checkpoint",
+    changes: [
+      "Checkpointed the separate Claims-4/4.1 research line, with fine-grained propositions, source-grounded participants and evidence, and full raw-proposal retention.",
+      "Recorded the frozen 106-proposal WotBS and 148-proposal Sweetwater extraction runs and deterministic reconciliation v2/v2.1/v2.2 source, tests, and offline replay tools.",
+      "Reconciliation v2.2 remains under semantic audit; production extraction, wiki persistence, and the database path are unchanged. Private sources and generated artifacts remain local-only.",
+    ],
+  },
+  {
     version: "0.6.7",
     date: "2026-09-28",
     title: "Claims-2 development checkpoint",

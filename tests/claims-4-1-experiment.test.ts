@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Claims3Request } from "../lib/ai/claims-3-experiment";
 import { claims41Preflight, loadFrozenClaims41Benchmarks } from "../lib/ai/claims-4-1-benchmarks";
 import { CLAIMS_4_1_PROMPT, planClaims41Request, reconcileClaims41 } from "../lib/ai/claims-4-1-experiment";
+import { authorizeClaims41Live, CLAIMS41_AUTHORIZATION_VARIABLE, CLAIMS41_REQUEST_ID } from "../lib/ai/claims-4-1-dispatch";
 
 const sentences = [
   "The characters find a note in the well.",
@@ -24,6 +25,18 @@ const request = planClaims41Request(base);
 const claim = (statement: string, participants: string[], id: string) => ({ statement, participants, evidence_unit_ids: [id] });
 
 describe("Claims-4.1 isolated reconciliation", () => {
+  it("requires a distinct authorization, exact request, one-call cap, and system CA", () => {
+    const gate = { live: true, authorization: "1", allowedRequestIds: [CLAIMS41_REQUEST_ID], maxCalls: 1,
+      plannedRequestIds: [CLAIMS41_REQUEST_ID], previousAttemptExists: false, execArgv: ["--use-system-ca"] };
+    expect(CLAIMS41_AUTHORIZATION_VARIABLE).toBe("ALLOW_PAID_CLAIMS41_WOTBS_LUNA");
+    expect(() => authorizeClaims41Live(gate)).not.toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, authorization: undefined })).toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, live: false })).toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, allowedRequestIds: ["test9-claims4-1-1"] })).toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, maxCalls: 2 })).toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, previousAttemptExists: true })).toThrow();
+    expect(() => authorizeClaims41Live({ ...gate, execArgv: [] })).toThrow();
+  });
   it("uses the specified fine-grained prompt and a separate identity", () => {
     expect(CLAIMS_4_1_PROMPT).toContain("One independently useful fact is the default claim unit.");
     expect(CLAIMS_4_1_PROMPT).toContain("Return only the fixed candidate-claim schema.");
