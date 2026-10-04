@@ -4,8 +4,9 @@ This isolated backend runner reuses PDF extraction, `cleanDocumentPagesForModel`
 `chunkPages` with the configured `PDF_CHUNK_TARGET_CHARACTERS` and one page of
 inventory overlap, `extractInventoryChunksLimited` (initial inventory and
 completeness per chunk), and `buildFinalGraphInventory`. Normal upload processing
-remains on its existing graph path. Package remains 0.6.8; this is an experiment,
-not a product release.
+remains on its existing graph path. Application release checkpoint 0.6.9 records
+this backend experiment, Claims-4.1 extraction, and reconciliation algorithm v2.2.4.
+It does not enable live extraction, production persistence, or frontend integration.
 
 After global inventory union, the new path builds generic ordered Claims evidence
 units with production semantic-to-raw mapping factored into `source-mapping.ts`.
@@ -77,7 +78,7 @@ Run the source-agnostic CLI with explicit source, new private output directory,
 expected source hash and expected page count:
 
 ```powershell
-node --conditions=react-server --import tsx scripts/claims-document-pipeline.ts --preflight '--source=fixtures/private/narrative-dev/Tales_of_the_Demon_Lord_no_bkgd_v6-5-16 (1).pdf' --output=fixtures/private/tales-full-claims-pipeline-preflight-v7 --expected-sha256=07f3bda14d7375f3da6f008aa499bc0fe2ee90e7183e11f2a64eeeb96fdf3377 --expected-pages=49
+node --conditions=react-server --import tsx scripts/claims-document-pipeline.ts --preflight '--source=fixtures/private/narrative-dev/Tales_of_the_Demon_Lord_no_bkgd_v6-5-16 (1).pdf' --output=fixtures/private/tales-full-claims-pipeline-preflight-v8 --expected-sha256=07f3bda14d7375f3da6f008aa499bc0fe2ee90e7183e11f2a64eeeb96fdf3377 --expected-pages=49
 ```
 
 Acceptance completed locally on the complete private Tales PDF, hash
@@ -88,10 +89,10 @@ primary ownership is duplicated or omitted. Actual Claims counts and total plann
 calls/input tokens remain unknown until actual inventory exists. Synthetic inventory
 demonstrates generic packing over the complete source; its counts are capability-only.
 No model calls, API requests, database writes or frontend changes occurred.
-The final bundle lives under ignored `fixtures/private/tales-full-claims-pipeline-preflight-v6/`;
-v1–v5 remain preserved development preflights. The PDF is not copied into any bundle.
+The v0.6.9 release preflight bundle lives under ignored `fixtures/private/tales-full-claims-pipeline-preflight-v7/`;
+v1–v6 remain preserved prior preflights. The PDF is not copied into any bundle.
 
-Deterministic verification passed 93 test files / 1,092 tests (including all 14 new
+Deterministic verification passed 93 test files / 1,093 tests (including all 14 new
 generic pipeline tests), typecheck, lint (three pre-existing warnings, zero errors)
 and `git diff --check`. Frozen Claims implementation/reconciliation and historical
 fixtures have no diff from baseline `29857f5125cf022809b35b3217bfe0da3be8b95f`.
