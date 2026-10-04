@@ -7,8 +7,8 @@ import { extractInventoryChunksLimited, type InventoryExtractedChunk } from "./e
 import { buildFinalGraphInventory } from "../processing/graph-core";
 import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, validateClaimsProvenance,
   CLAIMS_DOCUMENT_MODEL, CLAIMS_OUTPUT_CAP, INVENTORY_OUTPUT_CAP, COMPLETENESS_OUTPUT_CAP, assertDocumentModelPolicy } from "./claims-document-source";
-import { CLAIMS_4_1_PROMPT, claims41OutputSchema, serializeClaims41Request, CLAIMS_4_1_BEHAVIOR_VERSION, type Claims41Output, type Claims41Request } from "./claims-4-1-experiment";
-import { reconcileClaims41V224 } from "./claims-4-1-reconciliation-v2-2-4";
+import { CLAIMS_4_1_PROMPT, claims41OutputSchema, claims41DocumentUnionSchema, serializeClaims41Request, CLAIMS_4_1_BEHAVIOR_VERSION, type Claims41DocumentUnion, type Claims41Output, type Claims41Request } from "./claims-4-1-experiment";
+import { reconcileClaims41DocumentV224 } from "./claims-4-1-reconciliation-v2-2-4";
 import { EXTRACTION_INVENTORY_BEHAVIOR_VERSION, EXTRACTION_INVENTORY_COMPLETENESS_BEHAVIOR_VERSION, semanticInputHash } from "./operation-checkpoint";
 import type { durableDocumentProvider } from "./claims-document-runtime";
 import type { GraphInventory } from "./entity-reconciliation";
@@ -60,7 +60,7 @@ export async function runDocumentInventory(preflight: ReturnType<typeof prefligh
 export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<{ requestId: string; output: Claims41Output }>) {
   if (outputs.length !== requests.length || new Set(outputs.map((item) => item.requestId)).size !== requests.length ||
     outputs.some((item) => !requests.some((request) => request.requestId === item.requestId))) throw new Error("Exactly one output per Claims request required");
-  const unionedOutput: Claims41Output = { claims: [] };
+  const unionedOutput: Claims41DocumentUnion = { claims: [] };
   const proposalProvenance: Array<{ globalProposalIndex: number; extractionRequestId: string; requestLocalProposalIndex: number }> = [];
   for (const request of requests) {
     const output = outputs.find((item) => item.requestId === request.requestId)!.output;
@@ -70,13 +70,12 @@ export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<
       unionedOutput.claims.push(structuredClone(claim));
     }
   }
+  claims41DocumentUnionSchema.parse(unionedOutput);
   return { unionedOutput, proposalProvenance };
 }
 
 export function reconcileDocumentClaims(union: ReturnType<typeof unionDocumentClaims>, request: Claims41Request) {
-  // Frozen reconciler validates max(400). Never trim, batch reconcile, or weaken it.
-  if (!claims41OutputSchema.safeParse(union.unionedOutput).success) throw new Error("Document union exceeds frozen Claims schema (400 proposals); raw proposals retained; reconciliation blocked");
-  return reconcileClaims41V224(union.unionedOutput, request);
+  return reconcileClaims41DocumentV224(union.unionedOutput, request);
 }
 
 export async function runDocumentClaims(preflight: ReturnType<typeof preflightClaimsDocument>, inventory: GraphInventory,
@@ -94,7 +93,7 @@ export async function runDocumentClaims(preflight: ReturnType<typeof preflightCl
     outputs.push({ requestId: request.requestId, output: result.output }); usage.push(result.usage);
   }
   const union = unionDocumentClaims(packing.requests, outputs);
-  preserveUnion(union); // Durable complete raw union precedes the frozen 400-proposal guard.
+  preserveUnion(union); // Durable complete raw union precedes document-wide reconciliation.
   const reconciliation = reconcileDocumentClaims(union, documentWideRequest);
   return { document: { ...preflight.document, claimsRequestManifest: packing.manifest }, inventory: { finalInventory: inventory },
     claimsExtraction: { evidenceUnits: documentWideRequest.evidenceUnits, requestIds: packing.requests.map((request) => request.requestId),

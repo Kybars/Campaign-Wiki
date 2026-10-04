@@ -17,7 +17,7 @@ export const changelog = [
       "Bounded context evidence to what resolution needs, improved source-established descriptor continuation conservatively, and preserved source discrepancies proposition-by-proposition in GM Review. Retained candidate entities, many-to-many claim associations, Campaign Timeline associations, and mechanical-only disposition.",
       "Connected production PDF cleaning, page chunking, inventory extraction, and inventory completeness to Claims-4.1 with generic evidence construction and bounded request packing. Unioned request-level proposals into one document-wide stream for one v2.2.4 reconciliation, producing a Claims-native backend artifact for later wiki visualization instead of CanonicalGraph.",
       "Prepared the complete Tales PDF offline/preflight path with all upcoming acceptance-run AI stages constrained to gpt-6-luna. Live full-document Tales extraction has not run; production database persistence and frontend integration remain unchanged.",
-      "Next: source-vs-output DM/player table-usability validation, followed by Claims-native visualization if successful. The frozen 400-proposal document-union limit remains a live-test blocker.",
+      "Next: source-vs-output DM/player table-usability validation, followed by Claims-native visualization if successful. The 400-proposal extraction limit applies per model response; document unions validate every proposal without that ceiling.",
     ],
   },
   {

@@ -22,11 +22,15 @@ Cite one direct evidence unit by default. Use additional units only when needed 
 
 Return only the fixed candidate-claim schema.`;
 
-export const claims41OutputSchema = z.object({ claims: z.array(z.object({
+export const claims41CandidateClaimSchema = z.object({
   statement: z.string().trim().min(1).max(900),
   participants: z.array(z.string().trim().min(1).max(200)).max(24),
   evidence_unit_ids: z.array(z.string().trim().min(1).max(50)).min(1).max(5),
-}).strict()).max(400) }).strict();
+}).strict();
+export const claims41OutputSchema = z.object({ claims: z.array(claims41CandidateClaimSchema).max(400) }).strict();
+/** Deterministic document union, not a model response schema. Every item stays frozen. */
+export const claims41DocumentUnionSchema = z.object({ claims: z.array(claims41CandidateClaimSchema) }).strict();
+export type Claims41DocumentUnion = z.infer<typeof claims41DocumentUnionSchema>;
 export type Claims41Output = z.infer<typeof claims41OutputSchema>;
 export interface Claims41Request extends Claims3Request { inputDifferences: string[] }
 export type Claims41Status = "ready" | "pending_identity" | "pending_evidence" | "pending_source_status" | "pending_gm_review";

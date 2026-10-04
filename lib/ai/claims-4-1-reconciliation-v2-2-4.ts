@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { claims41OutputSchema, type Claims41Output, type Claims41Request, type SourceStatus } from "./claims-4-1-experiment";
+import { claims41OutputSchema, claims41DocumentUnionSchema, type Claims41DocumentUnion, type Claims41Output, type Claims41Request, type SourceStatus } from "./claims-4-1-experiment";
 import type { ReconciledClaimV2, TimelineAssociation } from "./claims-4-1-reconciliation-v2";
 import type { CandidateEntity, ParticipantResolutionV22, IdentityRelationV22, ReconciledClaimV22 } from "./claims-4-1-reconciliation-v2-2";
 import { normalizeName as norm } from "../graph/normalize";
@@ -469,6 +469,13 @@ function sourceMetadata(statement: string, direct: Unit[], timeline: ReturnType<
 
 export function reconcileClaims41V224(output: Claims41Output, request: Claims41Request) {
   claims41OutputSchema.parse(output); // Validate without replacing or trimming the frozen proposals.
+  return reconcileClaims41DocumentV224(output, request);
+}
+
+/** Shared v2.2.4 core: document validation changes only the container's array bound.
+ * Ignore the parsed copy so validation never trims or replaces raw proposals. */
+export function reconcileClaims41DocumentV224(output: Claims41DocumentUnion, request: Claims41Request) {
+  claims41DocumentUnionSchema.parse(output);
   const rawProposals = structuredClone(output);
   // Stage 1 precedes identity precomputation and all entity creation/attachment.
   const dispositions = output.claims.map((claim) => mechanicalOnly(claim.statement) ? "mechanical_only" as const : "present" as const);

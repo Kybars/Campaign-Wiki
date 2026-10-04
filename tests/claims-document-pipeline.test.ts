@@ -10,7 +10,7 @@ import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, es
   CLAIMS_DOCUMENT_MODEL, CLAIMS_INPUT_MAXIMUM, validateClaimsProvenance, assertDocumentModelPolicy } from "../lib/ai/claims-document-source";
 import { preflightClaimsDocument, unionDocumentClaims, reconcileDocumentClaims, runDocumentInventory, runDocumentClaims } from "../lib/ai/claims-document-pipeline";
 import * as reconciler from "../lib/ai/claims-4-1-reconciliation-v2-2-4";
-import { claims41PromptHash, claims41SchemaHash } from "../lib/ai/claims-4-1-experiment";
+import { claims41PromptHash, claims41SchemaHash, claims41OutputSchema, claims41DocumentUnionSchema } from "../lib/ai/claims-4-1-experiment";
 import { authorizeDocumentStage, durableDocumentProvider, operationIdentity, CLAIMS_DOCUMENT_CLIENT_OPTIONS } from "../lib/ai/claims-document-runtime";
 import { createOpenAIStructuredModelProvider, createLocalStructuredModelProvider } from "../lib/ai/structured-model-provider";
 import type { GraphInventory } from "../lib/ai/entity-reconciliation";
@@ -90,7 +90,7 @@ describe("union and document-wide frozen reconciliation", () => {
     expect(union.unionedOutput.claims).toEqual([first, second]);
     expect(union.proposalProvenance).toEqual([{ globalProposalIndex: 0, extractionRequestId: "r-1", requestLocalProposalIndex: 0 },
       { globalProposalIndex: 1, extractionRequestId: "r-2", requestLocalProposalIndex: 0 }]);
-    const spy = vi.spyOn(reconciler, "reconcileClaims41V224");
+    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
     const wide = documentClaimsRequest(evidence, inventory, "document");
     const result = reconcileDocumentClaims(union, wide);
     expect(spy).toHaveBeenCalledExactlyOnceWith(union.unionedOutput, wide);
@@ -100,13 +100,14 @@ describe("union and document-wide frozen reconciliation", () => {
     spy.mockRestore();
     expect(() => unionDocumentClaims(requests, outputs.slice(0, 1))).toThrow();
   });
-  it("retains every proposal but blocks a union exceeding the frozen schema instead of truncating or per-request reconciling", () => {
+  it("retains every proposal above 400 at document scope while the historical entry point still rejects it", () => {
     const request = documentClaimsRequest(units(), inventory, "document");
     const claim = { statement: "Fog covers the valley.", participants: [], evidence_unit_ids: [units()[3].unitId] };
     const union = unionDocumentClaims([{ ...request, requestId: "a" }, { ...request, requestId: "b" }],
       [{ requestId: "a", output: { claims: Array(400).fill(claim) } }, { requestId: "b", output: { claims: [claim] } }]);
     expect(union.unionedOutput.claims).toHaveLength(401);
-    expect(() => reconcileDocumentClaims(union, request)).toThrow("400 proposals");
+    expect(() => reconciler.reconcileClaims41V224(union.unionedOutput, request)).toThrow();
+    expect(reconcileDocumentClaims(union, request).rawProposals).toEqual(union.unionedOutput);
   });
   it("lets reconciliation see alias evidence from a different extraction request", () => {
     const evidence = buildClaimsEvidenceUnits([{ pageNumber: 1, text: "Mira was also called Ember. Ember guards the door." }]);
@@ -119,6 +120,52 @@ describe("union and document-wide frozen reconciliation", () => {
     expect(result.aliasMetadata.some((alias) => alias.alias === "Ember" && alias.entityId === "entity-1")).toBe(true);
     expect(result.claims[1].entityAssociations.some((association) => association.canonicalId === "entity-1")).toBe(true);
     expect(result.rawProposals).toEqual(union.unionedOutput);
+  });
+  it.each([500, 1200])("reconciles a %i-proposal union once with exact raw order and global indexes", (count) => {
+    const request = documentClaimsRequest(units(), inventory, "document");
+    const perRequest = count === 500 ? 250 : 300;
+    const requests = Array.from({ length: count / perRequest }, (_, index) => ({ ...request, requestId: `r-${index}` }));
+    const outputs = requests.map((request, index) => ({ requestId: request.requestId, output: { claims: Array.from({ length: perRequest }, (_, local) => ({
+      statement: `  Fog covers the valley ${index * perRequest + local}.  `, participants: [], evidence_unit_ids: [units()[3].unitId],
+    })) } }));
+    const originals = structuredClone(outputs.flatMap((item) => item.output.claims));
+    const union = unionDocumentClaims(requests, [...outputs].reverse());
+    expect(claims41DocumentUnionSchema.safeParse(union.unionedOutput).success).toBe(true);
+    expect(union.unionedOutput.claims).toEqual(originals);
+    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
+    const result = reconcileDocumentClaims(union, request);
+    expect(spy).toHaveBeenCalledExactlyOnceWith(union.unionedOutput, request);
+    spy.mockRestore();
+    expect(result.rawProposals.claims).toEqual(originals);
+    expect(result.claims.map((claim) => claim.original)).toEqual(originals);
+    expect(result.claims.map((claim) => claim.proposalIndex)).toEqual(Array.from({ length: count }, (_, index) => index));
+    expect(union.proposalProvenance).toEqual(Array.from({ length: count }, (_, index) => ({ globalProposalIndex: index,
+      extractionRequestId: requests[Math.floor(index / perRequest)].requestId, requestLocalProposalIndex: index % perRequest })));
+    expect(result.version).toBe("claims-4-1-reconciliation-2.2.4");
+  });
+  it("still rejects 401 claims in a single model response before union", () => {
+    const request = documentClaimsRequest(units(), inventory, "request");
+    const output = { claims: Array.from({ length: 401 }, () => ({ statement: "Fog covers the valley.", participants: [], evidence_unit_ids: [units()[3].unitId] })) };
+    expect(claims41OutputSchema.safeParse(output).success).toBe(false);
+    expect(() => unionDocumentClaims([request], [{ requestId: request.requestId, output }])).toThrow();
+    expect(() => reconciler.reconcileClaims41V224(output, request)).toThrow();
+  });
+  it("uses the same core for the historical entry point without altering its result", () => {
+    const request = documentClaimsRequest(units(), inventory, "request");
+    const output = { claims: [{ statement: "Fog covers the valley.", participants: [], evidence_unit_ids: [units()[3].unitId] }] };
+    expect(reconciler.reconcileClaims41V224(output, request)).toEqual(reconciler.reconcileClaims41DocumentV224(output, request));
+  });
+  it("validates the strict union container and every frozen item, including after index 400", () => {
+    const request = documentClaimsRequest(units(), inventory, "request");
+    const valid = { statement: "Fog covers the valley.", participants: [], evidence_unit_ids: [units()[3].unitId] };
+    for (const invalid of [{ ...valid, statement: "x".repeat(901) }, { ...valid, participants: Array(25).fill("person") },
+      { ...valid, evidence_unit_ids: Array(6).fill("unit") }, { ...valid, unexpected: true }]) {
+      const output = { claims: [...Array(500).fill(valid), invalid] };
+      expect(claims41DocumentUnionSchema.safeParse(output).success).toBe(false);
+      expect(() => reconciler.reconcileClaims41DocumentV224(output, request)).toThrow();
+    }
+    expect(claims41DocumentUnionSchema.safeParse({ claims: [valid], unexpected: true }).success).toBe(false);
+    expect(claims41DocumentUnionSchema.safeParse({ claims: "invalid" }).success).toBe(false);
   });
   it("keeps frozen prompt/schema identities and isolates graph/persistence/frontend stages", () => {
     expect(claims41PromptHash()).toBe("d631d2234fbaf5517a7543f46d053b9f837a6c2589a4471fd3fbfeb05eca5b58");
@@ -203,7 +250,7 @@ describe("durable authorization and retries", () => {
     const claimIds = packed.requests.map((request) => request.requestId);
     const createClaims = vi.fn().mockResolvedValue(response({ claims: [{ statement: "Mira is immortal.", participants: ["Mira"], evidence_unit_ids: [plan.evidenceUnits[0].unitId] }] }));
     const claimsRuntime = durableDocumentProvider(mkdtempSync(join(tmpdir(), "claims-run-")), auth(claimIds), claimIds, { responses: { create: createClaims } } as never);
-    const spy = vi.spyOn(reconciler, "reconcileClaims41V224");
+    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
     const preserve = vi.fn();
     const result = await runDocumentClaims(plan, inv.finalInventory, claimsRuntime, preserve);
     expect(spy).toHaveBeenCalledTimes(1);

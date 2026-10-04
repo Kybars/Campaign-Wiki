@@ -45,7 +45,7 @@ write("model-policy.v1.json", { distinctPlannedModelIds: [CLAIMS_DOCUMENT_MODEL]
 write("call-safety.v1.json", { liveAuthorized: live, automaticRetries: 0, stageAllowlistRequired: true, exactMaxCallsRequired: true,
   durableAttemptBeforeDispatch: true, uncertainDispatchBlocks: true, rawResponseBeforeValidation: true, validatedResume: true,
   stagedAuthorizationReason: "Actual inventory determines Claims request IDs/count. Freeze it before authorizing Claims.",
-  frozenDocumentUnionMaximum: 400 });
+  perRequestProposalMaximum: 400, documentUnionProposalMaximum: null });
 
 if (preflightOnly) {
   // Synthetic inventory proves packing capability on the complete real evidence stream.

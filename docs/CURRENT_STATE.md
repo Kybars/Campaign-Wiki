@@ -4,7 +4,7 @@ Update this disposable implementation snapshot after every completed milestone. 
 
 ## Version and baseline
 
-- Full-document Claims backend integration is an isolated offline experiment described in `docs/claims_document_pipeline.md`. Complete private Tales preflight verifies 49 pages, 6 inventory chunks, 12 planned inventory calls and 1,999 exact-mapped evidence units. Actual Claims call count depends on future inventory. All new stages require `gpt-6-luna`; live authorization is staged, SDK retries are disabled, and private file checkpoints block ambiguous redispatch. No live run, DB persistence, frontend integration or deployment has occurred. The frozen 400-proposal schema also caps document-wide reconciliation; an oversized union is preserved and blocked pending a separately reviewed contract decision.
+- Full-document Claims backend integration is an isolated offline experiment described in `docs/claims_document_pipeline.md`. Complete private Tales preflight verifies 49 pages, 6 inventory chunks, 12 planned inventory calls and 1,999 exact-mapped evidence units. Actual Claims call count depends on future inventory. All new stages require `gpt-6-luna`; live authorization is staged, SDK retries are disabled, and private file checkpoints block ambiguous redispatch. No live run, DB persistence, frontend integration or deployment has occurred. The frozen 400-proposal schema applies only to each extraction response. Document unions validate every candidate with the same item contract and invoke the unchanged v2.2.4 core once, without a document-wide proposal ceiling.
 
 - Package version: `0.6.9`
 - v0.4 backend/extraction work is complete. v0.5 now includes durable GM curation and the coherent category/entity editing system.
