@@ -9,6 +9,8 @@ export interface StructuredModelRequest<T> {
   payload: unknown;
   schema: z.ZodType<T>;
   schemaName: string;
+  /** Optional output ceiling; absent preserves historical provider payloads. */
+  maxOutputTokens?: number;
 }
 
 export interface StructuredModelResult<T> {
@@ -25,6 +27,10 @@ export interface StructuredModelProvider {
   parseStructured<T>(request: StructuredModelRequest<T>): Promise<StructuredModelResult<T>>;
 }
 
+function validateOutputCap(cap: number | undefined) {
+  if (cap !== undefined && (!Number.isInteger(cap) || cap < 1)) throw new Error("Invalid output token cap");
+}
+
 function userContent(payload: unknown): string {
   return typeof payload === "string" ? payload : JSON.stringify(payload);
 }
@@ -35,8 +41,9 @@ export function createOpenAIStructuredModelProvider(modelId: string, client: Ope
   return {
     providerId: "openai",
     modelId,
-    async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
-      const response = await client.responses.parse({ model: modelId, input: [{ role: "system", content: system }, { role: "user", content: userContent(payload) }], text: { format: zodTextFormat(schema, schemaName) } });
+    async parseStructured<T>({ system, payload, schema, schemaName, maxOutputTokens }: StructuredModelRequest<T>) {
+      validateOutputCap(maxOutputTokens);
+      const response = await client.responses.parse({ ...(maxOutputTokens === undefined ? {} : { max_output_tokens: maxOutputTokens }), model: modelId, input: [{ role: "system", content: system }, { role: "user", content: userContent(payload) }], text: { format: zodTextFormat(schema, schemaName) } });
       if (!response.output_parsed) throw new Error(`OpenAI returned no parsed ${schemaName} result`);
       const usage = modelCallUsage(response.model, response.id, response.usage);
       return { output: response.output_parsed as T, providerId: "openai" as const, modelId: response.model, responseId: response.id ?? null, usage };
@@ -139,7 +146,8 @@ export function createLocalStructuredModelProvider(config: Extract<ResolvedAIPro
   return {
     providerId: "local",
     modelId: config.modelId,
-    async parseStructured<T>({ system, payload, schema, schemaName }: StructuredModelRequest<T>) {
+    async parseStructured<T>({ system, payload, schema, schemaName, maxOutputTokens }: StructuredModelRequest<T>) {
+      validateOutputCap(maxOutputTokens);
       const startedAt = performance.now();
       const endpoint = `${config.baseUrl}/chat/completions`;
       const jsonSchema = z.toJSONSchema(schema);
@@ -149,6 +157,7 @@ export function createLocalStructuredModelProvider(config: Extract<ResolvedAIPro
           method: "POST",
           headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) },
           body: JSON.stringify({
+            ...(maxOutputTokens === undefined ? {} : { max_tokens: maxOutputTokens }),
             model: config.modelId,
             messages: [
               { role: "system", content: `${system}\nReturn only valid JSON matching the requested ${schemaName} structure.` },
