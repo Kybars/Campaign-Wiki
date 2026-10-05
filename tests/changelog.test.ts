@@ -7,12 +7,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { CLAIMS_4_1_RECONCILIATION_V2_2_4_VERSION } from "@/lib/ai/claims-4-1-reconciliation-v2-2-4";
+import { CLAIMS_4_1_RECONCILIATION_V2_3_0_VERSION } from "@/lib/ai/claims-4-1-reconciliation-v2-3-0";
 
 describe("changelog", () => {
   it("matches the current release to the package version", () => {
-    expect(currentVersion).toBe("0.6.9");
-    expect(currentChangelog.version).toBe("0.6.9");
-    expect(currentChangelog.date).toBe("2026-10-04");
+    expect(currentVersion).toBe("0.6.10");
+    expect(currentChangelog.version).toBe("0.6.10");
+    expect(currentChangelog.date).toBe("2026-10-05");
     expect(currentVersion).toBe(packageMetadata.version);
     expect(changelog[0].version).toBe(packageMetadata.version);
     expect(currentChangelog).toBe(changelog[0]);
@@ -20,6 +21,7 @@ describe("changelog", () => {
     expect(lock.version).toBe(packageMetadata.version);
     expect(lock.packages[""].version).toBe(packageMetadata.version);
     expect(CLAIMS_4_1_RECONCILIATION_V2_2_4_VERSION).toBe("claims-4-1-reconciliation-2.2.4");
+    expect(CLAIMS_4_1_RECONCILIATION_V2_3_0_VERSION).toBe("claims-4-1-reconciliation-2.3.0");
   });
 
   it("keeps releases newest first with unique versions", () => {
@@ -52,7 +54,7 @@ describe("changelog", () => {
   });
 
   it("retains the complete historical 0.6.8 entry after the new release", () => {
-    expect(changelog[1]).toEqual({
+    expect(changelog.find(entry => entry.version === "0.6.8")).toEqual({
       version: "0.6.8",
       date: "2026-10-01",
       title: "Claims-4.1 extraction research checkpoint",

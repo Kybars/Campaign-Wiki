@@ -9,6 +9,17 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.10",
+    date: "2026-10-05",
+    title: "Full-document reconciliation hardening",
+    changes: [
+      "Improved generic source structure and context, including heading paths, running furniture suppression, bounded statblocks, rumors and relative scheduled Timeline associations.",
+      "Added conservative document-global inventory normalization with aliases, original IDs and source-backed merge provenance.",
+      "Introduced reconciliation v2.3.0 with conservative inventory ambiguity handling, stable candidate identity reuse and generic-participant classification; retained v2.2.4 and existing mechanics semantics.",
+      "Validated offline against the frozen full Tales acceptance extraction, preserving all 1,891 raw Claims proposals. Claims-4.1 extraction prompt/schema remain frozen; no new model extraction was performed for this replay.",
+    ],
+  },
+  {
     version: "0.6.9",
     date: "2026-10-04",
     title: "Claims reconciliation v2.2.4 and full-document pipeline",

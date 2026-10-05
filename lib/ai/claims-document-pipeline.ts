@@ -8,7 +8,9 @@ import { buildFinalGraphInventory } from "../processing/graph-core";
 import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, validateClaimsProvenance,
   CLAIMS_DOCUMENT_MODEL, CLAIMS_OUTPUT_CAP, INVENTORY_OUTPUT_CAP, COMPLETENESS_OUTPUT_CAP, assertDocumentModelPolicy } from "./claims-document-source";
 import { CLAIMS_4_1_PROMPT, claims41OutputSchema, claims41DocumentUnionSchema, serializeClaims41Request, CLAIMS_4_1_BEHAVIOR_VERSION, type Claims41DocumentUnion, type Claims41Output, type Claims41Request } from "./claims-4-1-experiment";
-import { reconcileClaims41DocumentV224 } from "./claims-4-1-reconciliation-v2-2-4";
+import { reconcileClaims41DocumentV230 } from "./claims-4-1-reconciliation-v2-3-0";
+import { annotateSourceStructure } from "./claims-source-structure";
+import { normalizeClaimsInventory } from "./claims-inventory-normalization";
 import { EXTRACTION_INVENTORY_BEHAVIOR_VERSION, EXTRACTION_INVENTORY_COMPLETENESS_BEHAVIOR_VERSION, semanticInputHash } from "./operation-checkpoint";
 import type { durableDocumentProvider } from "./claims-document-runtime";
 import type { GraphInventory } from "./entity-reconciliation";
@@ -16,7 +18,8 @@ import type { GraphInventory } from "./entity-reconciliation";
 export function preflightClaimsDocument(pages: DocumentPage[], sourceHash: string, filename: string,
   targetCharacters = getProcessingEnv().PDF_CHUNK_TARGET_CHARACTERS) {
   const cleaning = cleanDocumentPagesForModel(pages);
-  const evidenceUnits = buildClaimsEvidenceUnits(cleaning.pages);
+  const structure = annotateSourceStructure(buildClaimsEvidenceUnits(cleaning.pages));
+  const evidenceUnits = structure.units;
   const chunks = chunkPages(cleaning.pages, { targetCharacters, overlapPages: 1 });
   const inventoryPlan = chunks.flatMap((chunk) => [
     { requestId: `inventory-${chunk.id}-${sourceHash.slice(0, 12)}-${semanticInputHash(chunk.pages).slice(0, 12)}`, chunkId: chunk.id,
@@ -28,7 +31,7 @@ export function preflightClaimsDocument(pages: DocumentPage[], sourceHash: strin
     pages: cleaning.pages.map((page) => ({ page: page.pageNumber, rawCharacters: page.text.length, modelCharacters: pageTextForModel(page).length })) },
     coarseInventoryChunkManifest: chunks.map((chunk) => ({ id: chunk.id, pages: chunk.pages.map((page) => page.pageNumber), characterCount: chunk.characterCount })),
     claimsRequestManifest: null }, cleaning, chunks, evidenceUnits, inventoryPlan,
-    diagnostics: { provenance: validateClaimsProvenance(evidenceUnits, pages),
+    diagnostics: { sourceStructure: structure, provenance: validateClaimsProvenance(evidenceUnits, pages),
       sourceCoverage: cleaning.pages.map((page) => ({ page: page.pageNumber,
         modelNonWhitespaceCharacters: pageTextForModel(page).replace(/\s/gu, "").length,
         evidenceNonWhitespaceCharacters: evidenceUnits.filter((unit) => unit.page === page.pageNumber).map((unit) => unit.text).join("").replace(/\s/gu, "").length })),
@@ -54,7 +57,10 @@ export async function runDocumentInventory(preflight: ReturnType<typeof prefligh
     result.completenessCheckpointStatus = runtime.metadata.findLast((item) => item.id === completenessId)?.reused ? "REUSE" : "RUN";
     results.push(result);
   }
-  return { finalInventory: buildFinalGraphInventory(results.map((item) => item.inventory)), chunks: results, checkpointMetadata: runtime.metadata, calls: runtime.calls };
+  const rawFinalInventory = buildFinalGraphInventory(results.map((item) => item.inventory));
+  const normalized = normalizeClaimsInventory(rawFinalInventory, preflight.evidenceUnits);
+  return { finalInventory: normalized.inventory, rawFinalInventory, normalizationMerges: normalized.merges,
+    chunks: results, checkpointMetadata: runtime.metadata, calls: runtime.calls };
 }
 
 export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<{ requestId: string; output: Claims41Output }>) {
@@ -75,7 +81,7 @@ export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<
 }
 
 export function reconcileDocumentClaims(union: ReturnType<typeof unionDocumentClaims>, request: Claims41Request) {
-  return reconcileClaims41DocumentV224(union.unionedOutput, request);
+  return reconcileClaims41DocumentV230(union.unionedOutput, request);
 }
 
 export async function runDocumentClaims(preflight: ReturnType<typeof preflightClaimsDocument>, inventory: GraphInventory,

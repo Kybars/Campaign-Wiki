@@ -10,6 +10,7 @@ import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, es
   CLAIMS_DOCUMENT_MODEL, CLAIMS_INPUT_MAXIMUM, validateClaimsProvenance, assertDocumentModelPolicy } from "../lib/ai/claims-document-source";
 import { preflightClaimsDocument, unionDocumentClaims, reconcileDocumentClaims, runDocumentInventory, runDocumentClaims } from "../lib/ai/claims-document-pipeline";
 import * as reconciler from "../lib/ai/claims-4-1-reconciliation-v2-2-4";
+import * as downstream from "../lib/ai/claims-4-1-reconciliation-v2-3-0";
 import { claims41PromptHash, claims41SchemaHash, claims41OutputSchema, claims41DocumentUnionSchema } from "../lib/ai/claims-4-1-experiment";
 import { authorizeDocumentStage, durableDocumentProvider, operationIdentity, CLAIMS_DOCUMENT_CLIENT_OPTIONS } from "../lib/ai/claims-document-runtime";
 import { createOpenAIStructuredModelProvider, createLocalStructuredModelProvider } from "../lib/ai/structured-model-provider";
@@ -90,7 +91,7 @@ describe("union and document-wide frozen reconciliation", () => {
     expect(union.unionedOutput.claims).toEqual([first, second]);
     expect(union.proposalProvenance).toEqual([{ globalProposalIndex: 0, extractionRequestId: "r-1", requestLocalProposalIndex: 0 },
       { globalProposalIndex: 1, extractionRequestId: "r-2", requestLocalProposalIndex: 0 }]);
-    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
+    const spy = vi.spyOn(downstream, "reconcileClaims41DocumentV230");
     const wide = documentClaimsRequest(evidence, inventory, "document");
     const result = reconcileDocumentClaims(union, wide);
     expect(spy).toHaveBeenCalledExactlyOnceWith(union.unionedOutput, wide);
@@ -132,7 +133,7 @@ describe("union and document-wide frozen reconciliation", () => {
     const union = unionDocumentClaims(requests, [...outputs].reverse());
     expect(claims41DocumentUnionSchema.safeParse(union.unionedOutput).success).toBe(true);
     expect(union.unionedOutput.claims).toEqual(originals);
-    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
+    const spy = vi.spyOn(downstream, "reconcileClaims41DocumentV230");
     const result = reconcileDocumentClaims(union, request);
     expect(spy).toHaveBeenCalledExactlyOnceWith(union.unionedOutput, request);
     spy.mockRestore();
@@ -141,7 +142,7 @@ describe("union and document-wide frozen reconciliation", () => {
     expect(result.claims.map((claim) => claim.proposalIndex)).toEqual(Array.from({ length: count }, (_, index) => index));
     expect(union.proposalProvenance).toEqual(Array.from({ length: count }, (_, index) => ({ globalProposalIndex: index,
       extractionRequestId: requests[Math.floor(index / perRequest)].requestId, requestLocalProposalIndex: index % perRequest })));
-    expect(result.version).toBe("claims-4-1-reconciliation-2.2.4");
+    expect(result.version).toBe("claims-4-1-reconciliation-2.3.0");
   });
   it("still rejects 401 claims in a single model response before union", () => {
     const request = documentClaimsRequest(units(), inventory, "request");
@@ -250,7 +251,7 @@ describe("durable authorization and retries", () => {
     const claimIds = packed.requests.map((request) => request.requestId);
     const createClaims = vi.fn().mockResolvedValue(response({ claims: [{ statement: "Mira is immortal.", participants: ["Mira"], evidence_unit_ids: [plan.evidenceUnits[0].unitId] }] }));
     const claimsRuntime = durableDocumentProvider(mkdtempSync(join(tmpdir(), "claims-run-")), auth(claimIds), claimIds, { responses: { create: createClaims } } as never);
-    const spy = vi.spyOn(reconciler, "reconcileClaims41DocumentV224");
+    const spy = vi.spyOn(downstream, "reconcileClaims41DocumentV230");
     const preserve = vi.fn();
     const result = await runDocumentClaims(plan, inv.finalInventory, claimsRuntime, preserve);
     expect(spy).toHaveBeenCalledTimes(1);
