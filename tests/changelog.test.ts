@@ -14,8 +14,8 @@ import { CLAIMS_4_1_RECONCILIATION_V2_3_2_VERSION } from "@/lib/ai/claims-4-1-re
 
 describe("changelog", () => {
   it("matches the current release to the package version", () => {
-    expect(currentVersion).toBe("0.6.12");
-    expect(currentChangelog.version).toBe("0.6.12");
+    expect(currentVersion).toBe("0.6.13");
+    expect(currentChangelog.version).toBe("0.6.13");
     expect(currentChangelog.date).toBe("2026-10-06");
     expect(currentVersion).toBe(packageMetadata.version);
     expect(changelog[0].version).toBe(packageMetadata.version);

@@ -9,6 +9,16 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.13",
+    date: "2026-10-06",
+    title: "PDF model-text decontamination",
+    changes: [
+      "Improved PDF model-text decontamination for interleaved page furniture, recurring purchaser watermarks, page ornaments and exact duplicate overlay fragments.",
+      "Raw source and provenance remain unchanged; removal diagnostics preserve raw offsets and reasons, and model evidence never joins across removed layers.",
+      "Claims-4.1 and reconciliation 2.3.2 remain frozen. Prepared three small Claims-only Tales regression requests without executing them; zero model/API calls in this release.",
+    ],
+  },
+  {
     version: "0.6.12",
     date: "2026-10-06",
     title: "Source-form participant references",

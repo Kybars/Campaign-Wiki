@@ -29,6 +29,7 @@ export function preflightClaimsDocument(pages: DocumentPage[], sourceHash: strin
       stage: "inventory_completeness", modelId: CLAIMS_DOCUMENT_MODEL, maxOutputTokens: COMPLETENESS_OUTPUT_CAP },
   ]);
   return { document: { sourceHash, filename, pageCount: pages.length, cleaningDiagnostics: { removedLineCount: cleaning.removedLineCount,
+    countsByReason: cleaning.countsByReason, removedFragments: cleaning.removedFragments,
     pages: cleaning.pages.map((page) => ({ page: page.pageNumber, rawCharacters: page.text.length, modelCharacters: pageTextForModel(page).length })) },
     coarseInventoryChunkManifest: chunks.map((chunk) => ({ id: chunk.id, pages: chunk.pages.map((page) => page.pageNumber), characterCount: chunk.characterCount })),
     claimsRequestManifest: null }, cleaning, chunks, evidenceUnits, inventoryPlan,
