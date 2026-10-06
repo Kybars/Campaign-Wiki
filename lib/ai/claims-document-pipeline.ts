@@ -8,9 +8,10 @@ import { buildFinalGraphInventory } from "../processing/graph-core";
 import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, validateClaimsProvenance,
   CLAIMS_DOCUMENT_MODEL, CLAIMS_OUTPUT_CAP, INVENTORY_OUTPUT_CAP, COMPLETENESS_OUTPUT_CAP, assertDocumentModelPolicy } from "./claims-document-source";
 import { CLAIMS_4_1_PROMPT, claims41OutputSchema, claims41DocumentUnionSchema, serializeClaims41Request, CLAIMS_4_1_BEHAVIOR_VERSION, type Claims41DocumentUnion, type Claims41Output, type Claims41Request } from "./claims-4-1-experiment";
-import { reconcileClaims41DocumentV230 } from "./claims-4-1-reconciliation-v2-3-0";
+import { reconcileClaims41DocumentV231 } from "./claims-4-1-reconciliation-v2-3-1";
+import type { InventorySources } from "./claims-inventory-ambiguity";
 import { annotateSourceStructure } from "./claims-source-structure";
-import { normalizeClaimsInventory } from "./claims-inventory-normalization";
+import { normalizeClaimsInventoryV231 } from "./claims-inventory-normalization";
 import { EXTRACTION_INVENTORY_BEHAVIOR_VERSION, EXTRACTION_INVENTORY_COMPLETENESS_BEHAVIOR_VERSION, semanticInputHash } from "./operation-checkpoint";
 import type { durableDocumentProvider } from "./claims-document-runtime";
 import type { GraphInventory } from "./entity-reconciliation";
@@ -58,7 +59,7 @@ export async function runDocumentInventory(preflight: ReturnType<typeof prefligh
     results.push(result);
   }
   const rawFinalInventory = buildFinalGraphInventory(results.map((item) => item.inventory));
-  const normalized = normalizeClaimsInventory(rawFinalInventory, preflight.evidenceUnits);
+  const normalized = normalizeClaimsInventoryV231(rawFinalInventory, preflight.evidenceUnits);
   return { finalInventory: normalized.inventory, rawFinalInventory, normalizationMerges: normalized.merges,
     chunks: results, checkpointMetadata: runtime.metadata, calls: runtime.calls };
 }
@@ -80,8 +81,8 @@ export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<
   return { unionedOutput, proposalProvenance };
 }
 
-export function reconcileDocumentClaims(union: ReturnType<typeof unionDocumentClaims>, request: Claims41Request) {
-  return reconcileClaims41DocumentV230(union.unionedOutput, request);
+export function reconcileDocumentClaims(union: ReturnType<typeof unionDocumentClaims>, request: Claims41Request, sources?: InventorySources) {
+  return reconcileClaims41DocumentV231(union.unionedOutput, request, undefined, sources);
 }
 
 export async function runDocumentClaims(preflight: ReturnType<typeof preflightClaimsDocument>, inventory: GraphInventory,
@@ -100,7 +101,7 @@ export async function runDocumentClaims(preflight: ReturnType<typeof preflightCl
   }
   const union = unionDocumentClaims(packing.requests, outputs);
   preserveUnion(union); // Durable complete raw union precedes document-wide reconciliation.
-  const reconciliation = reconcileDocumentClaims(union, documentWideRequest);
+  const reconciliation = reconcileDocumentClaims(union, documentWideRequest, new Map(inventory.entities.map(e => [e.temporary_id, e.sources])));
   return { document: { ...preflight.document, claimsRequestManifest: packing.manifest }, inventory: { finalInventory: inventory },
     claimsExtraction: { evidenceUnits: documentWideRequest.evidenceUnits, requestIds: packing.requests.map((request) => request.requestId),
       ownership: packing.ownership, rawOutputs: outputs, ...union }, reconciliation,

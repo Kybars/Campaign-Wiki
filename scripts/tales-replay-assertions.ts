@@ -45,7 +45,22 @@ export function assertTalesReplay(replay: ReturnType<typeof replayAcceptanceBund
       n.type === e.type && (n.temporary_id === e.temporary_id || n.memberIds?.includes(e.temporary_id)))));
   check("ambiguous_inventory_does_not_spawn_candidates", result.candidateEntities.every(e => !ambiguous.includes(nameKey(e.name))));
   const ambiguityParticipants = result.claims.filter(c => c.wikiDisposition === "present").flatMap(c => c.participants.filter(p => ambiguous.includes(nameKey(p.mention))));
-  check("real_identity_ambiguity_unresolved", ambiguityParticipants.length > 0 && ambiguityParticipants.every(p => p.kind === "unresolved"), ambiguityParticipants.length);
+  if (result.version.endsWith("2.3.1")) {
+    check("inventory_collision_alone_does_not_force_unresolved", ambiguityParticipants.some(p => p.kind === "canonical_entity"));
+    check("source_supported_collision_selection", ambiguityParticipants.filter(p => p.kind === "canonical_entity").every(p => p.supportingEvidence.some(e => e.direct)));
+    check("indistinguishable_collisions_remain_unresolved", ambiguityParticipants.some(p => p.kind === "unresolved"));
+    const participantsFor = (name: string) => result.claims.filter(c => c.wikiDisposition === "present")
+      .flatMap(c => c.participants.filter(p => nameKey(p.mention) === nameKey(name)));
+    const typeFor = (id: string | null) => normalized.inventory.entities.find(e => e.temporary_id === id)?.type;
+    for (const [name, type] of [["The Red Light of the Woods", "deity"], ["Iron Titan", "item"]]) {
+      const participants = participantsFor(name);
+      check(`source_supported_${name}`, participants.length > 0 && participants.every(p => p.kind === "canonical_entity" && typeFor(p.canonicalId) === type));
+    }
+    for (const [name, type] of [["Gibbering Fever", "other"], ["Moon Spire", "location"], ["Academy of Engineers", "faction"], ["Academy of Engineers", "location"]])
+      check(`claim_local_${name}_${type}`, participantsFor(name).some(p => p.kind === "canonical_entity" && typeFor(p.canonicalId) === type));
+    check("void_source_selection_and_residual", participantsFor("Void").some(p => p.kind === "canonical_entity") && participantsFor("Void").some(p => p.kind === "unresolved"));
+    check("temple_no_manufactured_associations", participantsFor("Temple of Shadows").length === 0);
+  }
   const generics = result.claims.filter(c => c.wikiDisposition === "present").flatMap(c => c.participants.filter(p => /^(?:creature|cultists|children|farm|portal|fog|island|guards|small demon)$/iu.test(p.mention)));
   check("source_common_participants_are_generic", generics.length > 0 && generics.every(p => p.kind === "generic_non_entity"), generics.length);
   const randomIds = new Set(structure.units.filter(u => /random/u.test(u.context)).map(u => u.unitId));

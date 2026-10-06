@@ -9,6 +9,17 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.11",
+    date: "2026-10-06",
+    title: "Source-backed inventory ambiguity correction",
+    changes: [
+      "Corrected over-conservative cross-type inventory ambiguity handling in reconciliation v2.3.1 with source-backed claim-local disambiguation of existing identities.",
+      "Added narrowly proven specific-type/fallback normalization with source records, original IDs and merge reasons; retained distinct identities when source proof is insufficient.",
+      "Fixed offline replay parity with production structured evidence units passed into inventory normalization.",
+      "Claims-4.1 prompt/schema remain frozen. Preserved all 1,891 Tales proposals and historical v2.2.4/v2.3.0 behavior; zero new model extraction was performed and zero model/API calls were made.",
+    ],
+  },
+  {
     version: "0.6.10",
     date: "2026-10-05",
     title: "Full-document reconciliation hardening",

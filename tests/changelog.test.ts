@@ -9,11 +9,13 @@ import { readFileSync } from "node:fs";
 import { CLAIMS_4_1_RECONCILIATION_V2_2_4_VERSION } from "@/lib/ai/claims-4-1-reconciliation-v2-2-4";
 import { CLAIMS_4_1_RECONCILIATION_V2_3_0_VERSION } from "@/lib/ai/claims-4-1-reconciliation-v2-3-0";
 
+import { CLAIMS_4_1_RECONCILIATION_V2_3_1_VERSION } from "@/lib/ai/claims-4-1-reconciliation-v2-3-1";
+
 describe("changelog", () => {
   it("matches the current release to the package version", () => {
-    expect(currentVersion).toBe("0.6.10");
-    expect(currentChangelog.version).toBe("0.6.10");
-    expect(currentChangelog.date).toBe("2026-10-05");
+    expect(currentVersion).toBe("0.6.11");
+    expect(currentChangelog.version).toBe("0.6.11");
+    expect(currentChangelog.date).toBe("2026-10-06");
     expect(currentVersion).toBe(packageMetadata.version);
     expect(changelog[0].version).toBe(packageMetadata.version);
     expect(currentChangelog).toBe(changelog[0]);
@@ -22,6 +24,7 @@ describe("changelog", () => {
     expect(lock.packages[""].version).toBe(packageMetadata.version);
     expect(CLAIMS_4_1_RECONCILIATION_V2_2_4_VERSION).toBe("claims-4-1-reconciliation-2.2.4");
     expect(CLAIMS_4_1_RECONCILIATION_V2_3_0_VERSION).toBe("claims-4-1-reconciliation-2.3.0");
+    expect(CLAIMS_4_1_RECONCILIATION_V2_3_1_VERSION).toBe("claims-4-1-reconciliation-2.3.1");
   });
 
   it("keeps releases newest first with unique versions", () => {

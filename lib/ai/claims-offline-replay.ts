@@ -8,8 +8,9 @@ import type { GraphInventory } from "./entity-reconciliation";
 import { CLAIMS_4_1_PROMPT, claims41OutputSchema, claims41DocumentUnionSchema } from "./claims-4-1-experiment";
 import { documentClaimsRequest } from "./claims-document-source";
 import { annotateSourceStructure } from "./claims-source-structure";
-import { normalizeClaimsInventory } from "./claims-inventory-normalization";
+import { normalizeClaimsInventoryV231 } from "./claims-inventory-normalization";
 import { reconcileClaims41DocumentV230 } from "./claims-4-1-reconciliation-v2-3-0";
+import { reconcileClaims41DocumentV231 } from "./claims-4-1-reconciliation-v2-3-1";
 
 export const sha256 = (bytes: string | Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 export const frozenHashes = () => ({ prompt: sha256(CLAIMS_4_1_PROMPT), schema: sha256(JSON.stringify(z.toJSONSchema(claims41OutputSchema))) });
@@ -39,7 +40,7 @@ export function verifyAcceptanceBundle(directory: string, expectedManifestHash: 
 
 /** Pure deterministic stages are injectable for future acceptance comparisons. */
 export function replayAcceptanceBundle(bundle: ReturnType<typeof verifyAcceptanceBundle>, stages = {
-  structure: annotateSourceStructure, inventory: normalizeClaimsInventory, reconcile: reconcileClaims41DocumentV230,
+  structure: annotateSourceStructure, inventory: normalizeClaimsInventoryV231, reconcile: reconcileClaims41DocumentV231,
 }) {
   const raw = bundle.read<Parameters<typeof reconcileClaims41DocumentV230>[0]>("claims-raw.v1.json");
   claims41DocumentUnionSchema.parse(raw);
@@ -49,9 +50,10 @@ export function replayAcceptanceBundle(bundle: ReturnType<typeof verifyAcceptanc
   const originalInventory = bundle.read<{ finalInventory: GraphInventory }>("inventory-review.v1.json").finalInventory;
   const structure = stages.structure(originalUnits);
   if (!isDeepStrictEqual(structure.units.map(u => [u.unitId, u.rawSource, u.order, u.text]), originalUnits.map(u => [u.unitId, u.rawSource, u.order, u.text]))) throw new Error("Source spans/IDs changed");
-  const normalized = stages.inventory(originalInventory, originalUnits);
+  const normalized = stages.inventory(originalInventory, structure.units);
   const before = bundle.read<ReturnType<typeof reconcileClaims41DocumentV230>>("reconciliation.v1.json");
-  const result = stages.reconcile(raw, documentClaimsRequest(structure.units, normalized.inventory, "claims4-1-document-wide"));
+  const result = stages.reconcile(raw, documentClaimsRequest(structure.units, normalized.inventory, "claims4-1-document-wide"), undefined,
+    new Map(normalized.inventory.entities.map(e => [e.temporary_id, e.sources])));
   if (!isDeepStrictEqual(raw, result.rawProposals) || result.claims.some((c, i) => c.proposalIndex !== i || !isDeepStrictEqual(c.original, raw.claims[i]))) throw new Error("Raw proposals/indexes changed");
   const summarize = (r: typeof result, inventory: GraphInventory) => {
     const counts = (values: string[]) => values.reduce<Record<string, number>>((out, v) => { out[v] = (out[v] ?? 0) + 1; return out; }, {});
