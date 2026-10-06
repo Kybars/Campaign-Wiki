@@ -9,6 +9,16 @@ export const CHANGELOG_PATH = "/changelog";
 
 export const changelog = [
   {
+    version: "0.6.12",
+    date: "2026-10-06",
+    title: "Source-form participant references",
+    changes: [
+      "Added source-form generic participant handling based on source determiners, quantity, plurality and common-noun usage, with inventory and explicit-designation safeguards.",
+      "Added bounded structural/source coreference backed by explicit proposition anchors; headings alone never choose an identity and conservative inventory ambiguity is preserved.",
+      "Claims-4.1 extraction remains frozen. Preserved all 1,891 Tales proposals, previous reconciliation versions and mechanics; zero new model extraction was performed and zero model/API calls were made.",
+    ],
+  },
+  {
     version: "0.6.11",
     date: "2026-10-06",
     title: "Source-backed inventory ambiguity correction",

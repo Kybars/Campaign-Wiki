@@ -8,7 +8,7 @@ import { buildFinalGraphInventory } from "../processing/graph-core";
 import { buildClaimsEvidenceUnits, packClaimsRequests, documentClaimsRequest, validateClaimsProvenance,
   CLAIMS_DOCUMENT_MODEL, CLAIMS_OUTPUT_CAP, INVENTORY_OUTPUT_CAP, COMPLETENESS_OUTPUT_CAP, assertDocumentModelPolicy } from "./claims-document-source";
 import { CLAIMS_4_1_PROMPT, claims41OutputSchema, claims41DocumentUnionSchema, serializeClaims41Request, CLAIMS_4_1_BEHAVIOR_VERSION, type Claims41DocumentUnion, type Claims41Output, type Claims41Request } from "./claims-4-1-experiment";
-import { reconcileClaims41DocumentV231 } from "./claims-4-1-reconciliation-v2-3-1";
+import { reconcileClaims41DocumentV232 } from "./claims-4-1-reconciliation-v2-3-2";
 import type { InventorySources } from "./claims-inventory-ambiguity";
 import { annotateSourceStructure } from "./claims-source-structure";
 import { normalizeClaimsInventoryV231 } from "./claims-inventory-normalization";
@@ -82,7 +82,7 @@ export function unionDocumentClaims(requests: Claims41Request[], outputs: Array<
 }
 
 export function reconcileDocumentClaims(union: ReturnType<typeof unionDocumentClaims>, request: Claims41Request, sources?: InventorySources) {
-  return reconcileClaims41DocumentV231(union.unionedOutput, request, undefined, sources);
+  return reconcileClaims41DocumentV232(union.unionedOutput, request, undefined, sources);
 }
 
 export async function runDocumentClaims(preflight: ReturnType<typeof preflightClaimsDocument>, inventory: GraphInventory,

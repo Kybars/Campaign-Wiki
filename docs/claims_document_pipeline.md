@@ -1,13 +1,15 @@
 # Full-document Claims backend experiment
 
-Current checkpoint: application 0.6.10 / reconciliation 2.3.0. The completed
+Current checkpoint: application 0.6.12 / reconciliation 2.3.2. The completed
 Tales acceptance extraction is frozen at 1,891 proposals and has been replayed
 offline without new extraction or model/API calls. The document backend now
 annotates existing source spans, normalizes `buildFinalGraphInventory` before
-Claims consumption, and uses one document-wide v2.3.0 reconciliation. The frozen
+Claims consumption, and uses one document-wide v2.3.2 reconciliation. The frozen
 prompt/schema, candidate semantics and packer are unchanged; v2.2.4 remains an
-immutable historical entry point. See `claims_reconciliation_v2_3_0.md` and
-`audits/tales_reconciliation_v2_3_0.md` for the current architecture and validation.
+immutable historical entry point, alongside unchanged v2.3.0 and v2.3.1. See
+`claims_reconciliation_v2_3_2.md` and `audits/tales_reconciliation_v2_3_2.md`
+for the current architecture and validation. Inventory normalization remains
+v2.3.1; replay uses the same structured units as production.
 The original 0.6.9 implementation/preflight history below is preserved.
 
 This isolated backend runner reuses PDF extraction, `cleanDocumentPagesForModel`,
