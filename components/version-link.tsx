@@ -21,6 +21,7 @@ export function VersionLink() {
       >
         <p className="font-mono text-xs font-semibold text-[var(--accent)]">v{currentChangelog.version}</p>
         <p className="mt-1 font-semibold">{currentChangelog.title}</p>
+        {currentChangelog.summary && <p className="mt-2 text-xs leading-5">{currentChangelog.summary}</p>}
         <ul className="mt-2 space-y-1 text-xs leading-5 text-[var(--muted)]">
           {currentChangelog.changes.map((change) => <li key={change}>• {change}</li>)}
         </ul>

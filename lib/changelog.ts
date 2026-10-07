@@ -2,6 +2,7 @@ export interface ChangelogEntry {
   version: string;
   date: string;
   title: string;
+  summary?: string;
   changes: readonly string[];
 }
 
@@ -12,6 +13,7 @@ export const changelog = [
     version: "0.6.13",
     date: "2026-10-06",
     title: "PDF model-text decontamination",
+    summary: "Improved PDF model-text cleaning to remove interleaved page furniture, watermarks, page ornaments and duplicate overlays while preserving exact raw source provenance.",
     changes: [
       "Improved PDF model-text decontamination for interleaved page furniture, recurring purchaser watermarks, page ornaments and exact duplicate overlay fragments.",
       "Raw source and provenance remain unchanged; removal diagnostics preserve raw offsets and reasons, and model evidence never joins across removed layers.",
@@ -22,6 +24,7 @@ export const changelog = [
     version: "0.6.12",
     date: "2026-10-06",
     title: "Source-form participant references",
+    summary: "Added source-form generic participant handling and bounded structural coreference in reconciliation v2.3.2.",
     changes: [
       "Added source-form generic participant handling based on source determiners, quantity, plurality and common-noun usage, with inventory and explicit-designation safeguards.",
       "Added bounded structural/source coreference backed by explicit proposition anchors; headings alone never choose an identity and conservative inventory ambiguity is preserved.",
@@ -32,6 +35,7 @@ export const changelog = [
     version: "0.6.11",
     date: "2026-10-06",
     title: "Source-backed inventory ambiguity correction",
+    summary: "Added source-backed claim-local resolution for ambiguous inventory identities and reconciliation v2.3.1.",
     changes: [
       "Corrected over-conservative cross-type inventory ambiguity handling in reconciliation v2.3.1 with source-backed claim-local disambiguation of existing identities.",
       "Added narrowly proven specific-type/fallback normalization with source records, original IDs and merge reasons; retained distinct identities when source proof is insufficient.",
@@ -43,6 +47,7 @@ export const changelog = [
     version: "0.6.10",
     date: "2026-10-05",
     title: "Full-document reconciliation hardening",
+    summary: "Hardened full-document reconciliation with source structure, rumor and relative-timeline context, conservative inventory normalization and reconciliation v2.3.0.",
     changes: [
       "Improved generic source structure and context, including heading paths, running furniture suppression, bounded statblocks, rumors and relative scheduled Timeline associations.",
       "Added conservative document-global inventory normalization with aliases, original IDs and source-backed merge provenance.",
@@ -54,6 +59,7 @@ export const changelog = [
     version: "0.6.9",
     date: "2026-10-04",
     title: "Claims reconciliation v2.2.4 and full-document pipeline",
+    summary: "Connected the production PDF and inventory pipeline to Claims-4.1 and added document-wide proposal union and reconciliation v2.2.4.",
     changes: [
       "Checkpointed reconciliation v2.2.4, frozen after the WotBS/Sweetwater semantic audit: identity-relation metadata stays on its source claim while preserving one document-level identity relation.",
       "Bounded context evidence to what resolution needs, improved source-established descriptor continuation conservatively, and preserved source discrepancies proposition-by-proposition in GM Review. Retained candidate entities, many-to-many claim associations, Campaign Timeline associations, and mechanical-only disposition.",
@@ -66,6 +72,7 @@ export const changelog = [
     version: "0.6.8",
     date: "2026-10-01",
     title: "Claims-4.1 extraction research checkpoint",
+    summary: "Established the Claims-4.1 extraction architecture with fine-grained propositions, source-grounded participants and evidence, and frozen WotBS/Sweetwater extraction checkpoints.",
     changes: [
       "Checkpointed the separate Claims-4/4.1 research line, with fine-grained propositions, source-grounded participants and evidence, and full raw-proposal retention.",
       "Recorded the frozen 106-proposal WotBS and 148-proposal Sweetwater extraction runs and deterministic reconciliation v2/v2.1/v2.2 source, tests, and offline replay tools.",
@@ -76,6 +83,7 @@ export const changelog = [
     version: "0.6.7",
     date: "2026-09-28",
     title: "Claims-2 development checkpoint",
+    summary: "Introduced Claims-2 development experiments for granular source-backed facts, completeness testing, bounded budgets and citation auditing.",
     changes: [
       "Added isolated Claims-2 and completeness experiments with source-backed participant validation, bounded run budgets, and Test 9/10/11 development runners.",
       "Recorded narrative extraction and citation audits, including the stopped acceptance test and known context limits.",

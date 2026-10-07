@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { changelog } from "@/lib/changelog";
+import { changelog, type ChangelogEntry } from "@/lib/changelog";
 
 export const metadata = {
   title: "Changelog | Campaign Wiki",
@@ -17,13 +17,14 @@ export default function ChangelogPage() {
       </header>
 
       <ol className="divide-y divide-[var(--line)]">
-        {changelog.map((release) => (
+        {changelog.map((release: ChangelogEntry) => (
           <li className="py-4 sm:py-5" key={release.version}>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 className="font-serif text-xl font-semibold">v{release.version}</h2>
               <time className="text-sm text-[var(--muted)]" dateTime={release.date}>{release.date}</time>
             </div>
             <p className="mt-1 text-sm font-semibold">{release.title}</p>
+            {release.summary && <p className="mt-2 text-sm leading-6 text-[var(--ink)]">{release.summary}</p>}
             <ul className="mt-2 space-y-1 text-sm leading-6 text-[var(--muted)]">
               {release.changes.map((change) => <li key={change}>• {change}</li>)}
             </ul>
